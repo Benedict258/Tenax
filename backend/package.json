@@ -1,0 +1,35 @@
+{
+  "name": "tenax-backend",
+  "version": "1.0.0",
+  "description": "Tenax AI Agent Backend",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest",
+    "test:whatsapp": "node scripts/test_whatsapp_flow.js",
+    "test:regression": "node scripts/run_regression_tests.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.90.1",
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.12.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "groq-sdk": "^0.37.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "openai": "^6.16.0",
+    "pg": "^8.11.0",
+    "redis": "^4.6.0",
+    "twilio": "^4.19.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.0"
+  }
+}

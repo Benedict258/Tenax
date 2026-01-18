@@ -1,0 +1,68 @@
+[
+  {
+    "id": "reminder-tone-low",
+    "type": "reminder",
+    "reason": "Tone felt too harsh for a wellness reminder (Opik tone score 2.1/5)",
+    "user": {
+      "id": "regression-user",
+      "name": "Regression User",
+      "goal": "Maintain consistent health habits"
+    },
+    "task": {
+      "id": "task-morning-yoga",
+      "title": "Morning Yoga Flow",
+      "category": "Health",
+      "status": "todo"
+    },
+    "reminderType": "30_min",
+    "expected_min_scores": {
+      "tone_score": 3.5,
+      "specificity_score": 3,
+      "goal_alignment_score": 3,
+      "realism_score": 3
+    }
+  },
+  {
+    "id": "daily-plan-overcommit",
+    "type": "daily_plan",
+    "reason": "Plan tried to stack conflicting priorities (realism 2.5/5)",
+    "user": {
+      "id": "regression-user",
+      "name": "Regression User",
+      "goal": "Ship capstone without burning out"
+    },
+    "tasks": [
+      { "id": "task-ml-report", "title": "Finish ML findings report", "category": "P1", "status": "todo" },
+      { "id": "task-cardio", "title": "90-min interval cardio", "category": "Health", "status": "todo" },
+      { "id": "task-slides", "title": "Prep rehearsal slides", "category": "P1", "status": "todo" }
+    ],
+    "expected_min_scores": {
+      "tone_score": 3,
+      "specificity_score": 3.5,
+      "realism_score": 3.5,
+      "goal_alignment_score": 3.5
+    }
+  },
+  {
+    "id": "eod-summary-generic",
+    "type": "eod_summary",
+    "reason": "Summary ignored real progress (specificity 1.3/5)",
+    "user": {
+      "id": "regression-user",
+      "name": "Regression User",
+      "goal": "Build sustainable study habits"
+    },
+    "stats": {
+      "total": 4,
+      "completed": 1,
+      "pending": 3,
+      "completion_rate": 25
+    },
+    "expected_min_scores": {
+      "tone_score": 3,
+      "specificity_score": 3.5,
+      "realism_score": 3,
+      "goal_alignment_score": 3
+    }
+  }
+]
