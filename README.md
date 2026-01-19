@@ -113,7 +113,8 @@ npm start
 
 ### Supported Commands
 
-- `"done [task name]"` - Mark task complete
+- `"done [task name]"` - Mark task complete / you can still be explicit if you prefer
+- Natural intent: statements like "I finished deep work" or "I'm done with everything" also trigger completion (we'll ask which task if it's ambiguous)
 - `"status"` - Check remaining tasks
 - `"add [task name]"` - Add new task
 - `"help"` - Show commands
@@ -231,6 +232,13 @@ Need to demo the guardrail in action? Set `FORCE_REGRESSION_FAILURE=true` in you
 5. **Evaluation & Regression** – Run `npm run test:regression` and capture the CLI success + Opik quality chart (scores over threshold). Link these visuals back to `devPhases.md` lines 196–332 to narrate how Tenax improves itself over time.
 
 Pair the screenshots with short captions so the demo explains _why_ Tenax keeps getting better, not just that it works.
+
+### Human Feedback Loop & Judge Calibration
+
+- Store structured human reviews in [backend/opik_datasets/human_feedback_v1.json](backend/opik_datasets/human_feedback_v1.json). Each entry should capture context (message type, prompt version), quick 1–5 scores, positives, issues, and behavioral expectations. Feel free to duplicate the existing `entries` array structure for new reviewers or dates.
+- During prompt work, pull insights from that file to adjust instructions (tone variety, conversational closings, emoji usage). When we collect 5+ new reviews, bump `feedback_version` to keep history.
+- Map human notes to Opik evaluators: e.g., low specificity or robotic tone from reviewers should become stricter score thresholds in `failure_cases.json` so the regression harness enforces the improvement.
+- For demos, cite both: “LLM judge score improved from 2 → 4” and “Human feedback flagged tone as ‘alive’.” This shows evaluators and actual users agree the change is better.
 
 ### API Testing with curl
 
