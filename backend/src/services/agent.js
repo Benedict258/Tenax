@@ -4,8 +4,13 @@ const llmService = require('./llm');
 const opikLogger = require('../utils/opikBridge');
 const metricsStore = require('./metricsStore');
 const opikAgentTracer = require('../instrumentation/opikTracer');
+const variantConfig = require('../config/experiment');
+
+const forceRegressionFailure = process.env.FORCE_REGRESSION_FAILURE === 'true';
+const forcedReminderMessage = 'Remember to work on your tasks today.';
 
 const getUserGoal = (user) => user?.goal || user?.primary_goal || 'Improve daily execution habits';
+const getExperimentId = (user) => user?.experiment_id || variantConfig.experimentId || 'control';
 
 const mapTasksToMetadata = (tasks = []) => tasks.map((task) => ({
   id: task.id,
@@ -15,6 +20,58 @@ const mapTasksToMetadata = (tasks = []) => tasks.map((task) => ({
   start_time: task.start_time || null,
   due_time: task.due_time || null
 }));
+
+const REMINDER_TIME_FORMAT = { hour: 'numeric', minute: '2-digit' };
+
+const toTimeLabel = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleTimeString('en-US', REMINDER_TIME_FORMAT);
+};
+
+const addMinutesLabel = (value, minutes) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setMinutes(date.getMinutes() + minutes);
+  return date.toLocaleTimeString('en-US', REMINDER_TIME_FORMAT);
+};
+
+const resolveDurationMinutes = (task, reminderType) => {
+  const parsed = Number(task?.duration_minutes);
+  if (!Number.isNaN(parsed) && parsed > 0) {
+    return Math.round(parsed);
+  }
+  if (reminderType === '30_min') return 30;
+  if (reminderType === 'on_time') return 45;
+  return 25;
+};
+
+const describeWindowText = (task, reminderType, durationMinutes) => {
+  const startLabel = toTimeLabel(task?.start_time);
+  if (reminderType === 'on_time') {
+    const endLabel = addMinutesLabel(task?.start_time, durationMinutes);
+    if (startLabel && endLabel) {
+      return `now until ${endLabel}`;
+    }
+    return 'right now';
+  }
+  if (reminderType === '30_min') {
+    return startLabel ? `starting at ${startLabel}` : 'in about 30 minutes';
+  }
+  return startLabel ? `today at ${startLabel}` : 'today';
+};
+
+const buildSpecificReminderMessage = (task, reminderType) => {
+  const taskTitle = task?.title || 'your next task';
+  const durationMinutes = resolveDurationMinutes(task, reminderType);
+  const windowText = describeWindowText(task, reminderType, durationMinutes);
+  const actionVerb = reminderType === 'on_time' ? 'Start'
+    : reminderType === '30_min' ? 'Prep for' : 'Focus on';
+
+  return `${actionVerb} "${taskTitle}" ${windowText}. Stay focused for ${durationMinutes} minutes. Reply 'done' when complete.`;
+};
 
 class AgentService {
   constructor() {
@@ -51,7 +108,8 @@ class AgentService {
           userSchedule: mapTasksToMetadata(tasks),
           taskMetadata: mapTasksToMetadata(tasks),
           generatedText: response.text,
-          promptVersion: 'morning_summary_v1'
+          promptVersion: 'morning_summary_v1',
+          experimentId: getExperimentId(user)
         });
       } catch (traceError) {
         console.error('[Opik] Failed to trace daily plan:', traceError.message);
@@ -88,12 +146,11 @@ class AgentService {
   async generateReminder(user, task, reminderType = '30_min') {
     let message;
 
-    if (reminderType === '30_min') {
-      message = `Reminder: "${task.title}" starts in 30 minutes.\n\nReply 'done' when finished.`;
-    } else if (reminderType === 'on_time') {
-      message = `It's time: "${task.title}" starts now!\n\nLet's go! Reply 'done' when complete.`;
+    if (forceRegressionFailure) {
+      // Demo/testing flag: intentionally degrade reminder quality to trigger regression failures.
+      message = forcedReminderMessage;
     } else {
-      message = `Don't forget: "${task.title}"\n\nReply 'done' when finished.`;
+      message = buildSpecificReminderMessage(task, reminderType);
     }
 
     await opikLogger.log('log_reminder_generated', {
@@ -122,7 +179,8 @@ class AgentService {
           reminder_type: reminderType
         },
         generatedText: message,
-        promptVersion: `reminder_${reminderType}_v1`
+        promptVersion: `reminder_${reminderType}_v1`,
+        experimentId: getExperimentId(user)
       });
     } catch (traceError) {
       console.error('[Opik] Failed to trace reminder:', traceError.message);
@@ -225,7 +283,8 @@ class AgentService {
         }],
         taskMetadata: stats,
         generatedText: message,
-        promptVersion: `eod_summary_${tone}_v1`
+        promptVersion: `eod_summary_${tone}_v1`,
+        experimentId: getExperimentId(user)
       });
     } catch (traceError) {
       console.error('[Opik] Failed to trace EOD summary:', traceError.message);

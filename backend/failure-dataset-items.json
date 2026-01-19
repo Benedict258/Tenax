@@ -1,0 +1,1386 @@
+[
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af29",
+    "expected_output": {
+      "input_context": {
+        "user_goal": "Improve daily execution habits",
+        "user_schedule": [
+          {
+            "id": "8f46e049-4814-4509-b822-c962d897d65d",
+            "title": "Morning Workout",
+            "category": "Health",
+            "status": "done",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+            "title": "Deep Work Block",
+            "category": "P1",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          }
+        ],
+        "task_metadata": [
+          {
+            "id": "8f46e049-4814-4509-b822-c962d897d65d",
+            "title": "Morning Workout",
+            "category": "Health",
+            "status": "done",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+            "title": "Deep Work Block",
+            "category": "P1",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          }
+        ]
+      },
+      "output": {
+        "generated_text": "You've got a productive day ahead of you, starting with a morning workout to boost your energy, followed by focused deep work and diving into exciting AI papers to expand your knowledge. Stay motivated and own your day, you're taking great steps to grow and learn, and every task you complete brings you closer to your goals."
+      },
+      "metadata": {
+        "agent_version": "v1.0",
+        "prompt_version": "morning_summary_v1",
+        "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+        "message_type": "daily_plan"
+      },
+      "logged_at": "2026-01-18T18:39:55.559690"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 5,
+        "reason": "The tone is motivating, respectful, and supportive, encouraging sustained daily execution without any aggression or shaming.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not provide any specific strategies or actionable steps to improve daily execution habits, which is the user's stated goal.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The user has a morning workout completed and a deep work block scheduled, but the multiple 'read ai paper' tasks may be too ambitious given the time constraints, making it moderately realistic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The output does not provide clear, actionable steps for improving daily execution habits. It lists tasks but lacks specific guidance on how to approach them or prioritize them effectively.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "input_context": {
+        "user_goal": "Improve daily execution habits",
+        "user_schedule": [
+          {
+            "id": "8f46e049-4814-4509-b822-c962d897d65d",
+            "title": "Morning Workout",
+            "category": "Health",
+            "status": "done",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+            "title": "Deep Work Block",
+            "category": "P1",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          }
+        ],
+        "task_metadata": [
+          {
+            "id": "8f46e049-4814-4509-b822-c962d897d65d",
+            "title": "Morning Workout",
+            "category": "Health",
+            "status": "done",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+            "title": "Deep Work Block",
+            "category": "P1",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          }
+        ]
+      },
+      "output": {
+        "generated_text": "You've got a productive day ahead of you, starting with a morning workout to boost your energy, followed by focused deep work and diving into exciting AI papers to expand your knowledge. Stay motivated and own your day, you're taking great steps to grow and learn, and every task you complete brings you closer to your goals."
+      },
+      "metadata": {
+        "agent_version": "v1.0",
+        "prompt_version": "morning_summary_v1",
+        "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+        "message_type": "daily_plan"
+      }
+    },
+    "spans": [
+      {
+        "id": "019bd231-2699-7c41-93cf-7fb079ec650e",
+        "name": "daily_plan",
+        "type": "general",
+        "input": {
+          "input_context": {
+            "user_goal": "Improve daily execution habits",
+            "user_schedule": [
+              {
+                "id": "8f46e049-4814-4509-b822-c962d897d65d",
+                "title": "Morning Workout",
+                "category": "Health",
+                "status": "done",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+                "title": "Deep Work Block",
+                "category": "P1",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              }
+            ],
+            "task_metadata": [
+              {
+                "id": "8f46e049-4814-4509-b822-c962d897d65d",
+                "title": "Morning Workout",
+                "category": "Health",
+                "status": "done",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+                "title": "Deep Work Block",
+                "category": "P1",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              }
+            ]
+          },
+          "output": {
+            "generated_text": "You've got a productive day ahead of you, starting with a morning workout to boost your energy, followed by focused deep work and diving into exciting AI papers to expand your knowledge. Stay motivated and own your day, you're taking great steps to grow and learn, and every task you complete brings you closer to your goals."
+          },
+          "metadata": {
+            "agent_version": "v1.0",
+            "prompt_version": "morning_summary_v1",
+            "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+            "message_type": "daily_plan"
+          }
+        },
+        "output": {
+          "input_context": {
+            "user_goal": "Improve daily execution habits",
+            "user_schedule": [
+              {
+                "id": "8f46e049-4814-4509-b822-c962d897d65d",
+                "title": "Morning Workout",
+                "category": "Health",
+                "status": "done",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+                "title": "Deep Work Block",
+                "category": "P1",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              }
+            ],
+            "task_metadata": [
+              {
+                "id": "8f46e049-4814-4509-b822-c962d897d65d",
+                "title": "Morning Workout",
+                "category": "Health",
+                "status": "done",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+                "title": "Deep Work Block",
+                "category": "P1",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              }
+            ]
+          },
+          "output": {
+            "generated_text": "You've got a productive day ahead of you, starting with a morning workout to boost your energy, followed by focused deep work and diving into exciting AI papers to expand your knowledge. Stay motivated and own your day, you're taking great steps to grow and learn, and every task you complete brings you closer to your goals."
+          },
+          "metadata": {
+            "agent_version": "v1.0",
+            "prompt_version": "morning_summary_v1",
+            "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+            "message_type": "daily_plan"
+          },
+          "logged_at": "2026-01-18T18:39:55.559690"
+        },
+        "start_time": "2026-01-18T17:39:55.160298Z",
+        "end_time": "2026-01-18T17:39:55.559750Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.645088953Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af28",
+    "expected_output": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "message": "done Morning Workout",
+      "intent": "mark_complete",
+      "confidence": 0.92,
+      "slots": {
+        "taskName": "morning workout"
+      },
+      "agent_version": "v1.0",
+      "parsed_at": "2026-01-18T17:11:23.152336"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The output is very brief and lacks motivational or supportive language, making it feel somewhat impersonal and generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The output directly indicates the completion of the user's goal of doing a morning workout.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 5,
+        "reason": "The task of completing a morning workout is realistic and achievable, assuming the user has allocated time for it in their schedule.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The output indicates a completed task but does not provide clear instructions on what the user should do next or how to perform the morning workout.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "message": "done Morning Workout",
+      "intent": "mark_complete",
+      "confidence": 0.92,
+      "slots": {
+        "taskName": "morning workout"
+      }
+    },
+    "spans": [
+      {
+        "id": "019bd1e0-16f4-705f-9767-a0d5d5708e95",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "message": "done Morning Workout",
+          "intent": "mark_complete",
+          "confidence": 0.92,
+          "slots": {
+            "taskName": "morning workout"
+          }
+        },
+        "output": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "message": "done Morning Workout",
+          "intent": "mark_complete",
+          "confidence": 0.92,
+          "slots": {
+            "taskName": "morning workout"
+          },
+          "agent_version": "v1.0",
+          "parsed_at": "2026-01-18T17:11:23.152336"
+        },
+        "start_time": "2026-01-18T16:11:22.739302Z",
+        "end_time": "2026-01-18T16:11:23.152440Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.644928455Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af27",
+    "expected_output": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "message": "status",
+      "intent": "status",
+      "confidence": 0.95,
+      "slots": {},
+      "agent_version": "v1.0",
+      "parsed_at": "2026-01-18T18:21:01.263405"
+    },
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output does not provide any specific instructions or actionable tasks for the user.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The proposed plan is somewhat realistic but may require adjustments to fit within the user's time constraints.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not provide any relevant information or context to evaluate the user's goal.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally motivating and supportive, encouraging sustained daily execution, but could benefit from more specific examples or personalized encouragement to reach a perfect score.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "message": "status",
+      "intent": "status",
+      "confidence": 0.95,
+      "slots": {}
+    },
+    "spans": [
+      {
+        "id": "019bd21f-d7bd-783a-9f16-2190cab2e81a",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "message": "status",
+          "intent": "status",
+          "confidence": 0.95,
+          "slots": {}
+        },
+        "output": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "message": "status",
+          "intent": "status",
+          "confidence": 0.95,
+          "slots": {},
+          "agent_version": "v1.0",
+          "parsed_at": "2026-01-18T18:21:01.263405"
+        },
+        "start_time": "2026-01-18T17:21:00.860614Z",
+        "end_time": "2026-01-18T17:21:01.263469Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.644780578Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af26",
+    "expected_output": {
+      "action": "regression_llm_judge",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 189,
+      "latency_ms": 1082,
+      "attempt": 1,
+      "prompt_preview": "You are Tenax's quality judge.\nRate the provided agent output on four dimensions from 1 (poor) to 5 (excellent).\nReturn ",
+      "error_message": null,
+      "user_id": null,
+      "metadata": {
+        "action": "regression_llm_judge",
+        "message_type": "reminder"
+      },
+      "agent_version": "v1.0",
+      "timestamp": "2026-01-18T19:39:21.991235"
+    },
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output lacks clear, actionable steps for the user to follow, making it ambiguous.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The proposed plan is somewhat realistic but may require adjustments to fit within the user's time constraints.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The reminder is motivating and supportive, encouraging sustained daily execution while maintaining a respectful tone.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The output directly addresses the user's goal and provides relevant information without drifting off-topic.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "regression_llm_judge",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 189,
+      "latency_ms": 1082,
+      "attempt": 1,
+      "prompt_preview": "You are Tenax's quality judge.\nRate the provided agent output on four dimensions from 1 (poor) to 5 (excellent).\nReturn ",
+      "user_id": null,
+      "error_message": null,
+      "metadata": {
+        "action": "regression_llm_judge",
+        "message_type": "reminder"
+      }
+    },
+    "spans": [
+      {
+        "id": "019bd267-91d3-70bb-b1f6-f1d253a4de27",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "regression_llm_judge",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 189,
+          "latency_ms": 1082,
+          "attempt": 1,
+          "prompt_preview": "You are Tenax's quality judge.\nRate the provided agent output on four dimensions from 1 (poor) to 5 (excellent).\nReturn ",
+          "user_id": null,
+          "error_message": null,
+          "metadata": {
+            "action": "regression_llm_judge",
+            "message_type": "reminder"
+          }
+        },
+        "output": {
+          "action": "regression_llm_judge",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 189,
+          "latency_ms": 1082,
+          "attempt": 1,
+          "prompt_preview": "You are Tenax's quality judge.\nRate the provided agent output on four dimensions from 1 (poor) to 5 (excellent).\nReturn ",
+          "error_message": null,
+          "user_id": null,
+          "metadata": {
+            "action": "regression_llm_judge",
+            "message_type": "reminder"
+          },
+          "agent_version": "v1.0",
+          "timestamp": "2026-01-18T19:39:21.991235"
+        },
+        "start_time": "2026-01-18T18:39:21.554607Z",
+        "end_time": "2026-01-18T18:39:21.991312Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.644633264Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af25",
+    "expected_output": {
+      "input_context": {
+        "user_goal": "Improve daily execution habits",
+        "user_schedule": [
+          {
+            "id": "8f46e049-4814-4509-b822-c962d897d65d",
+            "title": "Morning Workout",
+            "category": "Health",
+            "status": "done",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+            "title": "Deep Work Block",
+            "category": "P1",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          }
+        ],
+        "task_metadata": [
+          {
+            "id": "8f46e049-4814-4509-b822-c962d897d65d",
+            "title": "Morning Workout",
+            "category": "Health",
+            "status": "done",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+            "title": "Deep Work Block",
+            "category": "P1",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          }
+        ]
+      },
+      "output": {
+        "generated_text": "Good morning Benedict, today is a fresh start to tackle your goals, beginning with a morning workout to energize your body and mind, followed by a focused deep work block to drive progress. Remember, every task you complete, including reading that AI paper, brings you closer to achieving your aspirations, so stay motivated and make the most of this day."
+      },
+      "metadata": {
+        "agent_version": "v1.0",
+        "prompt_version": "morning_summary_v1",
+        "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+        "message_type": "daily_plan"
+      },
+      "logged_at": "2026-01-18T17:09:41.755117"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 5,
+        "reason": "The tone is motivating and supportive, encouraging the user to focus on their tasks while acknowledging their completed workout. It fosters a positive mindset for daily execution.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not provide any specific strategies or actionable steps to improve daily execution habits, which is the user's stated goal.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The user has completed a morning workout and has a deep work block scheduled, which suggests they are actively working on their goals. However, the plan to read an AI paper may be ambitious if time is limited after the deep work block.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The output mentions improving daily execution habits but does not provide specific, actionable steps for the user to take next, leaving room for ambiguity.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "input_context": {
+        "user_goal": "Improve daily execution habits",
+        "user_schedule": [
+          {
+            "id": "8f46e049-4814-4509-b822-c962d897d65d",
+            "title": "Morning Workout",
+            "category": "Health",
+            "status": "done",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+            "title": "Deep Work Block",
+            "category": "P1",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          }
+        ],
+        "task_metadata": [
+          {
+            "id": "8f46e049-4814-4509-b822-c962d897d65d",
+            "title": "Morning Workout",
+            "category": "Health",
+            "status": "done",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+            "title": "Deep Work Block",
+            "category": "P1",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          },
+          {
+            "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+            "title": "read ai paper",
+            "category": "Other",
+            "status": "todo",
+            "start_time": null,
+            "due_time": null
+          }
+        ]
+      },
+      "output": {
+        "generated_text": "Good morning Benedict, today is a fresh start to tackle your goals, beginning with a morning workout to energize your body and mind, followed by a focused deep work block to drive progress. Remember, every task you complete, including reading that AI paper, brings you closer to achieving your aspirations, so stay motivated and make the most of this day."
+      },
+      "metadata": {
+        "agent_version": "v1.0",
+        "prompt_version": "morning_summary_v1",
+        "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+        "message_type": "daily_plan"
+      }
+    },
+    "spans": [
+      {
+        "id": "019bd1de-8aee-7975-b207-7d8574d26709",
+        "name": "daily_plan",
+        "type": "general",
+        "input": {
+          "input_context": {
+            "user_goal": "Improve daily execution habits",
+            "user_schedule": [
+              {
+                "id": "8f46e049-4814-4509-b822-c962d897d65d",
+                "title": "Morning Workout",
+                "category": "Health",
+                "status": "done",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+                "title": "Deep Work Block",
+                "category": "P1",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              }
+            ],
+            "task_metadata": [
+              {
+                "id": "8f46e049-4814-4509-b822-c962d897d65d",
+                "title": "Morning Workout",
+                "category": "Health",
+                "status": "done",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+                "title": "Deep Work Block",
+                "category": "P1",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              }
+            ]
+          },
+          "output": {
+            "generated_text": "Good morning Benedict, today is a fresh start to tackle your goals, beginning with a morning workout to energize your body and mind, followed by a focused deep work block to drive progress. Remember, every task you complete, including reading that AI paper, brings you closer to achieving your aspirations, so stay motivated and make the most of this day."
+          },
+          "metadata": {
+            "agent_version": "v1.0",
+            "prompt_version": "morning_summary_v1",
+            "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+            "message_type": "daily_plan"
+          }
+        },
+        "output": {
+          "input_context": {
+            "user_goal": "Improve daily execution habits",
+            "user_schedule": [
+              {
+                "id": "8f46e049-4814-4509-b822-c962d897d65d",
+                "title": "Morning Workout",
+                "category": "Health",
+                "status": "done",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+                "title": "Deep Work Block",
+                "category": "P1",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              }
+            ],
+            "task_metadata": [
+              {
+                "id": "8f46e049-4814-4509-b822-c962d897d65d",
+                "title": "Morning Workout",
+                "category": "Health",
+                "status": "done",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+                "title": "Deep Work Block",
+                "category": "P1",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              },
+              {
+                "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+                "title": "read ai paper",
+                "category": "Other",
+                "status": "todo",
+                "start_time": null,
+                "due_time": null
+              }
+            ]
+          },
+          "output": {
+            "generated_text": "Good morning Benedict, today is a fresh start to tackle your goals, beginning with a morning workout to energize your body and mind, followed by a focused deep work block to drive progress. Remember, every task you complete, including reading that AI paper, brings you closer to achieving your aspirations, so stay motivated and make the most of this day."
+          },
+          "metadata": {
+            "agent_version": "v1.0",
+            "prompt_version": "morning_summary_v1",
+            "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+            "message_type": "daily_plan"
+          },
+          "logged_at": "2026-01-18T17:09:41.755117"
+        },
+        "start_time": "2026-01-18T16:09:41.357398Z",
+        "end_time": "2026-01-18T16:09:41.755177Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.644486970Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af24",
+    "expected_output": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "agent_version": "v1.0",
+      "task_count": 4,
+      "summary": "Good morning Benedict, today is a great opportunity to tackle your goals with a morning workout to get you energized, followed by a productive deep work block and staying ahead of the curve with some insightful AI paper readings. You've got this, stay focused and make the most of your day, you're one step closer to achieving your objectives.",
+      "tokens": 143,
+      "timestamp": "2026-01-18T18:20:00.506719"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The reminder is motivating and supportive, encouraging sustained daily execution while maintaining a respectful tone.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The output directly addresses the user's goal and provides relevant information without drifting off-topic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output lacks clear, actionable steps for the user to follow, making it ambiguous and unhelpful.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The proposed plan is somewhat realistic but may require adjustments to fit within the user's time constraints.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "task_count": 4,
+      "summary": "Good morning Benedict, today is a great opportunity to tackle your goals with a morning workout to get you energized, followed by a productive deep work block and staying ahead of the curve with some insightful AI paper readings. You've got this, stay focused and make the most of your day, you're one step closer to achieving your objectives.",
+      "tokens_used": 143
+    },
+    "spans": [
+      {
+        "id": "019bd21e-ea6c-7148-a1c1-a98fd820491a",
+        "name": "morning_summary_generated",
+        "type": "general",
+        "input": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "task_count": 4,
+          "summary": "Good morning Benedict, today is a great opportunity to tackle your goals with a morning workout to get you energized, followed by a productive deep work block and staying ahead of the curve with some insightful AI paper readings. You've got this, stay focused and make the most of your day, you're one step closer to achieving your objectives.",
+          "tokens_used": 143
+        },
+        "output": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "agent_version": "v1.0",
+          "task_count": 4,
+          "summary": "Good morning Benedict, today is a great opportunity to tackle your goals with a morning workout to get you energized, followed by a productive deep work block and staying ahead of the curve with some insightful AI paper readings. You've got this, stay focused and make the most of your day, you're one step closer to achieving your objectives.",
+          "tokens": 143,
+          "timestamp": "2026-01-18T18:20:00.506719"
+        },
+        "start_time": "2026-01-18T17:20:00.107809Z",
+        "end_time": "2026-01-18T17:20:00.506793Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.644328716Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af23",
+    "expected_output": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "total": 3,
+      "completed": 1,
+      "pending": 2,
+      "completion_rate": 33,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-18T17:10:41.645065"
+    },
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output lacks clear, actionable steps for the user to follow, making it ambiguous.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The proposed plan is somewhat realistic but may require adjustments to fit within the user's time constraints.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The output directly addresses the user's goal and provides relevant information without drifting off-topic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally motivating and supportive, encouraging sustained daily execution, but could benefit from more specific examples or personalized encouragement.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "total": 3,
+      "completed": 1,
+      "pending": 2,
+      "completion_rate": 33
+    },
+    "spans": [
+      {
+        "id": "019bd1df-7480-7bff-a565-bdaea39dc629",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "total": 3,
+          "completed": 1,
+          "pending": 2,
+          "completion_rate": 33
+        },
+        "output": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "total": 3,
+          "completed": 1,
+          "pending": 2,
+          "completion_rate": 33,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-18T17:10:41.645065"
+        },
+        "start_time": "2026-01-18T16:10:41.151568Z",
+        "end_time": "2026-01-18T16:10:41.645124Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.644156217Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af22",
+    "expected_output": {
+      "action": "generate_morning_summary",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 140,
+      "latency_ms": 3881,
+      "attempt": 1,
+      "prompt_preview": "Generate a motivating morning summary for Benedict.\n\nTasks: • Morning Workout\n• Deep Work Block\n• read ai paper\n\nBe brie",
+      "error_message": null,
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "metadata": {
+        "action": "generate_morning_summary",
+        "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+        "task_count": 3
+      },
+      "agent_version": "v1.0",
+      "timestamp": "2026-01-18T17:08:58.987031"
+    },
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The proposed plan is somewhat realistic but may require adjustments to fit within the user's time constraints.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output lacks clear, actionable steps for the user to follow, making it ambiguous and unhelpful.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The output directly addresses the user's goal and provides relevant information without drifting off-topic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally motivating and supportive, encouraging sustained daily execution, but could benefit from more specific examples or personalized encouragement.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "generate_morning_summary",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 140,
+      "latency_ms": 3881,
+      "attempt": 1,
+      "prompt_preview": "Generate a motivating morning summary for Benedict.\n\nTasks: • Morning Workout\n• Deep Work Block\n• read ai paper\n\nBe brie",
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "error_message": null,
+      "metadata": {
+        "action": "generate_morning_summary",
+        "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+        "task_count": 3
+      }
+    },
+    "spans": [
+      {
+        "id": "019bd1dd-e335-728b-8579-85597ff0b67b",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "generate_morning_summary",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 140,
+          "latency_ms": 3881,
+          "attempt": 1,
+          "prompt_preview": "Generate a motivating morning summary for Benedict.\n\nTasks: • Morning Workout\n• Deep Work Block\n• read ai paper\n\nBe brie",
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "error_message": null,
+          "metadata": {
+            "action": "generate_morning_summary",
+            "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+            "task_count": 3
+          }
+        },
+        "output": {
+          "action": "generate_morning_summary",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 140,
+          "latency_ms": 3881,
+          "attempt": 1,
+          "prompt_preview": "Generate a motivating morning summary for Benedict.\n\nTasks: • Morning Workout\n• Deep Work Block\n• read ai paper\n\nBe brie",
+          "error_message": null,
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "metadata": {
+            "action": "generate_morning_summary",
+            "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+            "task_count": 3
+          },
+          "agent_version": "v1.0",
+          "timestamp": "2026-01-18T17:08:58.987031"
+        },
+        "start_time": "2026-01-18T16:08:58.420369Z",
+        "end_time": "2026-01-18T16:08:58.987120Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.644007156Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af21",
+    "expected_output": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "agent_version": "v1.0",
+      "task_count": 3,
+      "summary": "Good morning Benedict, today is a fresh start to tackle your goals, beginning with a morning workout to energize your body and mind, followed by a focused deep work block to drive progress. Remember, every task you complete, including reading that AI paper, brings you closer to achieving your aspirations, so stay motivated and make the most of this day.",
+      "tokens": 140,
+      "timestamp": "2026-01-18T17:09:29.544202"
+    },
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The proposed plan is somewhat realistic but may require adjustments to fit within the user's time constraints.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output lacks clear, actionable steps for the user to follow, making it ambiguous.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The reminder is motivating and supportive, encouraging sustained daily execution while maintaining a respectful tone.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The output directly addresses the user's goal and provides relevant information without drifting off-topic.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "task_count": 3,
+      "summary": "Good morning Benedict, today is a fresh start to tackle your goals, beginning with a morning workout to energize your body and mind, followed by a focused deep work block to drive progress. Remember, every task you complete, including reading that AI paper, brings you closer to achieving your aspirations, so stay motivated and make the most of this day.",
+      "tokens_used": 140
+    },
+    "spans": [
+      {
+        "id": "019bd1de-5b27-7c93-828c-a43b1ce9e471",
+        "name": "morning_summary_generated",
+        "type": "general",
+        "input": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "task_count": 3,
+          "summary": "Good morning Benedict, today is a fresh start to tackle your goals, beginning with a morning workout to energize your body and mind, followed by a focused deep work block to drive progress. Remember, every task you complete, including reading that AI paper, brings you closer to achieving your aspirations, so stay motivated and make the most of this day.",
+          "tokens_used": 140
+        },
+        "output": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "agent_version": "v1.0",
+          "task_count": 3,
+          "summary": "Good morning Benedict, today is a fresh start to tackle your goals, beginning with a morning workout to energize your body and mind, followed by a focused deep work block to drive progress. Remember, every task you complete, including reading that AI paper, brings you closer to achieving your aspirations, so stay motivated and make the most of this day.",
+          "tokens": 140,
+          "timestamp": "2026-01-18T17:09:29.544202"
+        },
+        "start_time": "2026-01-18T16:09:29.126428Z",
+        "end_time": "2026-01-18T16:09:29.544265Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.643850782Z"
+  },
+  {
+    "id": "019bd646-eafe-7343-8b80-213b4929af20",
+    "expected_output": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "task_id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+      "task_title": "Deep Work Block",
+      "reminder_type": "30_min",
+      "message_preview": "Reminder: \"Deep Work Block\" starts in 30 minutes.\n\nReply 'done' when finished.",
+      "agent_version": "v1.0",
+      "generated_at": "2026-01-18T19:06:24.033441"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The reminder is motivating and supportive, encouraging sustained daily execution while maintaining a respectful tone.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The output directly addresses the user's goal and provides relevant information without drifting off-topic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The proposed plan is somewhat realistic but may require adjustments to fit within the user's time constraints.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output lacks clear, actionable steps for the user to follow, making it ambiguous.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "task_id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+      "task_title": "Deep Work Block",
+      "reminder_type": "30_min",
+      "message_preview": "Reminder: \"Deep Work Block\" starts in 30 minutes.\n\nReply 'done' when finished."
+    },
+    "spans": [
+      {
+        "id": "019bd249-62a6-732f-8e9f-4d5a0260462b",
+        "name": "reminder_generated",
+        "type": "general",
+        "input": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "task_id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+          "task_title": "Deep Work Block",
+          "reminder_type": "30_min",
+          "message_preview": "Reminder: \"Deep Work Block\" starts in 30 minutes.\n\nReply 'done' when finished."
+        },
+        "output": {
+          "user_id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+          "task_id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+          "task_title": "Deep Work Block",
+          "reminder_type": "30_min",
+          "message_preview": "Reminder: \"Deep Work Block\" starts in 30 minutes.\n\nReply 'done' when finished.",
+          "agent_version": "v1.0",
+          "generated_at": "2026-01-18T19:06:24.033441"
+        },
+        "start_time": "2026-01-18T18:06:23.397603Z",
+        "end_time": "2026-01-18T18:06:24.033506Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-01-19T12:42:10.643700348Z"
+  }
+]

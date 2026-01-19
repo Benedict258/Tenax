@@ -1,4 +1,5 @@
 const opikBridge = require('../utils/opikBridge');
+const variantConfig = require('../config/experiment');
 
 const TRACE_FUNCTION_MAP = {
   daily_plan: 'log_daily_plan_trace',
@@ -8,7 +9,8 @@ const TRACE_FUNCTION_MAP = {
 
 class OpikAgentTracer {
   constructor() {
-    this.agentVersion = process.env.AGENT_VERSION || 'v1.0';
+    this.agentVersion = variantConfig.agentVersion || 'v1.0';
+    this.defaultExperimentId = variantConfig.experimentId || 'control';
   }
 
   async traceAgentOutput({
@@ -18,7 +20,8 @@ class OpikAgentTracer {
     userSchedule,
     taskMetadata,
     generatedText,
-    promptVersion
+    promptVersion,
+    experimentId
   }) {
     const functionName = TRACE_FUNCTION_MAP[messageType];
 
@@ -29,6 +32,7 @@ class OpikAgentTracer {
     const metadata = {
       agent_version: this.agentVersion,
       prompt_version: promptVersion || 'default',
+      experiment_id: experimentId || this.defaultExperimentId,
       user_id: userId,
       message_type: messageType
     };

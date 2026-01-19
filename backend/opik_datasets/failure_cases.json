@@ -1,68 +1,159 @@
 [
   {
-    "id": "reminder-tone-low",
-    "type": "reminder",
-    "reason": "Tone felt too harsh for a wellness reminder (Opik tone score 2.1/5)",
+    "id": "opik-daily-plan-goal-miss",
+    "opik_trace_id": "019bd646-eafe-7343-8b80-213b4929af29",
+    "type": "daily_plan",
+    "reason": "Opik trace goal_alignment_score=1 and specificity_score=2 because the morning plan just cheered Benedict on without clarifying how to execute the pile of 'read ai paper' tasks.",
     "user": {
-      "id": "regression-user",
-      "name": "Regression User",
-      "goal": "Maintain consistent health habits"
+      "id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "name": "Benedict",
+      "goal": "Improve daily execution habits"
     },
+    "tasks": [
+      {
+        "id": "8f46e049-4814-4509-b822-c962d897d65d",
+        "title": "Morning Workout",
+        "category": "Health",
+        "status": "done",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+        "title": "Deep Work Block",
+        "category": "P1",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      }
+    ],
+    "expected_min_scores": {
+      "goal_alignment_score": 3.5,
+      "specificity_score": 3.5,
+      "realism_score": 3.2,
+      "tone_score": 4
+    }
+  },
+  {
+    "id": "opik-daily-plan-overlap",
+    "opik_trace_id": "019bd646-eafe-7343-8b80-213b4929af25",
+    "type": "daily_plan",
+    "reason": "Real trace realism_score=4 but goal_alignment_score dropped to 1 and specificity to 2 because the summary ignored prioritization across Deep Work and AI reading.",
+    "user": {
+      "id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "name": "Benedict",
+      "goal": "Improve daily execution habits"
+    },
+    "tasks": [
+      {
+        "id": "8f46e049-4814-4509-b822-c962d897d65d",
+        "title": "Morning Workout",
+        "category": "Health",
+        "status": "done",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+        "title": "Deep Work Block",
+        "category": "P1",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      }
+    ],
+    "expected_min_scores": {
+      "goal_alignment_score": 3.5,
+      "specificity_score": 3.5,
+      "tone_score": 4,
+      "realism_score": 3.3
+    }
+  },
+  {
+    "id": "opik-reminder-flat",
+    "opik_trace_id": "019bd646-eafe-7343-8b80-213b4929af20",
+    "type": "reminder",
+    "reason": "Specificity_score came back as 1/5 because the reminder just echoed the task title without guidance.",
+    "user": {
+      "id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "name": "Benedict",
+      "goal": "Improve daily execution habits"
+    },
+    "userSchedule": [
+      {
+        "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+        "title": "Deep Work Block",
+        "category": "P1",
+        "status": "todo"
+      }
+    ],
     "task": {
-      "id": "task-morning-yoga",
-      "title": "Morning Yoga Flow",
-      "category": "Health",
+      "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+      "title": "Deep Work Block",
+      "category": "P1",
       "status": "todo"
     },
     "reminderType": "30_min",
     "expected_min_scores": {
-      "tone_score": 3.5,
-      "specificity_score": 3,
-      "goal_alignment_score": 3,
-      "realism_score": 3
-    }
-  },
-  {
-    "id": "daily-plan-overcommit",
-    "type": "daily_plan",
-    "reason": "Plan tried to stack conflicting priorities (realism 2.5/5)",
-    "user": {
-      "id": "regression-user",
-      "name": "Regression User",
-      "goal": "Ship capstone without burning out"
-    },
-    "tasks": [
-      { "id": "task-ml-report", "title": "Finish ML findings report", "category": "P1", "status": "todo" },
-      { "id": "task-cardio", "title": "90-min interval cardio", "category": "Health", "status": "todo" },
-      { "id": "task-slides", "title": "Prep rehearsal slides", "category": "P1", "status": "todo" }
-    ],
-    "expected_min_scores": {
-      "tone_score": 3,
-      "specificity_score": 3.5,
-      "realism_score": 3.5,
-      "goal_alignment_score": 3.5
-    }
-  },
-  {
-    "id": "eod-summary-generic",
-    "type": "eod_summary",
-    "reason": "Summary ignored real progress (specificity 1.3/5)",
-    "user": {
-      "id": "regression-user",
-      "name": "Regression User",
-      "goal": "Build sustainable study habits"
-    },
-    "stats": {
-      "total": 4,
-      "completed": 1,
-      "pending": 3,
-      "completion_rate": 25
-    },
-    "expected_min_scores": {
-      "tone_score": 3,
       "specificity_score": 3.5,
       "realism_score": 3,
-      "goal_alignment_score": 3
+      "tone_score": 4,
+      "goal_alignment_score": 4
+    }
+  },
+  {
+    "id": "opik-eod-generic",
+    "opik_trace_id": "019bd646-eafe-7343-8b80-213b4929af23",
+    "type": "eod_summary",
+    "reason": "Specificity_score hit 1/5 on this Opik trace because the EOD recap ignored that only 1/3 tasks were finished.",
+    "user": {
+      "id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "name": "Benedict",
+      "goal": "Improve daily execution habits"
+    },
+    "stats": {
+      "total": 3,
+      "completed": 1,
+      "pending": 2,
+      "completion_rate": 33
+    },
+    "expected_min_scores": {
+      "specificity_score": 3.5,
+      "realism_score": 3.2,
+      "tone_score": 3.5,
+      "goal_alignment_score": 3.5
     }
   }
 ]
