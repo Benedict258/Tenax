@@ -236,9 +236,11 @@ Pair the screenshots with short captions so the demo explains _why_ Tenax keeps 
 ### Human Feedback Loop & Judge Calibration
 
 - Store structured human reviews in [backend/opik_datasets/human_feedback_v1.json](backend/opik_datasets/human_feedback_v1.json). Each entry should capture context (message type, prompt version), quick 1–5 scores, positives, issues, and behavioral expectations. Feel free to duplicate the existing `entries` array structure for new reviewers or dates.
+- Always include the Opik `trace_ids` you reviewed so we can tag the trace metadata (see the existing entries for examples). When you send new feedback, just drop the trace IDs in chat and we’ll append them to the JSON.
 - During prompt work, pull insights from that file to adjust instructions (tone variety, conversational closings, emoji usage). When we collect 5+ new reviews, bump `feedback_version` to keep history.
 - Map human notes to Opik evaluators: e.g., low specificity or robotic tone from reviewers should become stricter score thresholds in `failure_cases.json` so the regression harness enforces the improvement.
 - For demos, cite both: “LLM judge score improved from 2 → 4” and “Human feedback flagged tone as ‘alive’.” This shows evaluators and actual users agree the change is better.
+- Permanent tone guardrails live in [backend/opik_datasets/agent_style_rules.json](backend/opik_datasets/agent_style_rules.json). The agent pulls these constraints into its prompts (conversation-first voice, no command-style phrasing, adaptive emotional tone). Update the JSON when redefining Tenax’s persona so prompts and evaluators stay in sync.
 
 ### API Testing with curl
 

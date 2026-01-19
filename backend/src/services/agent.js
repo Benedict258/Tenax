@@ -22,6 +22,50 @@ const mapTasksToMetadata = (tasks = []) => tasks.map((task) => ({
 }));
 
 const REMINDER_TIME_FORMAT = { hour: 'numeric', minute: '2-digit' };
+const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+const reminderOpeners = {
+  '30_min': [
+    'Heads up',
+    'Quick warm-up',
+    'Light stretch',
+    'Psst'
+  ],
+  on_time: [
+    'Game time',
+    "Clock's up",
+    'All right',
+    'Let’s launch'
+  ],
+  default: [
+    'Friendly ping',
+    'Gentle nudge'
+  ]
+};
+
+const reminderEmojiPool = ['⚡', '✨', '💪', '🧠', '🔥'];
+
+const reminderClosings = [
+  "Ping me when you wrap it.",
+  "Let me know when it's off your plate.",
+  "Shoot me a quick note once it's done.",
+  "Tell me when you close it out."
+];
+
+const buildEODSummaryMessage = (tone, stats, user) => {
+  const ratio = `${stats.completed}/${stats.total}`;
+  const percent = `${stats.completion_rate}%`;
+
+  if (tone === 'congratulatory') {
+    return `Clinic today, ${user.name}! ${ratio} tasks wrapped (${percent}). Take the win, log anything lingering, and tell me how you want to open tomorrow.`;
+  }
+
+  if (tone === 'encouraging') {
+    return `Solid push — ${ratio} done (${percent}). You're moving the ball forward, so jot down what blocked the rest and we'll adjust tomorrow. Ping me if you want help sequencing.`;
+  }
+
+  return `You closed ${ratio} (${percent}). Not perfect, but you still showed up. Shake it off, note what tripped you up, and let me know how I can help you hit harder tomorrow.`;
+};
 
 const toTimeLabel = (value) => {
   if (!value) return null;
@@ -67,10 +111,21 @@ const buildSpecificReminderMessage = (task, reminderType) => {
   const taskTitle = task?.title || 'your next task';
   const durationMinutes = resolveDurationMinutes(task, reminderType);
   const windowText = describeWindowText(task, reminderType, durationMinutes);
-  const actionVerb = reminderType === 'on_time' ? 'Start'
-    : reminderType === '30_min' ? 'Prep for' : 'Focus on';
+  const openerPool = reminderOpeners[reminderType] || reminderOpeners.default;
+  const opener = pickRandom(openerPool);
+  const emoji = pickRandom(reminderEmojiPool);
+  const closing = pickRandom(reminderClosings);
 
-  return `${actionVerb} "${taskTitle}" ${windowText}. Stay focused for ${durationMinutes} minutes. Reply 'done' when complete.`;
+  let actionPhrase;
+  if (reminderType === 'on_time') {
+    actionPhrase = `Jump into "${taskTitle}" ${windowText}`;
+  } else if (reminderType === '30_min') {
+    actionPhrase = `Get set for "${taskTitle}" ${windowText}`;
+  } else {
+    actionPhrase = `Carve out time for "${taskTitle}" ${windowText}`;
+  }
+
+  return `${opener}! ${actionPhrase}. Give it about ${durationMinutes} minutes and keep me posted ${emoji} ${closing}`;
 };
 
 class AgentService {
@@ -80,8 +135,24 @@ class AgentService {
 
   async generateMorningSummary(user, tasks) {
     try {
-      const taskList = tasks.map(t => `• ${t.title}`).join('\n');
-      const prompt = `Generate a motivating morning summary for ${user.name}.\n\nTasks: ${taskList}\n\nBe brief and supportive (max 2 sentences).`;
+      const taskList = tasks.map((t, idx) => `${idx + 1}. ${t.title}${t.category ? ` (${t.category})` : ''}`).join('\n');
+      const prompt = [
+        'You are Tenax, an execution companion—not a robotic assistant.',
+        `Help ${user.name} start the day with clarity, energy, and motivation while the north star goal is "${getUserGoal(user)}".`,
+        'Agent identity & tone rules:',
+        '- Speak conversationally with light emoji warmth (optional).',
+        '- Vary sentence structure every day; never recycle the same opening.',
+        '- Avoid command-style phrasing or stiff office-assistant wording.',
+        '- Sound alive and personal—like a supportive accountability partner.',
+        'Morning summary requirements:',
+        '- Highlight the key tasks in sequence or grouped by priority (max 3 sentences).',
+        '- Present tasks clearly but weave them into a natural narrative (no bullet dump unless necessary).',
+        '- Close with an invitation such as "Let me know when you finish anything today 😊" (never say "Reply \'done [task]\'").',
+        '- You may acknowledge prior wins to keep momentum.',
+        'If the user later reports completion without specifying the task, you will politely ask which task they meant (mention this expectation briefly).',
+        'Tasks for today:',
+        taskList || 'No tasks scheduled yet.'
+      ].join('\n');
 
       const response = await llmService.generate(prompt, {
         maxTokens: 100,
@@ -128,7 +199,7 @@ class AgentService {
       if (tasks.length === 0) return null;
 
       const summary = await this.generateMorningSummary(user, tasks);
-      const fullMessage = `${summary}\n\nReply 'done [task]' when finished.`;
+      const fullMessage = `${summary}\n\nLet me know when you finish anything today 😊`;
       
       await whatsappService.sendMessage(user.phone_number, fullMessage);
       await opikLogger.log('log_morning_summary_dispatch', {
@@ -255,15 +326,7 @@ class AgentService {
 
   async generateEODSummary(user, stats) {
     const tone = this.determineTone(stats.completion_rate);
-    let message;
-    
-    if (tone === 'congratulatory') {
-      message = `Perfect day! You completed all ${stats.total} tasks. Outstanding work, ${user.name}!`;
-    } else if (tone === 'encouraging') {
-      message = `Good progress! You finished ${stats.completed}/${stats.total} tasks (${stats.completion_rate}%). Keep the momentum going!`;
-    } else {
-      message = `You completed ${stats.completed}/${stats.total} tasks (${stats.completion_rate}%). Tomorrow is a fresh start. You've got this!`;
-    }
+    const message = buildEODSummaryMessage(tone, stats, user);
 
     await opikLogger.log('log_eod_summary_draft', {
       user_id: user.id,

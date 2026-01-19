@@ -155,5 +155,178 @@
       "tone_score": 3.5,
       "goal_alignment_score": 3.5
     }
+  },
+  {
+    "id": "opik-daily-plan-ai-stack",
+    "opik_trace_id": "019bd699-edff-73a1-97b4-b1a17039a901",
+    "type": "daily_plan",
+    "reason": "Trace specificity_score and goal_alignment_score both hit 1/5 because the morning summary just cheerleads the duplicate 'read ai paper' tasks without sequencing or clarifying time blocks.",
+    "user": {
+      "id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "name": "Benedict",
+      "goal": "Improve daily execution habits"
+    },
+    "tasks": [
+      {
+        "id": "8f46e049-4814-4509-b822-c962d897d65d",
+        "title": "Morning Workout",
+        "category": "Health",
+        "status": "done",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+        "title": "Deep Work Block",
+        "category": "P1",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      }
+    ],
+    "expected_min_scores": {
+      "goal_alignment_score": 3.8,
+      "specificity_score": 3.8,
+      "realism_score": 3.2,
+      "tone_score": 4
+    }
+  },
+  {
+    "id": "opik-daily-plan-dup-stack",
+    "opik_trace_id": "019bd694-3b0f-71f4-813e-93801bb24bb6",
+    "type": "daily_plan",
+    "reason": "Second live trace where specificity stayed at 2/5 because the agent repeated 'read ai paper' without chunking or explaining sequencing after the deep work block.",
+    "user": {
+      "id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "name": "Benedict",
+      "goal": "Improve daily execution habits"
+    },
+    "tasks": [
+      {
+        "id": "8f46e049-4814-4509-b822-c962d897d65d",
+        "title": "Morning Workout",
+        "category": "Health",
+        "status": "done",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+        "title": "Deep Work Block",
+        "category": "P1",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "f4a74877-41a2-471e-b232-32d2bb70eed7",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "c385c1c8-e4da-480f-ae70-39426905c7cc",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      },
+      {
+        "id": "ec5900cd-e448-427c-af43-d74cee3c2f3f",
+        "title": "read ai paper",
+        "category": "Other",
+        "status": "todo",
+        "start_time": null,
+        "due_time": null
+      }
+    ],
+    "expected_min_scores": {
+      "goal_alignment_score": 3.8,
+      "specificity_score": 3.8,
+      "realism_score": 3.2,
+      "tone_score": 4
+    }
+  },
+  {
+    "id": "opik-eod-low-specificity",
+    "opik_trace_id": "019bd66e-ccb2-7ab2-bef8-a504b0476151",
+    "type": "eod_summary",
+    "reason": "Judge scores dropped to 2/5 across specificity and goal_alignment because the recap just said 'Tomorrow is a fresh start' despite 1/3 completion.",
+    "user": {
+      "id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "name": "Benedict",
+      "goal": "Improve daily execution habits"
+    },
+    "stats": {
+      "total": 3,
+      "completed": 1,
+      "pending": 2,
+      "completion_rate": 33
+    },
+    "expected_min_scores": {
+      "goal_alignment_score": 3.5,
+      "specificity_score": 3.5,
+      "realism_score": 3.2,
+      "tone_score": 3.5
+    }
+  },
+  {
+    "id": "opik-reminder-generic",
+    "opik_trace_id": "019bd695-3c68-7455-8f19-65a4a5a4d3c6",
+    "type": "reminder",
+    "reason": "Real trace caught by Opik where the reminder just said 'Remember to work on your tasks today' so goal_alignment fell to 1/5.",
+    "user": {
+      "id": "96242f32-f25b-487a-bfe5-e4d59113812a",
+      "name": "Benedict",
+      "goal": "Improve daily execution habits"
+    },
+    "userSchedule": [
+      {
+        "task_id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+        "scheduled_start": null,
+        "reminder_type": "30_min"
+      }
+    ],
+    "task": {
+      "id": "6092b9bf-e6b0-44c1-aab5-52103ee2005d",
+      "title": "Deep Work Block",
+      "category": "P1",
+      "status": "todo",
+      "reminder_type": "30_min"
+    },
+    "reminderType": "30_min",
+    "expected_min_scores": {
+      "goal_alignment_score": 4,
+      "specificity_score": 4,
+      "realism_score": 3.2,
+      "tone_score": 4
+    }
   }
 ]

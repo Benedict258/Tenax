@@ -10,25 +10,36 @@ const router = express.Router();
 // Simple intent parser
 function parseMessage(message) {
   const text = message.toLowerCase().trim();
-  
-  if (text.startsWith('done')) {
-    const taskName = text.replace('done', '').trim();
+  const collapsed = text.replace(/\s+/g, ' ');
+
+  // Natural language completion statements
+  const completionStarters = ['done', 'finished', 'completed'];
+  if (completionStarters.some((word) => collapsed.startsWith(word))) {
+    const taskName = collapsed.replace(/^(done|finished|completed)/, '').trim();
     return { intent: 'mark_complete', taskName, confidence: 0.92, slots: { taskName } };
   }
-  
-  if (text === 'status' || text === "what's left") {
+
+  const completionRegex = /(i\s*(?:have|just)?\s*)?(completed|finished|done)\s+(?<task>.+)/;
+  const completionMatch = collapsed.match(completionRegex);
+  if (completionMatch) {
+    const rawTask = (completionMatch.groups?.task || '').trim();
+    const taskName = ['my tasks', 'all my tasks', 'everything'].includes(rawTask) ? '' : rawTask;
+    return { intent: 'mark_complete', taskName, confidence: 0.85, slots: { taskName } };
+  }
+
+  if (collapsed === 'status' || collapsed === "what's left" || collapsed.includes('what is left')) {
     return { intent: 'status', confidence: 0.95, slots: {} };
   }
-  
-  if (text.startsWith('add')) {
-    const taskName = text.replace('add', '').trim();
+
+  if (collapsed.startsWith('add ') || collapsed.startsWith('create ')) {
+    const taskName = collapsed.replace(/^(add|create)/, '').trim();
     return { intent: 'add_task', taskName, confidence: 0.9, slots: { taskName } };
   }
-  
-  if (text === 'help') {
+
+  if (collapsed === 'help' || collapsed.includes('what can you do')) {
     return { intent: 'help', confidence: 0.85, slots: {} };
   }
-  
+
   return { intent: 'unknown', originalText: text, confidence: 0.2, slots: {} };
 }
 
@@ -135,7 +146,7 @@ async function handleMarkComplete(user, taskName, phoneNumber) {
       // Multiple tasks, ask for clarification
       const taskList = tasks.slice(0, 5).map((t, i) => `${i + 1}. ${t.title}`).join('\n');
       await whatsappService.sendMessage(phoneNumber, 
-        `Which task did you complete?\n\n${taskList}\n\nReply with the number or task name.`);
+        `Nice! Which task should I mark off?\n\n${taskList}\n\nYou can reply with the number or just tell me the task name.`);
     }
   } catch (error) {
     console.error('Mark complete error:', error);
