@@ -5,6 +5,7 @@ const opikLogger = require('../utils/opikBridge');
 const metricsStore = require('./metricsStore');
 const opikAgentTracer = require('../instrumentation/opikTracer');
 const variantConfig = require('../config/experiment');
+const ruleStateService = require('./ruleState');
 
 const forceRegressionFailure = process.env.FORCE_REGRESSION_FAILURE === 'true';
 const forcedReminderMessage = 'Remember to work on your tasks today.';
@@ -197,9 +198,22 @@ class AgentService {
     try {
       const tasks = await Task.getTodaysTasks(user.id);
       if (tasks.length === 0) return null;
+      const p1Tasks = await ruleStateService.getActiveP1Tasks(user.id);
 
       const summary = await this.generateMorningSummary(user, tasks);
-      const fullMessage = `${summary}\n\nLet me know when you finish anything today 😊`;
+      let guardrailBanner = '';
+      if (p1Tasks.length) {
+        guardrailBanner = `${ruleStateService.buildBanner(p1Tasks)}\n\n`;
+        await ruleStateService.recordSurface({
+          userId: user.id,
+          tasks: p1Tasks,
+          surfaceType: 'morning_summary',
+          channel: 'whatsapp',
+          metadata: { task_count: tasks.length }
+        });
+      }
+
+      const fullMessage = `${guardrailBanner}${summary}\n\nLet me know when you finish anything today 😊`;
       
       await whatsappService.sendMessage(user.phone_number, fullMessage);
       await opikLogger.log('log_morning_summary_dispatch', {
@@ -262,10 +276,45 @@ class AgentService {
 
   async sendReminder(user, task, reminderType = '30_min') {
     try {
-      const message = await this.generateReminder(user, task, reminderType);
+      let enrichedTask = task;
+      if (enrichedTask?.id && typeof enrichedTask.severity === 'undefined') {
+        enrichedTask = await Task.findById(enrichedTask.id);
+      }
+
+      const [ruleState, p1Tasks] = await Promise.all([
+        ruleStateService.getUserState(user.id),
+        ruleStateService.getActiveP1Tasks(user.id)
+      ]);
+
+      const guardActive = ruleStateService.shouldBlockNonCompletion(ruleState);
+      if (guardActive && enrichedTask?.severity !== 'p1' && p1Tasks.length) {
+        const guardMessage = ruleStateService.buildGuardrailMessage(p1Tasks);
+        await whatsappService.sendMessage(user.phone_number, guardMessage);
+        await ruleStateService.recordSurface({
+          userId: user.id,
+          tasks: p1Tasks,
+          surfaceType: 'reminder_guard',
+          channel: 'whatsapp',
+          metadata: { reminder_type: reminderType, requested_task_id: enrichedTask?.id }
+        });
+        await ruleStateService.recordBlockedAction({
+          userId: user.id,
+          action: 'non_p1_reminder',
+          channel: 'automation',
+          metadata: { requested_task_id: enrichedTask?.id }
+        });
+        return { message: guardMessage, blocked: true };
+      }
+
+      if (!enrichedTask) {
+        console.warn('[Agent] Reminder requested without task context.');
+        return null;
+      }
+
+      const message = await this.generateReminder(user, enrichedTask, reminderType);
       metricsStore.recordReminder({
         userId: user.id,
-        taskId: task.id,
+        taskId: enrichedTask.id,
         reminderType,
         sentAt: new Date()
       });
@@ -273,11 +322,21 @@ class AgentService {
 
       await opikLogger.log('log_reminder_sent', {
         user_id: user.id,
-        task_id: task.id,
-        task_title: task.title,
+        task_id: enrichedTask.id,
+        task_title: enrichedTask.title,
         reminder_type: reminderType,
         message: message
       });
+
+      if (enrichedTask?.severity === 'p1') {
+        await ruleStateService.recordSurface({
+          userId: user.id,
+          tasks: [enrichedTask],
+          surfaceType: 'reminder',
+          channel: 'whatsapp',
+          metadata: { reminder_type: reminderType }
+        });
+      }
 
       return { message, sent_at: new Date() };
     } catch (error) {
@@ -359,9 +418,24 @@ class AgentService {
   async sendEODSummary(user) {
     try {
       const stats = await this.calculateCompletionStats(user);
-      const { message, tone } = await this.generateEODSummary(user, stats);
+      const [p1Tasks, summary] = await Promise.all([
+        ruleStateService.getActiveP1Tasks(user.id),
+        this.generateEODSummary(user, stats)
+      ]);
+      const { message, tone } = summary;
+      const guardrailBanner = p1Tasks.length ? `${ruleStateService.buildBanner(p1Tasks)}\n\n` : '';
+      if (p1Tasks.length) {
+        await ruleStateService.recordSurface({
+          userId: user.id,
+          tasks: p1Tasks,
+          surfaceType: 'eod_summary',
+          channel: 'whatsapp',
+          metadata: { completion_rate: stats.completion_rate }
+        });
+      }
+      const finalMessage = `${guardrailBanner}${message}`;
       
-      await whatsappService.sendMessage(user.phone_number, message);
+      await whatsappService.sendMessage(user.phone_number, finalMessage);
 
       await opikLogger.log('log_eod_summary', {
         user_id: user.id,
@@ -369,10 +443,10 @@ class AgentService {
         total: stats.total,
         completion_rate: stats.completion_rate,
         tone: tone,
-        message: message
+        message: finalMessage
       });
 
-      return { stats, tone, message };
+      return { stats, tone, message: finalMessage };
     } catch (error) {
       console.error('[Agent] EOD summary error:', error);
       throw error;
@@ -407,6 +481,14 @@ class AgentService {
         reminder_was_sent: effectiveReminderSent,
         latency_minutes: latencyMinutes
       });
+
+      if (task?.severity === 'p1') {
+        await ruleStateService.recordAcknowledgement({
+          userId: user.id,
+          task,
+          ackVia: completedVia
+        });
+      }
 
       return { latencyMinutes };
     } catch (error) {

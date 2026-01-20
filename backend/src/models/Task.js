@@ -11,7 +11,10 @@ class Task {
       duration_minutes, 
       recurrence,
       priority,
-      created_via 
+      created_via,
+      severity,
+      metadata,
+      p1_metadata
     } = taskData;
     
     const { data, error } = await supabase
@@ -25,7 +28,10 @@ class Task {
         duration_minutes,
         recurrence,
         priority: priority || 5,
-        created_via: created_via || 'web'
+        created_via: created_via || 'web',
+        severity: severity || 'p2',
+        metadata: metadata || {},
+        p1_metadata: p1_metadata || {}
       }])
       .select()
       .single();
@@ -44,7 +50,8 @@ class Task {
       query = query.eq('status', status);
     }
     
-    query = query.order('priority', { ascending: true })
+    query = query.order('severity', { ascending: true })
+                 .order('priority', { ascending: true })
                  .order('created_at', { ascending: false });
 
     const { data, error } = await query;
@@ -79,6 +86,36 @@ class Task {
     const { data, error } = await supabase
       .from('tasks')
       .delete()
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async getActiveP1Tasks(user_id) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user_id)
+      .eq('severity', 'p1')
+      .not('status', 'in', '("done","archived")')
+      .order('priority', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async updateP1State(id, fields) {
+    const payload = {
+      ...fields,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(payload)
       .eq('id', id)
       .select()
       .single();

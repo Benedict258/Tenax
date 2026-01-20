@@ -357,6 +357,18 @@ redis-cli ping
 
 ---
 
+## 🛡️ Phase 3 P1 Enforcement
+
+- Schema now includes `severity` and `p1_*` columns on tasks plus the `rule_enforcement_events`, `user_rule_states`, and `active_p1_tasks_v` helpers. Full rationale lives in [docs/phase3-p1-rule-plan.md](docs/phase3-p1-rule-plan.md).
+- After every schema refresh, run `psql -d tenax -f database/migrations/20260120_p1_rule.sql` so these guardrail tables exist before you boot the backend.
+- To validate locally, mark a task's `severity` to `p1` in Supabase, then:
+  1. Send `status` via WhatsApp → the response should prepend the ⚠️ banner listing the protected tasks.
+  2. Try `add quick task` (or any non-completion intent) → it is blocked and logged to `rule_enforcement_events`.
+  3. Finish with `done [task]` → acknowledgement clears the guardrail and other intents resume.
+- Automation jobs (morning summary, reminders, EOD) now call the same rule service, so every surface re-sends the banner and logs proof of exposure whenever a P1 task exists.
+
+---
+
 ## 📞 Support
 
 For issues or questions:

@@ -5,6 +5,7 @@ const whatsappService = require('../services/whatsapp');
 const agentService = require('../services/agent');
 const opikLogger = require('../utils/opikBridge');
 const metricsStore = require('../services/metricsStore');
+const ruleStateService = require('../services/ruleState');
 const router = express.Router();
 
 // Simple intent parser
@@ -70,6 +71,31 @@ router.post('/webhook', async (req, res) => {
     metricsStore.recordUserMessage(user.id);
     const parsed = parseMessage(Body);
 
+    const [p1Tasks, ruleState] = await Promise.all([
+      ruleStateService.getActiveP1Tasks(user.id),
+      ruleStateService.getUserState(user.id)
+    ]);
+
+    const guardActive = ruleStateService.shouldBlockNonCompletion(ruleState);
+    if (guardActive && parsed.intent !== 'mark_complete' && parsed.intent !== 'help') {
+      const guardMessage = ruleStateService.buildGuardrailMessage(p1Tasks);
+      await whatsappService.sendMessage(phoneNumber, guardMessage);
+      await ruleStateService.recordSurface({
+        userId: user.id,
+        tasks: p1Tasks,
+        surfaceType: 'inbound_guard',
+        channel: 'whatsapp',
+        metadata: { blocked_intent: parsed.intent }
+      });
+      await ruleStateService.recordBlockedAction({
+        userId: user.id,
+        action: parsed.intent,
+        channel: 'whatsapp',
+        metadata: { body: Body }
+      });
+      return res.status(200).send('Guard enforced');
+    }
+
     await opikLogger.log('log_intent_parsing', {
       user_id: user.id,
       message: Body,
@@ -85,7 +111,7 @@ router.post('/webhook', async (req, res) => {
         break;
         
       case 'status':
-        await handleStatus(user, phoneNumber);
+        await handleStatus(user, phoneNumber, p1Tasks);
         break;
         
       case 'add_task':
@@ -154,23 +180,24 @@ async function handleMarkComplete(user, taskName, phoneNumber) {
   }
 }
 
-async function handleStatus(user, phoneNumber) {
+async function handleStatus(user, phoneNumber, p1Tasks = []) {
   try {
     const [todoTasks, doneTasks, stats] = await Promise.all([
       Task.findByUserId(user.id, 'todo'),
       Task.findByUserId(user.id, 'done'),
       agentService.calculateCompletionStats(user)
     ]);
+    const banner = p1Tasks.length ? `${ruleStateService.buildBanner(p1Tasks)}\n\n` : '';
     
     if (todoTasks.length === 0) {
       await whatsappService.sendMessage(phoneNumber, 
-        `All tasks completed! 🎉\n\nCompleted today: ${doneTasks.length}\nCompletion rate: ${stats.completion_rate}%`);
+        `${banner}All tasks completed! 🎉\n\nCompleted today: ${doneTasks.length}\nCompletion rate: ${stats.completion_rate}%`);
     } else {
       const taskList = todoTasks.slice(0, 8).map(t => `• ${t.title}`).join('\n');
       const moreText = todoTasks.length > 8 ? `\n...and ${todoTasks.length - 8} more` : '';
       
       await whatsappService.sendMessage(phoneNumber, 
-        `You have ${todoTasks.length} tasks left:\n\n${taskList}${moreText}\n\nCompleted: ${doneTasks.length}\nCompletion rate: ${stats.completion_rate}%`);
+        `${banner}You have ${todoTasks.length} tasks left:\n\n${taskList}${moreText}\n\nCompleted: ${doneTasks.length}\nCompletion rate: ${stats.completion_rate}%`);
     }
   } catch (error) {
     console.error('Status error:', error);
