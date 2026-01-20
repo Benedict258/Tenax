@@ -1,0 +1,33 @@
+{
+  "id": "pred-test-123",
+  "status": "succeeded",
+  "output": {
+    "annotations": [
+      {
+        "text": "Mon 8:00 AM - 9:30 AM Calculus 101 (Room B12)",
+        "confidence": 0.92,
+        "box": [0.12, 0.33, 0.45, 0.56]
+      },
+      {
+        "text": "Tue 13:00 - 15:00 Data Structures Lab",
+        "score": 0.81,
+        "bbox": [0.21, 0.4, 0.5, 0.7]
+      },
+      {
+        "text": "Tue 01:00 - 03:00 Data Structures Lab",
+        "score": 0.15,
+        "bbox": [0.21, 0.4, 0.5, 0.7]
+      },
+      {
+        "text": "Wed 7pm - 9pm Algorithms II",
+        "confidence": 0.67,
+        "bbox": [0.15, 0.44, 0.55, 0.71]
+      },
+      {
+        "text": "8:30 AM - 10:00 AM Calculus 101",
+        "confidence": 0.8,
+        "box": [0.1, 0.2, 0.3, 0.4]
+      }
+    ]
+  }
+}

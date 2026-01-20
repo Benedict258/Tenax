@@ -7,6 +7,8 @@ const helmet = require('helmet');
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 const whatsappRoutes = require('./routes/whatsapp');
+const scheduleRoutes = require('./routes/schedule');
+const scheduleQueues = require('./services/scheduleQueues');
 
 const app = express();
 
@@ -20,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/schedule', scheduleRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -46,6 +49,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Tenax Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  scheduleQueues.initProcessors();
 });
 
 module.exports = app;

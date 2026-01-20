@@ -53,6 +53,20 @@ CREATE DATABASE tenax;
 psql -d tenax -f database/schema.sql
 ```
 
+3. Apply Phase 3 P1 enforcement migration (severity columns, audit tables, helper view):
+
+```bash
+psql -d tenax -f database/migrations/20260120_p1_rule.sql
+```
+
+4. Apply Phase 4 schedule intelligence migration (timetable uploads, external calendars, unified view):
+
+```bash
+psql -d tenax -f database/migrations/20260120_schedule_intel.sql
+```
+
+5. Create a Supabase Storage bucket named `uploads` (Dashboard → Storage) and grant the backend `storage.objects` read/write access. This bucket stores raw timetable files for the OCR worker.
+
 ### 3. Environment Configuration
 
 Copy and configure `.env` in backend folder:
@@ -72,6 +86,14 @@ Update these values:
 - `JWT_SECRET` - Generate a secure secret
 - `AGENT_VERSION` - Semantic tag for the current prompt/model bundle (e.g., `v2.0-motivation`)
 - `EXPERIMENT_ID` - Variant label used in Opik dashboards (e.g., `reminder-tone-b`, defaults to `control`)
+- `SCHEDULE_INTEL_V1` - Set to `true` to enable timetable uploads and availability endpoints
+- `SUPABASE_STORAGE_BUCKET` - Supabase Storage bucket for timetable files (default `uploads`)
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - OAuth 2.0 creds for Calendar sync
+- `GOOGLE_CALENDAR_REDIRECT_URL` - Callback URL (e.g., `http://localhost:3000/api/auth/google/callback`)
+- `GOOGLE_CALENDAR_SCOPE` - Scope for read-only calendar access (`https://www.googleapis.com/auth/calendar.readonly`)
+- `DINO_MODEL_ID` - Optional override for the Meta DINO model used during OCR (`facebook/dino-vits16` by default)
+- `REPLICATE_API_KEY` - Server token for Replicate’s hosted OCR model
+- `REPLICATE_DINO_VERSION` - Specific Replicate model version string (e.g., `owner/model:version-hash`)
 
 ### 4. Start Services
 
@@ -267,8 +289,8 @@ Tenax/
 │   ├── src/
 │   │   ├── config/database.js
 │   │   ├── models/User.js, Task.js
-│   │   ├── routes/auth.js, tasks.js, whatsapp.js
-│   │   ├── services/whatsapp.js, queue.js
+│   │   ├── routes/auth.js, tasks.js, whatsapp.js, schedule.js
+│   │   ├── services/whatsapp.js, queue.js, scheduleService.js, scheduleQueues.js, ocrService.js
 │   │   ├── middleware/auth.js
 │   │   └── app.js
 │   ├── package.json
@@ -366,6 +388,20 @@ redis-cli ping
   2. Try `add quick task` (or any non-completion intent) → it is blocked and logged to `rule_enforcement_events`.
   3. Finish with `done [task]` → acknowledgement clears the guardrail and other intents resume.
 - Automation jobs (morning summary, reminders, EOD) now call the same rule service, so every surface re-sends the banner and logs proof of exposure whenever a P1 task exists.
+
+---
+
+## 📅 Phase 4 Schedule Intelligence
+
+- New schema tables (`timetable_uploads`, `timetable_extractions`, `external_calendars`, `external_events`) plus the `schedule_blocks_v` view unlock timetable ingestion and calendar syncing. See [docs/phase4-schedule-intel-plan.md](docs/phase4-schedule-intel-plan.md) for the full architecture.
+- Set `SCHEDULE_INTEL_V1=true` and `REDIS_URL` to enable the schedule upload API and Bull workers (`schedule-ocr`, `calendar-sync`). Queues initialize automatically when the backend starts.
+- Supabase Storage bucket `uploads` holds raw timetable files; uploads are saved under `timetables/<userId>/...` before OCR begins. Make sure the service key has `storage.objects` permissions.
+- OAuth 2.0 config (Google Calendar scope `https://www.googleapis.com/auth/calendar.readonly`, redirect `http://localhost:3000/api/auth/google/callback`) is now driven by the new env vars so we can wire the sync worker next.
+- OCR jobs call Meta’s DINO model via Replicate once `REPLICATE_API_KEY` + `REPLICATE_DINO_VERSION` are set. Until a parser is implemented, the worker logs prediction status so we can verify connectivity without mutating data.
+- `POST /api/schedule/upload` (multipart) now accepts timetable files (`timetable` field) + `user_id` and queues them for OCR/structuring. Current processor is a stub, so use this to verify plumbing before wiring real OCR/storage.
+- `GET /api/schedule/availability/:userId?date=YYYY-MM-DD` merges timetable rows, external events, and fixed tasks to return busy blocks plus computed free windows. This powers agent planning/tests today, and the dashboard later.
+- Every availability call logs Opik traces (see `schedule_availability_computed`) so we can measure busy/free coverage and eventually correlate reminder timing with completion latency.
+- OCR is being implemented with Meta's DINO models. The worker currently logs the stub execution path; once the DINO pipeline is ready it will parse rows into `timetable_extractions` automatically.
 
 ---
 
