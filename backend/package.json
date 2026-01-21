@@ -8,14 +8,17 @@
     "dev": "nodemon src/app.js",
     "test": "jest",
     "test:whatsapp": "node scripts/test_whatsapp_flow.js",
-    "test:regression": "node scripts/run_regression_tests.js"
+    "test:regression": "node scripts/run_regression_tests.js",
+    "optimizer:hrpo": "node scripts/run_optimizer_job.js hrpo",
+    "optimizer:gepa": "node scripts/run_optimizer_job.js gepa",
+    "optimizer:fewshot": "node scripts/run_optimizer_job.js fewshot",
+    "optimizer:lite": "node scripts/optimizer_lite.js"
   },
   "dependencies": {
     "axios": "^1.7.9",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.90.1",
     "bcryptjs": "^2.4.3",
-    "bull": "^4.12.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -25,7 +28,6 @@
     "multer": "^1.4.5-lts.1",
     "openai": "^6.16.0",
     "pg": "^8.11.0",
-    "redis": "^4.6.0",
     "twilio": "^4.19.0",
     "uuid": "^9.0.0"
   },

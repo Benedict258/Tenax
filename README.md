@@ -245,6 +245,18 @@ Need to demo the guardrail in action? Set `FORCE_REGRESSION_FAILURE=true` in you
 - In Opik, create saved views that filter by `metadata.experiment_id` (e.g., `control` vs `reminder-tone-b`) to compare score distributions, completion impact, and failure-case frequency.
 - Recommended experiments: reminder tone (warm vs assertive), planner strictness (strict vs flexible), and intervention frequency (2 vs 4 reminders). Update `EXPERIMENT_ID` before running regression tests to lock in the new variant.
 
+## 🤖 Phase 5 Optimizer Scaffolding
+
+- Install the Python SDK once in the environment referenced by `PYTHON_PATH`: `pip install opik-optimizer`. The bridge will raise a clear error if the dependency is missing.
+- Enable the workflows by toggling `OPIK_OPTIMIZER_ENABLED=true` inside `backend/.env`. Dataset + metric defaults live in [backend/src/config/optimizer.js](backend/src/config/optimizer.js) and point to the files under [backend/opik_datasets](backend/opik_datasets).
+- Use [backend/src/services/optimizerService.js](backend/src/services/optimizerService.js) whenever the Node backend needs to trigger HRPO, GEPA, or few-shot selection runs. It validates dataset paths, marshals payloads, and surfaces Python errors back to the caller.
+- The Python side lives in [backend/src/utils/opik_optimizer_helpers.py](backend/src/utils/opik_optimizer_helpers.py) and is reachable through the existing bridge ([backend/src/utils/opikBridge.js](backend/src/utils/opikBridge.js)). Each helper loads JSON/JSONL datasets, calls the respective Opik optimizer, and serializes results for Node.
+- Kick off local dry-runs with `npm run optimizer:hrpo`, `npm run optimizer:gepa`, or `npm run optimizer:fewshot`. The script [backend/scripts/run_optimizer_job.js](backend/scripts/run_optimizer_job.js) wires sample prompts/examples so you can validate connectivity before plugging in real datasets.
+- Store curated datasets next to `failure_cases.json` (e.g., `intent_examples.json`) so Phase 5 export tooling can hydrate optimizer jobs without wiring external storage.
+- Nightly runs are orchestrated by [backend/src/services/optimizerJobs.js](backend/src/services/optimizerJobs.js). When `OPIK_OPTIMIZER_ENABLED=true` and `REDIS_URL` is configured, the service schedules a Bull queue that fires HRPO batches according to `OPIK_OPTIMIZER_CRON` (default: `0 2 * * *`). Override the prompt/dataset per job if you want variant-specific experiments.
+- Every trace emitted via [backend/src/instrumentation/opikTracer.js](backend/src/instrumentation/opikTracer.js) now streams into JSONL files under `backend/opik_datasets/streams/`. Reminder send/completion events join the same sink through [backend/src/services/datasetExporter.js](backend/src/services/datasetExporter.js), so optimizers can pull fresh behavioral data without manual exports.
+- Local environments ship with `OPIK_OPTIMIZER_MOCK_MODE=true` so you get deterministic JSONL-backed results without Opik API credentials. Flip it to `false` (and provide Opik keys/datasets) when you want to run the real HRPO/GEPA pipelines.
+
 ### Deterministic Flow Narrative (Goal → Plan → Reminder → Completion → Evaluation)
 
 1. **Goal Input** – User states a primary goal in Supabase (see `devPhases.md` storytelling blocks). Capture a screenshot of the Opik trace showing `user_goal` metadata for the initial `daily_plan`.

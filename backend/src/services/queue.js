@@ -1,34 +1,53 @@
-const Queue = require('bull');
-const redis = require('redis');
+const { v4: uuid } = require('uuid');
 const agentService = require('./agent');
 const scheduleService = require('./scheduleService');
 
-// Create Redis client
-const redisClient = redis.createClient({ url: process.env.REDIS_URL });
+const reminderTimers = new Map();
+let completedJobs = 0;
+let failedJobs = 0;
 
-// Create job queues
-const reminderQueue = new Queue('reminder queue', process.env.REDIS_URL);
-const messageQueue = new Queue('message queue', process.env.REDIS_URL);
-
-// Process reminder jobs
-reminderQueue.process('send-reminder', async (job) => {
-  const { user, task, type } = job.data;
-  
-  try {
-    if (type === 'morning-summary') {
-      await agentService.sendMorningSummary(user);
-    } else if (type === 'task-reminder') {
-      await agentService.sendReminder(user, task, task?.reminderType || '30_min');
-    } else if (type === 'end-of-day') {
-      await agentService.sendEODSummary(user);
-    }
-    
-    console.log(`✅ Processed ${type} for user ${user.id}`);
-  } catch (error) {
-    console.error(`❌ Failed to process ${type}:`, error);
-    throw error;
+async function runReminderJob(job) {
+  const { user, task, type } = job;
+  if (!type) {
+    throw new Error('Reminder job missing type');
   }
-});
+
+  if (!user) {
+    throw new Error('Reminder job missing user payload');
+  }
+
+  if (type === 'morning-summary') {
+    await agentService.sendMorningSummary(user);
+  } else if (type === 'task-reminder') {
+    await agentService.sendReminder(user, task, task?.reminderType || '30_min');
+  } else if (type === 'end-of-day') {
+    await agentService.sendEODSummary(user);
+  } else {
+    throw new Error(`Unsupported reminder type: ${type}`);
+  }
+
+  console.log(`✅ Processed ${type} for user ${user.id}`);
+}
+
+function scheduleInMemoryJob(job, delayMs) {
+  const scheduledDelay = Math.max(0, delayMs);
+  const runAt = new Date(Date.now() + scheduledDelay);
+  const id = uuid();
+
+  const timer = setTimeout(async () => {
+    reminderTimers.delete(id);
+    try {
+      await runReminderJob(job);
+      completedJobs += 1;
+    } catch (error) {
+      failedJobs += 1;
+      console.error(`[Queue] ${job.type} failed:`, error.message || error);
+    }
+  }, scheduledDelay);
+
+  reminderTimers.set(id, timer);
+  return { id, runAt: runAt.toISOString(), type: job.type };
+}
 
 class QueueService {
   static resolveTaskDuration(task) {
@@ -42,11 +61,8 @@ class QueueService {
   }
 
   static async scheduleReminder(user, task, type, delay, extra = {}) {
-    return reminderQueue.add('send-reminder', { user, task: task ? { ...task, ...extra } : null, type }, { 
-      delay,
-      attempts: 3,
-      backoff: 'exponential'
-    });
+    const payload = { user, task: task ? { ...task, ...extra } : null, type };
+    return scheduleInMemoryJob(payload, Math.max(delay || 0, 0));
   }
 
   static async scheduleMorningSummary(user, tasks, startTime) {
@@ -126,16 +142,11 @@ class QueueService {
   }
 
   static async getQueueStats() {
-    const waiting = await reminderQueue.getWaiting();
-    const active = await reminderQueue.getActive();
-    const completed = await reminderQueue.getCompleted();
-    const failed = await reminderQueue.getFailed();
-    
     return {
-      waiting: waiting.length,
-      active: active.length,
-      completed: completed.length,
-      failed: failed.length
+      waiting: reminderTimers.size,
+      active: 0,
+      completed: completedJobs,
+      failed: failedJobs
     };
   }
 }

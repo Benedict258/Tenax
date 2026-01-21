@@ -1,5 +1,6 @@
 const opikBridge = require('../utils/opikBridge');
 const variantConfig = require('../config/experiment');
+const datasetExporter = require('../services/datasetExporter');
 
 const TRACE_FUNCTION_MAP = {
   daily_plan: 'log_daily_plan_trace',
@@ -47,11 +48,20 @@ class OpikAgentTracer {
       generated_text: generatedText
     };
 
-    return opikBridge.log(functionName, {
+    const tracePayload = {
       input_context: inputContext,
       output,
       metadata
+    };
+
+    datasetExporter.recordTrace(messageType, {
+      user_id: userId,
+      experiment_id: tracePayload.metadata.experiment_id,
+      input_context: tracePayload.input_context,
+      output: tracePayload.output
     });
+
+    return opikBridge.log(functionName, tracePayload);
   }
 }
 

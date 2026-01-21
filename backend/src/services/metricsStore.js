@@ -1,3 +1,5 @@
+const datasetExporter = require('./datasetExporter');
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 class MetricsStore {
@@ -17,6 +19,13 @@ class MetricsStore {
       completedAt: null,
       latencyMinutes: null
     });
+
+    datasetExporter.recordReminderEvent('reminder_sent', {
+      user_id: userId,
+      task_id: taskId,
+      reminder_type: reminderType,
+      sent_at: sentAt?.toISOString?.() || new Date().toISOString()
+    });
   }
 
   markReminderCompletion({ userId, taskId, latencyMinutes }) {
@@ -28,6 +37,14 @@ class MetricsStore {
       reminder.completed = true;
       reminder.completedAt = new Date();
       reminder.latencyMinutes = latencyMinutes;
+
+      datasetExporter.recordReminderEvent('reminder_completed', {
+        user_id: userId,
+        task_id: taskId,
+        latency_minutes: latencyMinutes,
+        sent_at: reminder.sentAt?.toISOString?.() || null,
+        completed_at: reminder.completedAt.toISOString()
+      });
     }
   }
 

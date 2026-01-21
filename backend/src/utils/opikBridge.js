@@ -7,7 +7,7 @@ class OpikBridge {
     this.runnerPath = path.join(__dirname, 'opik_runner.py');
   }
 
-  log(functionName, payload = {}) {
+  _run(functionName, payload = {}) {
     return new Promise((resolve, reject) => {
       const args = [this.runnerPath, functionName, JSON.stringify(payload)];
       const child = spawn(this.pythonPath, args, { cwd: __dirname });
@@ -34,10 +34,18 @@ class OpikBridge {
           reject(error);
         }
       });
-    }).catch((error) => {
-      console.error('[Opik] log failed:', error.message);
+    });
+  }
+
+  invoke(functionName, payload = {}) {
+    return this._run(functionName, payload).catch((error) => {
+      console.error('[Opik] invoke failed:', error.message);
       return null;
     });
+  }
+
+  log(functionName, payload = {}) {
+    return this.invoke(functionName, payload);
   }
 }
 

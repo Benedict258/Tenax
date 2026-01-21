@@ -1,0 +1,37 @@
+[
+  {
+    "id": "intent-status",
+    "user_message": "status",
+    "intent": "status_check",
+    "slots": {},
+    "notes": "Single-word shortcut for schedule status"
+  },
+  {
+    "id": "intent-done-explicit",
+    "user_message": "done deep work block",
+    "intent": "task_completion",
+    "slots": {
+      "task_name": "deep work block"
+    },
+    "notes": "Direct completion confirmation"
+  },
+  {
+    "id": "intent-fuzzy-completion",
+    "user_message": "I finally wrapped that ai paper",
+    "intent": "task_completion",
+    "slots": {
+      "task_name": "read ai paper"
+    },
+    "notes": "Needs fuzzy title matching"
+  },
+  {
+    "id": "intent-add-task",
+    "user_message": "add review notes at 4pm",
+    "intent": "add_task",
+    "slots": {
+      "task_name": "review notes",
+      "time": "16:00"
+    },
+    "notes": "Captures quick add intent with time"
+  }
+]

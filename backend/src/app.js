@@ -9,6 +9,7 @@ const taskRoutes = require('./routes/tasks');
 const whatsappRoutes = require('./routes/whatsapp');
 const scheduleRoutes = require('./routes/schedule');
 const scheduleQueues = require('./services/scheduleQueues');
+const optimizerJobs = require('./services/optimizerJobs');
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Tenax Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   scheduleQueues.initProcessors();
+  optimizerJobs.init();
 });
 
 module.exports = app;
