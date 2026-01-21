@@ -1,9 +1,17 @@
 const scheduleService = require('./scheduleService');
 const { parseDinoPrediction } = require('./ocrParser');
+
 const replicateApiKey = process.env.REPLICATE_API_KEY;
 const replicateModelVersion = process.env.REPLICATE_DINO_VERSION || process.env.DINO_MODEL_ID;
 const replicateBaseUrl = 'https://api.replicate.com/v1/predictions';
 const pollingIntervalMs = 2000;
+
+const huggingfaceToken =
+  process.env.HUGGINGFACE_API_TOKEN || process.env.HF_API_TOKEN || process.env.HUGGINGFACE_WRITE_TOKEN;
+const huggingfaceModelId =
+  process.env.HUGGINGFACE_MODEL_ID || process.env.HF_MODEL_ID || 'facebook/dinov3-vitl16-pretrain-lvd1689m';
+const huggingfaceBaseUrl = process.env.HUGGINGFACE_API_BASE_URL || 'https://api-inference.huggingface.co/models';
+const huggingfaceMaxRetries = Number(process.env.HUGGINGFACE_MAX_RETRIES || 3);
 
 class OcrService {
   async processUpload(uploadId) {
@@ -34,33 +42,53 @@ class OcrService {
   }
 
   async extractRowsWithDino(upload) {
-    if (!replicateApiKey || !replicateModelVersion) {
-      console.warn('[OCR] Replicate credentials or model version missing; skipping extraction');
-      return [];
-    }
-
     const signedUrl = await scheduleService.getSignedUploadUrl(upload.storage_path, 600);
     if (!signedUrl) {
       throw new Error('Failed to generate signed URL for upload');
     }
 
-    const prediction = await this.runReplicatePrediction({ image: signedUrl });
-    await scheduleService.saveOcrPayload(upload.id, prediction);
+    const { prediction, provider, modelVersion } = await this.runAvailableProvider(signedUrl);
+    await scheduleService.saveOcrPayload(upload.id, { provider, prediction });
 
     const rows = parseDinoPrediction(prediction, { uploadId: upload.id });
     console.log(
-      `[OCR] DINO inference complete for upload ${upload.id}. Status: ${prediction.status}. Parsed rows: ${rows.length}`
+      `[OCR] Inference complete via ${provider} for upload ${upload.id}. Status: ${prediction.status}. Parsed rows: ${rows.length}`
     );
 
     await scheduleService.logTrace('schedule_ocr_prediction', {
       upload_id: upload.id,
       user_id: upload.user_id,
       status: prediction?.status,
-      model_version: replicateModelVersion,
+      model_version: modelVersion,
+      provider,
       parsed_rows: rows.length
     });
 
     return rows;
+  }
+
+  async runAvailableProvider(signedUrl) {
+    let lastError = null;
+
+    if (replicateApiKey && replicateModelVersion) {
+      try {
+        const prediction = await this.runReplicatePrediction({ image: signedUrl });
+        return { prediction, provider: 'replicate', modelVersion: replicateModelVersion };
+      } catch (error) {
+        lastError = error;
+        console.warn('[OCR] Replicate call failed, attempting Hugging Face fallback:', error.message);
+      }
+    }
+
+    if (huggingfaceToken && huggingfaceModelId) {
+      const prediction = await this.runHuggingFacePrediction({ signedUrl });
+      return { prediction, provider: 'huggingface', modelVersion: huggingfaceModelId };
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
+    throw new Error('No OCR provider configured. Set Replicate or Hugging Face credentials.');
   }
 
   async runReplicatePrediction(input) {
@@ -107,6 +135,51 @@ class OcrService {
       }
       await new Promise((resolve) => setTimeout(resolve, pollingIntervalMs));
     }
+  }
+
+  async runHuggingFacePrediction({ signedUrl }) {
+    const imageResponse = await fetch(signedUrl);
+    if (!imageResponse.ok) {
+      const errorText = await imageResponse.text();
+      throw new Error(`Failed to download upload for Hugging Face OCR: ${errorText}`);
+    }
+    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+
+    for (let attempt = 0; attempt < huggingfaceMaxRetries; attempt += 1) {
+      const hfResponse = await fetch(`${huggingfaceBaseUrl}/${huggingfaceModelId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${huggingfaceToken}`,
+          'Content-Type': 'application/octet-stream'
+        },
+        body: imageBuffer
+      });
+
+      if (hfResponse.status === 503) {
+        const delay = (attempt + 1) * 1000;
+        console.info(`[OCR] Hugging Face model warming up (attempt ${attempt + 1}); retrying in ${delay}ms`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      if (!hfResponse.ok) {
+        const errorText = await hfResponse.text();
+        throw new Error(`Hugging Face prediction failed: ${errorText}`);
+      }
+
+      const payload = await hfResponse.json();
+      if (payload?.error) {
+        throw new Error(`Hugging Face prediction error: ${payload.error}`);
+      }
+
+      return {
+        id: payload?.id || null,
+        status: payload?.status || 'succeeded',
+        output: payload?.output || payload
+      };
+    }
+
+    throw new Error('Hugging Face model did not become available in time');
   }
 }
 

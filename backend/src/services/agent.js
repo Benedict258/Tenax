@@ -6,6 +6,7 @@ const metricsStore = require('./metricsStore');
 const opikAgentTracer = require('../instrumentation/opikTracer');
 const variantConfig = require('../config/experiment');
 const ruleStateService = require('./ruleState');
+const taskPrioritizer = require('./taskPrioritizer');
 
 const forceRegressionFailure = process.env.FORCE_REGRESSION_FAILURE === 'true';
 const forcedReminderMessage = 'Remember to work on your tasks today.';
@@ -19,7 +20,9 @@ const mapTasksToMetadata = (tasks = []) => tasks.map((task) => ({
   category: task.category,
   status: task.status,
   start_time: task.start_time || null,
-  due_time: task.due_time || null
+  due_time: task.due_time || null,
+  recommended_start: task.recommended_start || null,
+  recommended_end: task.recommended_end || null
 }));
 
 const REMINDER_TIME_FORMAT = { hour: 'numeric', minute: '2-digit' };
@@ -136,7 +139,15 @@ class AgentService {
 
   async generateMorningSummary(user, tasks) {
     try {
-      const taskList = tasks.map((t, idx) => `${idx + 1}. ${t.title}${t.category ? ` (${t.category})` : ''}`).join('\n');
+      const taskList = tasks
+        .map((t, idx) => {
+          const categoryLabel = t.category ? ` (${t.category})` : '';
+          const startLabel = toTimeLabel(t.recommended_start || t.start_time);
+          const endLabel = toTimeLabel(t.recommended_end) || addMinutesLabel(t.recommended_start, resolveDurationMinutes(t, '30_min'));
+          const recommendation = startLabel && endLabel ? ` — best window ${startLabel} - ${endLabel}` : startLabel ? ` — best window ${startLabel}` : '';
+          return `${idx + 1}. ${t.title}${categoryLabel}${recommendation}`;
+        })
+        .join('\n');
       const prompt = [
         'You are Tenax, an execution companion—not a robotic assistant.',
         `Help ${user.name} start the day with clarity, energy, and motivation while the north star goal is "${getUserGoal(user)}".`,
@@ -196,11 +207,12 @@ class AgentService {
 
   async sendMorningSummary(user) {
     try {
-      const tasks = await Task.getTodaysTasks(user.id);
-      if (tasks.length === 0) return null;
+      const todaysTasks = await Task.getTodaysTasks(user.id);
+      const prioritizedTasks = await taskPrioritizer.rankTasksWithAvailability(user.id, todaysTasks);
+      if (prioritizedTasks.length === 0) return null;
       const p1Tasks = await ruleStateService.getActiveP1Tasks(user.id);
 
-      const summary = await this.generateMorningSummary(user, tasks);
+      const summary = await this.generateMorningSummary(user, prioritizedTasks);
       let guardrailBanner = '';
       if (p1Tasks.length) {
         guardrailBanner = `${ruleStateService.buildBanner(p1Tasks)}\n\n`;
@@ -209,7 +221,7 @@ class AgentService {
           tasks: p1Tasks,
           surfaceType: 'morning_summary',
           channel: 'whatsapp',
-          metadata: { task_count: tasks.length }
+          metadata: { task_count: prioritizedTasks.length }
         });
       }
 
@@ -218,10 +230,10 @@ class AgentService {
       await whatsappService.sendMessage(user.phone_number, fullMessage);
       await opikLogger.log('log_morning_summary_dispatch', {
         user_id: user.id,
-        task_count: tasks.length,
+        task_count: prioritizedTasks.length,
         message_preview: fullMessage.slice(0, 200)
       });
-      return { summary, tasks };
+      return { summary, tasks: prioritizedTasks };
     } catch (error) {
       console.error('[Agent] Send morning summary error:', error);
       throw error;

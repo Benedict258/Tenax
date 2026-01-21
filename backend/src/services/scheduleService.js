@@ -8,6 +8,16 @@ const storageBucket = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
 
 const scheduleIntelEnabled = () => process.env.SCHEDULE_INTEL_V1 === 'true';
 
+const MS_IN_MINUTE = 60 * 1000;
+
+const toDate = (value) => {
+  if (value instanceof Date) return new Date(value.getTime());
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const overlap = (aStart, aEnd, bStart, bEnd) => aStart < bEnd && bStart < aEnd;
+
 const buildIsoRange = (date) => {
   const target = date instanceof Date ? date : new Date(date);
   const start = new Date(target);
@@ -139,6 +149,17 @@ async function getBusyBlocks(userId, date) {
   return data || [];
 }
 
+function normalizeBusyBlock(block) {
+  if (!block) return null;
+  const startDate = toDate(block.start_time);
+  const endDate = toDate(block.end_time);
+  return {
+    ...block,
+    startDate,
+    endDate
+  };
+}
+
 function mergeBlocks(blocks) {
   if (!blocks.length) return [];
   const sorted = blocks.slice().sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
@@ -229,6 +250,85 @@ async function recordReminderShift({ userId, taskId, originalTime, shiftedTime, 
   });
 }
 
+async function findAdjustedReminderTime(userId, targetTime, durationMinutes = 30) {
+  const targetStart = toDate(targetTime);
+  if (!userId || !targetStart) {
+    return { adjustedTime: targetStart, conflictBlock: null };
+  }
+
+  const durationMs = Math.max(durationMinutes, 5) * MS_IN_MINUTE;
+  const targetEnd = new Date(targetStart.getTime() + durationMs);
+
+  const { busyBlocks, freeWindows } = await getAvailability(userId, targetStart);
+  const normalizedBlocks = (busyBlocks || []).map(normalizeBusyBlock).filter((block) => block?.startDate && block?.endDate);
+  const conflictBlock = normalizedBlocks.find((block) => overlap(targetStart, targetEnd, block.startDate, block.endDate));
+
+  if (!conflictBlock) {
+    return { adjustedTime: targetStart, conflictBlock: null };
+  }
+
+  const candidateWindows = (freeWindows || [])
+    .map((window) => ({ start: toDate(window.start), end: toDate(window.end) }))
+    .filter((window) => window.start && window.end && window.end > window.start && (window.end - window.start) >= durationMs);
+
+  const afterWindows = candidateWindows
+    .filter((window) => window.start >= targetStart)
+    .sort((a, b) => a.start - b.start);
+
+  if (afterWindows.length) {
+    return { adjustedTime: new Date(afterWindows[0].start), conflictBlock };
+  }
+
+  const beforeWindows = candidateWindows
+    .filter((window) => window.end <= targetStart)
+    .sort((a, b) => b.end - a.end);
+
+  if (beforeWindows.length) {
+    const candidate = beforeWindows[0];
+    const startMs = Math.max(candidate.start.getTime(), candidate.end.getTime() - durationMs);
+    return { adjustedTime: new Date(startMs), conflictBlock };
+  }
+
+  return { adjustedTime: targetStart, conflictBlock, exhausted: true };
+}
+
+async function recordScheduleConflict({
+  userId,
+  taskId,
+  conflictType,
+  conflictWindow,
+  resolution = null,
+  resolvedAt = null,
+  metadata = {}
+}) {
+  const windowPayload = conflictWindow
+    ? {
+        ...conflictWindow,
+        start_time: conflictWindow.start_time || conflictWindow.startDate?.toISOString() || conflictWindow.start?.toISOString?.(),
+        end_time: conflictWindow.end_time || conflictWindow.endDate?.toISOString() || conflictWindow.end?.toISOString?.()
+      }
+    : null;
+
+  const { data, error } = await supabase
+    .from('task_schedule_conflicts')
+    .insert([
+      {
+        user_id: userId,
+        task_id: taskId,
+        conflict_type: conflictType,
+        conflict_window: windowPayload,
+        resolution,
+        resolved_at: resolvedAt,
+        metadata
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 module.exports = {
   scheduleIntelEnabled,
   ingestUpload,
@@ -241,6 +341,8 @@ module.exports = {
   computeFreeWindows,
   getAvailability,
   recordReminderShift,
+  findAdjustedReminderTime,
+  recordScheduleConflict,
   saveOcrPayload,
   logTrace,
   scheduleFeatureFlag: () => scheduleIntelEnabled(),

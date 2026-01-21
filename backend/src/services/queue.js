@@ -1,6 +1,7 @@
 const Queue = require('bull');
 const redis = require('redis');
 const agentService = require('./agent');
+const scheduleService = require('./scheduleService');
 
 // Create Redis client
 const redisClient = redis.createClient({ url: process.env.REDIS_URL });
@@ -30,6 +31,16 @@ reminderQueue.process('send-reminder', async (job) => {
 });
 
 class QueueService {
+  static resolveTaskDuration(task) {
+    if (!task) return 30;
+    const parsed = Number(task.duration_minutes);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      return Math.min(parsed, 180);
+    }
+    if (task.reminderType === 'on_time') return 45;
+    return 30;
+  }
+
   static async scheduleReminder(user, task, type, delay, extra = {}) {
     return reminderQueue.add('send-reminder', { user, task: task ? { ...task, ...extra } : null, type }, { 
       delay,
@@ -55,11 +66,63 @@ class QueueService {
 
   static async scheduleTaskReminder(user, task, reminderTime) {
     const now = new Date();
-    const delay = new Date(reminderTime).getTime() - now.getTime();
-    
-    if (delay > 0) {
-      return this.scheduleReminder(user, task, 'task-reminder', delay, { reminderType: task.reminderType || '30_min' });
+    const targetTime = new Date(reminderTime);
+    if (Number.isNaN(targetTime.getTime())) {
+      return null;
     }
+
+    let adjustedTime = targetTime;
+    const durationMinutes = this.resolveTaskDuration(task);
+    let conflictBlock = null;
+
+    try {
+      const adjustment = await scheduleService.findAdjustedReminderTime(user.id, targetTime, durationMinutes);
+      adjustedTime = adjustment?.adjustedTime || targetTime;
+      conflictBlock = adjustment?.conflictBlock || null;
+
+      if (conflictBlock && adjustedTime.getTime() !== targetTime.getTime()) {
+        await scheduleService.recordReminderShift({
+          userId: user.id,
+          taskId: task?.id,
+          originalTime: targetTime.toISOString(),
+          shiftedTime: adjustedTime.toISOString(),
+          reason: 'busy_block_conflict'
+        });
+
+        await scheduleService.recordScheduleConflict({
+          userId: user.id,
+          taskId: task?.id,
+          conflictType: 'reminder_vs_schedule',
+          conflictWindow: conflictBlock,
+          resolution: 'reminder_shifted',
+          metadata: {
+            reminder_type: task?.reminderType || '30_min',
+            original_time: targetTime.toISOString(),
+            shifted_time: adjustedTime.toISOString()
+          }
+        });
+
+        await scheduleService.logTrace('reminder_conflict_avoided', {
+          user_id: user.id,
+          task_id: task?.id,
+          original_time: targetTime.toISOString(),
+          shifted_time: adjustedTime.toISOString(),
+          duration_minutes: durationMinutes,
+          conflict_source: conflictBlock?.source || 'schedule_block'
+        });
+      }
+    } catch (error) {
+      console.warn('[Queue] Failed to adjust reminder time:', error.message);
+    }
+
+    let finalDelay = adjustedTime.getTime() - now.getTime();
+    if (finalDelay <= 0) {
+      finalDelay = 1000;
+    }
+    return this.scheduleReminder(user, task, 'task-reminder', finalDelay, {
+      reminderType: task.reminderType || '30_min',
+      scheduled_for: adjustedTime.toISOString()
+    });
   }
 
   static async getQueueStats() {

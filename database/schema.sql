@@ -147,8 +147,22 @@ CREATE TABLE timetable_extractions (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE task_schedule_conflicts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+  conflict_type TEXT NOT NULL,
+  conflict_window JSONB NOT NULL,
+  resolution TEXT,
+  resolved_at TIMESTAMPTZ,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE INDEX idx_timetable_uploads_user ON timetable_uploads(user_id);
 CREATE INDEX idx_timetable_extractions_user_day ON timetable_extractions(user_id, day_of_week);
+CREATE INDEX idx_task_schedule_conflicts_user ON task_schedule_conflicts(user_id);
+CREATE INDEX idx_task_schedule_conflicts_task ON task_schedule_conflicts(task_id);
 
 CREATE TABLE external_calendars (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

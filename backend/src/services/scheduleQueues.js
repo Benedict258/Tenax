@@ -9,8 +9,14 @@ let scheduleOcrQueue = null;
 let calendarSyncQueue = null;
 
 if (redisUrl) {
-  scheduleOcrQueue = new Queue('schedule-ocr', redisUrl);
-  calendarSyncQueue = new Queue('calendar-sync', redisUrl);
+  try {
+    scheduleOcrQueue = new Queue('schedule-ocr', redisUrl);
+    calendarSyncQueue = new Queue('calendar-sync', redisUrl);
+  } catch (error) {
+    console.warn('[ScheduleQueue] Failed to initialize Redis queues, falling back to inline mode:', error.message);
+    scheduleOcrQueue = null;
+    calendarSyncQueue = null;
+  }
 } else {
   console.warn('[ScheduleQueue] REDIS_URL not configured; schedule queues disabled');
 }
@@ -39,26 +45,41 @@ function initProcessors() {
   });
 }
 
-function enqueueUploadJob(payload) {
-  if (!scheduleOcrQueue) {
-    logQueueMessage('Upload queue unavailable; skipping job', payload);
-    return null;
-  }
-  return scheduleOcrQueue.add(payload, {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 1000 }
-  });
+async function processUploadInline(payload) {
+  logQueueMessage('Processing upload inline (queue disabled)', payload);
+  await ocrService.processUpload(payload.uploadId);
+  return { status: 'ok', inline: true };
 }
 
-function enqueueCalendarSync(payload) {
+async function enqueueUploadJob(payload) {
+  if (!scheduleOcrQueue) {
+    return processUploadInline(payload);
+  }
+  try {
+    return await scheduleOcrQueue.add(payload, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000 }
+    });
+  } catch (error) {
+    logQueueMessage('Upload queue add failed; falling back inline', { error: error.message });
+    return processUploadInline(payload);
+  }
+}
+
+async function enqueueCalendarSync(payload) {
   if (!calendarSyncQueue) {
     logQueueMessage('Calendar queue unavailable; skipping job', payload);
-    return null;
+    return { status: 'skipped', reason: 'queue_disabled' };
   }
-  return calendarSyncQueue.add(payload, {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000 }
-  });
+  try {
+    return await calendarSyncQueue.add(payload, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 }
+    });
+  } catch (error) {
+    logQueueMessage('Calendar queue add failed; skipping job', { error: error.message });
+    return { status: 'skipped', reason: 'queue_error', error: error.message };
+  }
 }
 
 module.exports = {
