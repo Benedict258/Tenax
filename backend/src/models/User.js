@@ -70,6 +70,17 @@ class User {
     if (error) throw error;
     return data;
   }
+
+  static async listAll(limit = 50) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  }
 }
 
 module.exports = User;

@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "axios": "^1.7.9",
+    "chrono-node": "^2.7.6",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.90.1",
     "bcryptjs": "^2.4.3",

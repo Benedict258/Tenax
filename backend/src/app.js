@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 const whatsappRoutes = require('./routes/whatsapp');
 const scheduleRoutes = require('./routes/schedule');
+const analyticsRoutes = require('./routes/analytics');
 const scheduleQueues = require('./services/scheduleQueues');
 const optimizerJobs = require('./services/optimizerJobs');
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/schedule', scheduleRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

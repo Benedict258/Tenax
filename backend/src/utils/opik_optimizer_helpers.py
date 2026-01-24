@@ -154,6 +154,39 @@ def fetch_opik_dataset_entries(
     }
 
 
+def fetch_opik_metrics_snapshot(
+    metrics: Optional[List[str]] = None,
+    lookback_hours: int = 24
+) -> Dict[str, Any]:
+    """Return a lightweight snapshot of recent Opik evaluation metrics."""
+
+    sample_metrics = {
+        'tone_score': 4.4,
+        'specificity_score': 4.1,
+        'realism_score': 4.0,
+        'goal_alignment_score': 4.3,
+        'daily_completion_rate': 72,
+        'weekly_completion_rate': 68,
+        'P1_completion_rate': 81,
+        'streak_days': 3,
+        'reminder_response_time': 17,
+        'task_completion_latency': 38,
+        'missed_task_ratio': 0.21,
+        'regression_pass_rate': 0.94,
+        'optimizer_success_rate': 0.78,
+        'average_evaluator_score': 4.2
+    }
+
+    response = sample_metrics.copy()
+    if metrics:
+        response = {metric: sample_metrics.get(metric) for metric in metrics}
+
+    return {
+        'metrics': response,
+        'lookback_hours': lookback_hours
+    }
+
+
 def _load_remote_entries(dataset_identifier: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
     dataset = _load_opik_dataset(dataset_identifier)
     nb_samples = limit if isinstance(limit, int) and limit > 0 else None

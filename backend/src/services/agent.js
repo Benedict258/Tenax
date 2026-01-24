@@ -7,6 +7,7 @@ const opikAgentTracer = require('../instrumentation/opikTracer');
 const variantConfig = require('../config/experiment');
 const ruleStateService = require('./ruleState');
 const taskPrioritizer = require('./taskPrioritizer');
+const reminderPreferences = require('./reminderPreferences');
 
 const forceRegressionFailure = process.env.FORCE_REGRESSION_FAILURE === 'true';
 const forcedReminderMessage = 'Remember to work on your tasks today.';
@@ -291,6 +292,16 @@ class AgentService {
       let enrichedTask = task;
       if (enrichedTask?.id && typeof enrichedTask.severity === 'undefined') {
         enrichedTask = await Task.findById(enrichedTask.id);
+      }
+
+      if (reminderPreferences.isPaused(user.id)) {
+        console.log('[Agent] Reminder blocked: user paused reminders for the day.');
+        return { message: 'Reminders are paused for today.', blocked: true };
+      }
+
+      if (reminderPreferences.isSnoozed(user.id)) {
+        console.log('[Agent] Reminder blocked: user snoozed reminders.');
+        return { message: 'Reminder snooze still active.', blocked: true };
       }
 
       const [ruleState, p1Tasks] = await Promise.all([

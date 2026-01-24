@@ -101,6 +101,15 @@ class MetricsStore {
     this.userStreaks.set(userId, next);
     return next;
   }
+
+  getStreak(userId) {
+    return this.userStreaks.get(userId) || 0;
+  }
+
+  getMessageVolume(userId, horizonMs = DAY_MS) {
+    const cutoff = Date.now() - horizonMs;
+    return (this.userMessages.get(userId) || []).filter((ts) => ts >= cutoff).length;
+  }
 }
 
 module.exports = new MetricsStore();

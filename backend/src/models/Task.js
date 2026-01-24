@@ -82,6 +82,23 @@ class Task {
     return data;
   }
 
+  static async updateFields(id, fields) {
+    const payload = {
+      ...fields,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   static async delete(id) {
     const { data, error } = await supabase
       .from('tasks')
@@ -145,6 +162,33 @@ class Task {
       console.error('[Task] getTodaysTasks Supabase error:', error);
       throw error;
     }
+    return data || [];
+  }
+
+  static async findByUserSince(user_id, sinceISO) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user_id)
+      .gte('created_at', sinceISO)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async findRecent(days = 7) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceISO = since.toISOString();
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .gte('created_at', sinceISO)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
     return data || [];
   }
 }
