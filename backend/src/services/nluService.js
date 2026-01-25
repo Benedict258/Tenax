@@ -27,6 +27,7 @@ const DAILY_KEYWORDS = ['daily', 'every day', 'each day'];
 const WEEKLY_KEYWORDS = ['weekly', 'every week'];
 const WEEKDAY_KEYWORDS = ['weekdays', 'every weekday'];
 const WEEKEND_KEYWORDS = ['weekends', 'weekend'];
+const TIMETABLE_TRIGGERS = ['timetable', 'course list', 'class schedule', 'courses i am taking', 'class timetable'];
 
 const normalize = (text) => text.toLowerCase().trim();
 
@@ -217,6 +218,10 @@ function parseMessage(rawText, options = {}) {
     return parseTaskAddition(text);
   }
 
+  if (TIMETABLE_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
+    return buildIntentResponse('upload_timetable', 0.93, {});
+  }
+
   if (REMOVE_TRIGGERS.some((trigger) => normalized.startsWith(trigger))) {
     return parseTaskRemoval(text);
   }
@@ -282,6 +287,32 @@ function resolvePendingAction(rawText, pendingAction) {
         targetTime: timeData.iso
       }, { clarified: true });
     }
+    return null;
+  }
+
+  if (pendingAction.type === 'timetable_confirmation') {
+    if (/^(yes|yep|sure|go ahead|add all)/i.test(rawText.trim())) {
+      return buildIntentResponse('import_timetable_confirm', 0.94, {
+        entries: pendingAction.entries
+      }, { clarified: true });
+    }
+
+    if (/^(no|cancel|not now)/i.test(rawText.trim())) {
+      return buildIntentResponse('timetable_cancel', 0.8, {}, { clarified: true });
+    }
+
+    if (normalized.startsWith('add only')) {
+      const requested = rawText.replace(/add only/i, '').split(/,|and/)
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+      const selected = pendingAction.entries.filter((entry) =>
+        requested.some((target) => entry.title.toLowerCase().includes(target))
+      );
+      if (selected.length) {
+        return buildIntentResponse('import_timetable_confirm', 0.9, { entries: selected }, { clarified: true });
+      }
+    }
+
     return null;
   }
 

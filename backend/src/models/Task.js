@@ -1,6 +1,26 @@
 const supabase = require('../config/supabase');
 
 class Task {
+  static normalizePriority(priority) {
+    if (typeof priority === 'number') {
+      return priority;
+    }
+    const label = String(priority || '').toUpperCase();
+    if (label === 'P1') return 1;
+    if (label === 'P2') return 2;
+    if (label === 'P3') return 3;
+    return 5;
+  }
+
+  static normalizeSeverity(severity) {
+    if (!severity) return 'p2';
+    const value = String(severity).toLowerCase();
+    if (value === 'p1' || value === 'p2' || value === 'p3') {
+      return value;
+    }
+    return 'p2';
+  }
+
   static async create(taskData) {
     const { 
       user_id, 
@@ -27,9 +47,9 @@ class Task {
         start_time,
         duration_minutes,
         recurrence,
-        priority: priority || 5,
+        priority: Task.normalizePriority(priority),
         created_via: created_via || 'web',
-        severity: severity || 'p2',
+        severity: Task.normalizeSeverity(severity),
         metadata: metadata || {},
         p1_metadata: p1_metadata || {}
       }])
@@ -38,6 +58,32 @@ class Task {
 
     if (error) throw error;
     return data;
+  }
+
+  static async createMany(taskDataList = []) {
+    if (!taskDataList.length) return [];
+    const payload = taskDataList.map((task) => ({
+      user_id: task.user_id,
+      title: task.title,
+      description: task.description,
+      category: task.category || 'Other',
+      start_time: task.start_time,
+      duration_minutes: task.duration_minutes,
+      recurrence: task.recurrence || null,
+      priority: Task.normalizePriority(task.priority),
+      created_via: task.created_via || 'system',
+      severity: Task.normalizeSeverity(task.severity),
+      metadata: task.metadata || {},
+      p1_metadata: task.p1_metadata || {}
+    }));
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert(payload)
+      .select();
+
+    if (error) throw error;
+    return data || [];
   }
 
   static async findByUserId(user_id, status = null) {

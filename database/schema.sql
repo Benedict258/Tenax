@@ -8,12 +8,25 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT,
+  preferred_name TEXT,
   email TEXT UNIQUE,
   phone_number TEXT UNIQUE,
   phone_verified BOOLEAN DEFAULT FALSE,
   start_time TIME DEFAULT '07:00:00',
+  daily_start_time TIME DEFAULT '07:00:00',
   timezone TEXT DEFAULT 'Africa/Lagos',
   role TEXT,
+  reason_for_using TEXT[] DEFAULT '{}',
+  primary_goal TEXT,
+  enforce_daily_p1 BOOLEAN DEFAULT FALSE,
+  enforce_workout BOOLEAN DEFAULT FALSE,
+  enforce_pre_class_reading BOOLEAN DEFAULT FALSE,
+  enforce_post_class_review BOOLEAN DEFAULT FALSE,
+  availability_pattern TEXT DEFAULT 'mixed',
+  timetable_upload_enabled BOOLEAN DEFAULT FALSE,
+  google_calendar_connected BOOLEAN DEFAULT FALSE,
+  tone_preference TEXT DEFAULT 'balanced',
+  whatsapp_identity JSONB DEFAULT '{}',
   preferences JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
@@ -81,6 +94,45 @@ CREATE INDEX idx_tasks_start_time ON tasks(start_time);
 CREATE INDEX idx_tasks_user_p1 ON tasks(user_id) WHERE severity = 'p1';
 CREATE INDEX idx_agent_states_user_date ON agent_states(user_id, date);
 CREATE INDEX idx_message_logs_user_time ON message_logs(user_id, created_at);
+
+-- Channel identity mapping for unified messaging
+CREATE TABLE user_channels (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL CHECK (channel IN ('whatsapp','web')),
+  external_id TEXT NOT NULL,
+  verified BOOLEAN DEFAULT FALSE,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (channel, external_id)
+);
+
+CREATE INDEX idx_user_channels_user ON user_channels(user_id);
+
+-- Shared conversation + message log for WhatsApp and Web chat
+CREATE TABLE conversations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active','closed')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE UNIQUE INDEX idx_conversations_user_active ON conversations(user_id) WHERE status = 'active';
+
+CREATE TABLE messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL CHECK (channel IN ('whatsapp','web')),
+  role TEXT NOT NULL CHECK (role IN ('user','assistant','system')),
+  text TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_messages_conversation_time ON messages(conversation_id, created_at);
+CREATE INDEX idx_messages_user_time ON messages(user_id, created_at);
 
 -- Rule enforcement audit log
 CREATE TABLE rule_enforcement_events (

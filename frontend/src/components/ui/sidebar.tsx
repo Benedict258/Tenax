@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import { Link, LinkProps } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, type AnimatePresenceProps } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -52,6 +52,8 @@ export const SidebarProvider = ({
     </SidebarContext.Provider>
   );
 };
+
+const Presence = AnimatePresence as React.ComponentType<React.PropsWithChildren<AnimatePresenceProps>>;
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -109,7 +111,7 @@ export const MobileSidebar = ({
         <p className="text-sm uppercase tracking-[0.2em] text-white/60">Menu</p>
         <Menu className="h-6 w-6 cursor-pointer" onClick={() => setOpen(!open)} />
       </div>
-      <AnimatePresence>
+      <Presence>
         {open && (
           <motion.div
             initial={{ x: '-100%', opacity: 0 }}
@@ -131,7 +133,7 @@ export const MobileSidebar = ({
             {children}
           </motion.div>
         )}
-      </AnimatePresence>
+      </Presence>
     </div>
   );
 };

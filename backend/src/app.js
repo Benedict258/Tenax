@@ -7,12 +7,14 @@ const helmet = require('helmet');
 const authRoutes = require('./routes/auth');
 const taskRoutes = require('./routes/tasks');
 const whatsappRoutes = require('./routes/whatsapp');
+const agentRoutes = require('./routes/agent');
 const scheduleRoutes = require('./routes/schedule');
 const analyticsRoutes = require('./routes/analytics');
 const scheduleQueues = require('./services/scheduleQueues');
 const optimizerJobs = require('./services/optimizerJobs');
 
 const app = express();
+app.set('etag', false);
 
 // Middleware
 app.use(helmet());
@@ -20,10 +22,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/agent', agentRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
@@ -48,7 +56,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Tenax Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);

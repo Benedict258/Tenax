@@ -123,6 +123,9 @@ function buildDemoSummary() {
 }
 
 async function getUserSummary(userId) {
+  if (!userId || userId === 'demo') {
+    return buildDemoSummary();
+  }
   try {
     const [user, todaysTasks] = await Promise.all([
       User.findById(userId).catch(() => null),

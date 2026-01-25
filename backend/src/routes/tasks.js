@@ -39,6 +39,21 @@ router.post('/', auth, async (req, res) => {
     if (!taskData.title) {
       return res.status(400).json({ error: 'Task title is required' });
     }
+
+    if (!taskData.category) {
+      taskData.category = 'Manual';
+    }
+
+    if (!taskData.start_time && taskData.time_for_execution) {
+      const target = new Date(taskData.time_for_execution);
+      taskData.start_time = Number.isNaN(target.getTime()) ? null : target.toISOString();
+    }
+    delete taskData.time_for_execution;
+
+    if (taskData.priority_label && !taskData.priority) {
+      taskData.priority = taskData.priority_label;
+    }
+    delete taskData.priority_label;
     
     const task = await Task.create(taskData);
     res.status(201).json({

@@ -2,45 +2,96 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const UserChannel = require('../models/UserChannel');
 const router = express.Router();
 
 // Register user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, phone_number, role } = req.body;
-    
-    // Validation
-    if (!name || !email || !phone_number || !role) {
-      return res.status(400).json({ error: 'All fields are required' });
+    const requiredFields = ['name', 'preferred_name', 'email', 'phone_number', 'role', 'reason_for_using', 'primary_goal', 'daily_start_time', 'timezone'];
+    const missing = requiredFields.filter((field) => {
+      const value = req.body[field];
+      if (Array.isArray(value)) {
+        return value.length === 0;
+      }
+      return value === undefined || value === null || value === '';
+    });
+
+    if (missing.length) {
+      return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
     }
-    
-    // Check if user exists
+
+    const {
+      name,
+      preferred_name,
+      email,
+      phone_number,
+      role,
+      reason_for_using,
+      primary_goal,
+      daily_start_time,
+      timezone,
+      enforce_daily_p1,
+      enforce_workout,
+      enforce_pre_class_reading,
+      enforce_post_class_review,
+      availability_pattern,
+      timetable_upload_enabled,
+      google_calendar_connected,
+      tone_preference
+    } = req.body;
+
     const existingUser = await User.findByPhone(phone_number) || await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists with this phone or email' });
     }
-    
-    // Create user
-    const user = await User.create({ name, email, phone_number, role });
-    
-    // Generate JWT
+
+    const user = await User.create({
+      name,
+      preferred_name,
+      email,
+      phone_number,
+      role,
+      reason_for_using,
+      primary_goal,
+      daily_start_time,
+      timezone,
+      enforce_daily_p1,
+      enforce_workout,
+      enforce_pre_class_reading,
+      enforce_post_class_review,
+      availability_pattern,
+      timetable_upload_enabled,
+      google_calendar_connected,
+      tone_preference,
+      whatsapp_identity: { phone_number }
+    });
+
+    await UserChannel.link(user.id, 'whatsapp', phone_number, { verified: false, metadata: { source: 'signup' } });
+
     const token = jwt.sign(
-      { userId: user.id }, 
-      process.env.JWT_SECRET, 
+      { userId: user.id },
+      process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       message: 'User registered successfully',
       user: {
         id: user.id,
         name: user.name,
+        preferred_name: user.preferred_name,
         email: user.email,
         phone_number: user.phone_number,
         role: user.role,
+        reason_for_using: user.reason_for_using,
+        primary_goal: user.primary_goal,
+        daily_start_time: user.daily_start_time,
+        timezone: user.timezone,
+        tone_preference: user.tone_preference,
         phone_verified: user.phone_verified
-      }, 
-      token 
+      },
+      token
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -75,9 +126,15 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
+        preferred_name: user.preferred_name,
         email: user.email,
         phone_number: user.phone_number,
         role: user.role,
+        reason_for_using: user.reason_for_using,
+        primary_goal: user.primary_goal,
+        daily_start_time: user.daily_start_time,
+        timezone: user.timezone,
+        tone_preference: user.tone_preference,
         phone_verified: user.phone_verified
       }, 
       token 
