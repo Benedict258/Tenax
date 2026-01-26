@@ -1,3 +1,9 @@
+// Simple severity inference based on keywords
+function inferSeverity(title) {
+  const lowered = title.toLowerCase();
+  if (lowered.includes('p1') || lowered.includes('priority') || lowered.includes('urgent')) return 'p1';
+  return 'p2';
+}
 const Task = require('../models/Task');
 const User = require('../models/User');
 const Conversation = require('../models/Conversation');
