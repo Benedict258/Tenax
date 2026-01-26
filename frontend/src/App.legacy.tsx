@@ -1,57 +1,51 @@
-import React, { FormEvent, useMemo, useState, useEffect } from 'react';
-import axios from 'axios';
-import {
-  Activity,
-  Bell,
-  import React from 'react';
-  import { Navigate, Route, Routes } from 'react-router-dom';
-  import HeroLanding from './pages/HeroLanding';
-  import DashboardLayout from './pages/dashboard/DashboardLayout';
-  import TodayPage from './pages/dashboard/TodayPage';
-  import WebChatPage from './pages/dashboard/WebChatPage';
-  import ExecutionBoardPage from './pages/dashboard/ExecutionBoardPage';
-  import WeeklyProgressPage from './pages/dashboard/WeeklyProgressPage';
-  import LeaderboardPage from './pages/dashboard/LeaderboardPage';
-  import BehaviorPage from './pages/admin/BehaviorPage';
-  import OpikPulsePage from './pages/admin/OpikPulsePage';
-  import SignalsPage from './pages/admin/SignalsPage';
-  import { AnalyticsProvider } from './context/AnalyticsContext';
-  import { ADMIN_ENABLED } from './lib/env';
+import React from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import HeroLanding from './pages/HeroLanding';
+import DashboardLayout from './pages/dashboard/DashboardLayout';
+import TodayPage from './pages/dashboard/TodayPage';
+import WebChatPage from './pages/dashboard/WebChatPage';
+import ExecutionBoardPage from './pages/dashboard/ExecutionBoardPage';
+import WeeklyProgressPage from './pages/dashboard/WeeklyProgressPage';
+import LeaderboardPage from './pages/dashboard/LeaderboardPage';
+import BehaviorPage from './pages/admin/BehaviorPage';
+import OpikPulsePage from './pages/admin/OpikPulsePage';
+import SignalsPage from './pages/admin/SignalsPage';
+import { AnalyticsProvider } from './context/AnalyticsContext';
+import { ADMIN_ENABLED } from './lib/env';
 
-  function App() {
-    return (
-      <AnalyticsProvider>
-        <Routes>
-          <Route path="/" element={<HeroLanding />} />
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Navigate to="today" replace />} />
-            <Route path="today" element={<TodayPage />} />
-            <Route path="chat" element={<WebChatPage />} />
-            <Route path="execution" element={<ExecutionBoardPage />} />
-            <Route path="weekly" element={<WeeklyProgressPage />} />
-            <Route path="leaderboard" element={<LeaderboardPage />} />
-            {ADMIN_ENABLED && (
-              <>
-                <Route path="behavior" element={<BehaviorPage />} />
-                <Route path="opik" element={<OpikPulsePage />} />
-                <Route path="signals" element={<SignalsPage />} />
-              </>
-            )}
-            {!ADMIN_ENABLED && (
-              <>
-                <Route path="behavior" element={<Navigate to="today" replace />} />
-                <Route path="opik" element={<Navigate to="today" replace />} />
-                <Route path="signals" element={<Navigate to="today" replace />} />
-              </>
-            )}
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AnalyticsProvider>
-    );
-  }
+function App() {
+  return (
+    <AnalyticsProvider>
+      <Routes>
+        <Route path="/" element={<HeroLanding />} />
+        <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="today" replace />} />
+          <Route path="today" element={<TodayPage />} />
+          <Route path="chat" element={<WebChatPage />} />
+          <Route path="execution" element={<ExecutionBoardPage />} />
+          <Route path="weekly" element={<WeeklyProgressPage />} />
+          <Route path="leaderboard" element={<LeaderboardPage />} />
+          {ADMIN_ENABLED ? (
+            <>
+              <Route path="behavior" element={<BehaviorPage />} />
+              <Route path="opik" element={<OpikPulsePage />} />
+              <Route path="signals" element={<SignalsPage />} />
+            </>
+          ) : (
+            <>
+              <Route path="behavior" element={<Navigate to="today" replace />} />
+              <Route path="opik" element={<Navigate to="today" replace />} />
+              <Route path="signals" element={<Navigate to="today" replace />} />
+            </>
+          )}
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnalyticsProvider>
+  );
+}
 
-  export default App;
+export default App;
             <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
               <p className="text-sm uppercase tracking-[0.4em] text-white/40">Completion</p>
               <h2 className="mt-4 text-4xl font-semibold">{completion.completion_rate}%</h2>
