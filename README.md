@@ -24,13 +24,15 @@
 ## 🚀 Overview
 
 Tenax is designed to solve real-world productivity problems by focusing on **measurable behavior change**. Unlike passive planners, Tenax is a persistent agent that:
+
 - Maintains user goals, schedules, and habits
 - Generates daily execution plans
 - Sends reminders/accountability messages via WhatsApp
 - Accepts completions via natural language
 - Evaluates interventions using Opik traces and metrics
 
-**Core Belief:**  
+**Core Belief:**
+
 > Productivity systems should be evaluated by behavior change, not just response quality.
 
 ---
@@ -48,33 +50,43 @@ Tenax is designed to solve real-world productivity problems by focusing on **mea
 ## 📈 Development Phases
 
 ### Phase 0 – System Foundation
+
 - Backend API, database schema, job queue, WhatsApp webhook, dashboard shell
 
 ### Phase 1 – Core Execution Loop + Opik Foundation
+
 - Onboarding, manual/recurring tasks, agent with morning/reminder/EOD summaries, WhatsApp intent parsing, Opik tracing
 
 ### Phase 2 – Advanced Opik Evaluation & LLM-as-Judge
+
 - Real-time scoring, human feedback loop, regression testing, advanced metrics
 
 ### Phase 3 – Agent Intelligence & Rule Engine
+
 - Daily rule enforcement, task classification, adaptive tone, weekly summaries
 
 ### Phase 4 – Schedule Intelligence
+
 - Timetable upload, OCR, calendar sync, conflict detection, smart reminders
 
 ### Phase 5 – Opik Optimizer & Self-Improving Agent
+
 - HRPO/GEPA optimization, A/B testing, automated prompt improvement
 
 ### Phase 6 – Enhanced NLU & Conversation
+
 - Advanced intent parsing, multi-turn context, fuzzy matching, recurrence recognition
 
 ### Phase 7 – Analytics & Insights Dashboard
+
 - User/admin dashboards, Opik metrics, export functionality
 
 ### Phase 8 – Polish & Hackathon Prep
+
 - Demo flow, error handling, mobile responsiveness, documentation
 
 ### Phase 9 – Hackathon Ready
+
 - Production deployment, demo materials, Opik workspace, backup plans
 
 ---
@@ -105,21 +117,26 @@ Tenax is designed to solve real-world productivity problems by focusing on **mea
 ## ⚡ Quick Setup
 
 ### Prerequisites
+
 - Node.js 18+, PostgreSQL 14+, Redis 6+, Twilio account
 
 ### Install Dependencies
+
 ```bash
 cd backend && npm install
 cd frontend && npm install
 ```
 
 ### Database Setup
+
 - Create DB, run schema and migrations, configure Supabase Storage
 
 ### Environment Configuration
+
 - Copy `.env.example` to `.env` and fill in all required keys (DB, Redis, Twilio, Supabase, Google, Replicate, etc.)
 
 ### Start Services
+
 - Redis: `redis-server`
 - Backend: `cd backend && npm run dev`
 - Frontend: `cd frontend && npm start`
@@ -209,6 +226,7 @@ Tenax/
 ---
 
 ## 💡 For full technical details, see:
+
 - `Tenax.md` (Product Requirements, Opik integration, agent architecture)
 - `devPhases.md` (Development phases, features, and timeline)
 - `docs/phase3-p1-rule-plan.md` (Rule enforcement details)
