@@ -102,7 +102,7 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
         ? Math.round(points.reduce((acc, day) => acc + day.completionRate, 0) / points.length)
         : 70;
     const userEntry: LeaderboardEntry = {
-      id: summary.user.id,
+      id: summary.user.id || 'current-user',
       name: summary.user.name || 'Current Operator',
       completionRate: userCompletion,
       streak: summary.today?.streak ?? 0,

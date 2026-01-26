@@ -1,43 +1,221 @@
-# Tenax - AI Agent Phase 0 Setup
+---
+# Tenax – AI Agent for Measurable Productivity
 
-🤖 **Tenax** is an AI-powered productivity agent that combines intelligent scheduling, WhatsApp-based accountability, and task execution tracking.
-
-## Phase 0 - System Foundation ✅
-
-This phase establishes the core infrastructure:
-
-- Backend API (Node.js/Express)
-- Database schema (PostgreSQL)
-- WhatsApp integration (Twilio)
-- Job queue system (Redis/Bull)
-- Basic dashboard (React)
+**Tenax** is a personal productivity AI agent that turns high-level goals into daily executable actions, enforces follow-through via WhatsApp, and evaluates its own effectiveness using Opik-powered observability and behavioral metrics.
 
 ---
 
-## 🚀 Quick Setup
+## 📋 Table of Contents
+
+- Overview & Vision
+- Architecture & Core Features
+- Development Phases
+- Opik Integration & Evaluation
+- Success Metrics
+- Setup & Deployment
+- API Endpoints
+- Database Schema
+- Testing & Optimization
+- Troubleshooting
+- Project Structure
+
+---
+
+## 🚀 Overview
+
+Tenax is designed to solve real-world productivity problems by focusing on **measurable behavior change**. Unlike passive planners, Tenax is a persistent agent that:
+- Maintains user goals, schedules, and habits
+- Generates daily execution plans
+- Sends reminders/accountability messages via WhatsApp
+- Accepts completions via natural language
+- Evaluates interventions using Opik traces and metrics
+
+**Core Belief:**  
+> Productivity systems should be evaluated by behavior change, not just response quality.
+
+---
+
+## 🏗️ Architecture & Core Features
+
+- **Backend:** Node.js/Express API, PostgreSQL, Redis/Bull job queue
+- **Frontend:** React dashboard (shadcn/ui, Tailwind CSS)
+- **WhatsApp Integration:** Twilio webhook for reminders and completions
+- **Agent Pipeline:** Unified message ingestion for WhatsApp and web chat
+- **Opik Observability:** Traces every agent action, logs behavioral outcomes, supports experiments
+
+---
+
+## 📈 Development Phases
+
+### Phase 0 – System Foundation
+- Backend API, database schema, job queue, WhatsApp webhook, dashboard shell
+
+### Phase 1 – Core Execution Loop + Opik Foundation
+- Onboarding, manual/recurring tasks, agent with morning/reminder/EOD summaries, WhatsApp intent parsing, Opik tracing
+
+### Phase 2 – Advanced Opik Evaluation & LLM-as-Judge
+- Real-time scoring, human feedback loop, regression testing, advanced metrics
+
+### Phase 3 – Agent Intelligence & Rule Engine
+- Daily rule enforcement, task classification, adaptive tone, weekly summaries
+
+### Phase 4 – Schedule Intelligence
+- Timetable upload, OCR, calendar sync, conflict detection, smart reminders
+
+### Phase 5 – Opik Optimizer & Self-Improving Agent
+- HRPO/GEPA optimization, A/B testing, automated prompt improvement
+
+### Phase 6 – Enhanced NLU & Conversation
+- Advanced intent parsing, multi-turn context, fuzzy matching, recurrence recognition
+
+### Phase 7 – Analytics & Insights Dashboard
+- User/admin dashboards, Opik metrics, export functionality
+
+### Phase 8 – Polish & Hackathon Prep
+- Demo flow, error handling, mobile responsiveness, documentation
+
+### Phase 9 – Hackathon Ready
+- Production deployment, demo materials, Opik workspace, backup plans
+
+---
+
+## 🧠 Opik Integration & Evaluation
+
+- **Traces:** Every agent action (plan, reminder, completion) is logged with context, inputs, outputs, and outcomes.
+- **Behavioral Metrics:** Completion rate, latency, streaks, engagement, and more.
+- **LLM-as-Judge:** Qualitative scoring for tone, specificity, realism.
+- **Experiments:** Variant tagging, A/B testing, dashboard comparison.
+- **Human Feedback:** Manual scoring, calibration, regression datasets.
+- **Optimization:** HRPO/GEPA/Few-shot Bayesian for prompt and agent improvement.
+
+---
+
+## 🎯 Success Metrics
+
+- Daily/weekly active users
+- % of planned tasks completed per day
+- WhatsApp completion rate
+- Timetable parsing accuracy
+- Engagement (messages/user/day)
+- Opik-tracked improvement after reminders
+- Agent decision accuracy
+
+---
+
+## ⚡ Quick Setup
 
 ### Prerequisites
+- Node.js 18+, PostgreSQL 14+, Redis 6+, Twilio account
 
-- Node.js 18+
-- PostgreSQL 14+
-- Redis 6+
-- Twilio account (for WhatsApp)
-
-### 1. Install Dependencies
-
-**Backend:**
-
+### Install Dependencies
 ```bash
-cd backend
-npm install
+cd backend && npm install
+cd frontend && npm install
 ```
 
-**Frontend:**
+### Database Setup
+- Create DB, run schema and migrations, configure Supabase Storage
 
-```bash
-cd frontend
-npm install
+### Environment Configuration
+- Copy `.env.example` to `.env` and fill in all required keys (DB, Redis, Twilio, Supabase, Google, Replicate, etc.)
+
+### Start Services
+- Redis: `redis-server`
+- Backend: `cd backend && npm run dev`
+- Frontend: `cd frontend && npm start`
+
+---
+
+## 🔌 API Endpoints
+
+- `/api/auth/register` – Register user
+- `/api/auth/login` – Login
+- `/api/tasks` – Task CRUD
+- `/api/whatsapp/webhook` – WhatsApp message webhook
+- `/api/schedule/upload` – Timetable upload
+
+---
+
+## 🗄️ Database Schema
+
+- `users` (UUID PK)
+- `tasks` (UUID PK, user_id FK)
+- `conversations` (UUID PK, user_id FK)
+- `messages` (UUID PK, conversation_id/user_id FK)
+- `agent_states`, `rule_enforcement_events`, `user_rule_states`, etc.
+
+---
+
+## 🧪 Testing & Optimization
+
+- Manual API/WhatsApp flow
+- End-to-end simulation: `npm run test:whatsapp`
+- Agent action tests: `node scripts/run_agent_actions.js`
+- Regression harness: `npm run test:regression`
+- Opik dashboard for trace/metric review
+
+---
+
+## 🛠️ Troubleshooting
+
+- Check DB/Redis/Twilio/Supabase connectivity
+- Ensure all tables use UUID for foreign keys
+- Update Twilio webhook to `/api/whatsapp/webhook`
+- Review logs for errors and Opik traces
+
+---
+
+## 📁 Project Structure
+
 ```
+Tenax/
+├── backend/
+│   ├── src/
+│   ├── package.json
+│   └── .env
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── database/
+│   ├── schema.sql
+│   └── migrations/
+├── docs/
+│   └── phase3-p1-rule-plan.md
+└── README.md
+```
+
+---
+
+## 🏆 Hackathon Success Criteria
+
+- End-to-end execution loop
+- WhatsApp integration
+- Intelligent agent decisions
+- Real-time dashboard updates
+- All agent actions traced in Opik
+- Behavioral metrics tracked and visualized
+- Experiments and outcome-based evaluation
+- LLM-as-judge evaluations
+- Measurable behavior change
+- Compelling demo and documentation
+
+---
+
+## 📅 Timeline Estimate
+
+- ~3-4 weeks to hackathon ready (see devPhases.md for breakdown)
+
+---
+
+## 💡 For full technical details, see:
+- `Tenax.md` (Product Requirements, Opik integration, agent architecture)
+- `devPhases.md` (Development phases, features, and timeline)
+- `docs/phase3-p1-rule-plan.md` (Rule enforcement details)
+
+---
+
+**Ready to build, measure, and win with Tenax!**
 
 ### 2. Database Setup
 
@@ -425,9 +603,16 @@ For issues or questions:
 2. Review API logs: `npm run dev` in backend
 3. Check database connections
 4. Verify Twilio webhook configuration
-   #   T e n a x 
-    
-    
-   #   T e n a x 
-    
-    
+
+---
+
+## Recent Updates
+
+- Backend: Fixed WhatsApp webhook, unified message ingestion, and agent pipeline for both WhatsApp and web chat.
+- Database: Ensure all required tables (`users`, `conversations`, `messages`, `tasks`, etc.) use UUID for foreign keys.
+- Frontend: BentoGrid dashboard UI, shadcn/ui, and Tailwind CSS integration. Fixed routing and build errors.
+- Troubleshooting: See error messages for missing tables, type mismatches, or connection issues. Update `.env` for correct Supabase, Twilio, and Redis credentials.
+- WhatsApp: Set Twilio webhook to `/api/whatsapp/webhook` for correct message routing.
+- For login button or UI fixes, see `frontend/src/pages/auth/SignupPage.tsx` and related components.
+
+---

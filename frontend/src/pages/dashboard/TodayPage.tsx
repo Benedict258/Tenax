@@ -144,7 +144,7 @@ const TodayPage = () => {
   const coverageCompletionMinutes = coverageStats?.completion?.total_minutes ?? null;
   const coverageCompletionCount = coverageStats?.completion?.task_count ?? null;
   // No fallback coverage ratio in production
-  const coverageRatio = coverageStats?.coverage_percent;
+  const coverageRatio = coverageStats?.coverage_percent ?? 0;
 
   const heroTitle = summary?.user?.name ? `${summary.user.name}, stay locked in.` : 'Craft your highest-leverage day';
 

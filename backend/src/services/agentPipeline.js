@@ -1,9 +1,3 @@
-// Simple severity inference based on keywords
-function inferSeverity(title) {
-  const lowered = title.toLowerCase();
-  if (lowered.includes('p1') || lowered.includes('priority') || lowered.includes('urgent')) return 'p1';
-  return 'p2';
-}
 const Task = require('../models/Task');
 const User = require('../models/User');
 const Conversation = require('../models/Conversation');
@@ -16,6 +10,7 @@ const ruleStateService = require('./ruleState');
 const nluService = require('./nluService');
 const conversationContext = require('./conversationContext');
 const reminderPreferences = require('./reminderPreferences');
+const resolutionBuilderService = require('./resolutionBuilderAgent');
 const { parseCoursesFromText, buildConfirmationSummary } = require('./timetableParser');
 const { DateTime } = require('luxon');
 
@@ -43,12 +38,65 @@ function levenshtein(a, b) {
     for (let i = 1; i <= a.length; i += 1) {
       if (a[i - 1] === b[j - 1]) {
         matrix[j][i] = matrix[j - 1][i - 1];
+      } else {
+        const substitution = matrix[j - 1][i - 1] + 1;
+        const insertion = matrix[j][i - 1] + 1;
+        const deletion = matrix[j - 1][i] + 1;
+        matrix[j][i] = Math.min(substitution, insertion, deletion);
       }
     }
   }
   return matrix[b.length][a.length];
 }
-// ...existing code...
+
+function similarity(a, b) {
+  if (!a || !b) return 0;
+  const normA = normalizeTitle(a);
+  const normB = normalizeTitle(b);
+  if (!normA || !normB) return 0;
+  const distance = levenshtein(normA, normB);
+  const maxLen = Math.max(normA.length, normB.length) || 1;
+  return Math.max(0, 1 - distance / maxLen);
+}
+
+function inferSeverity(taskTitle = '') {
+  return P1_KEYWORDS.some((keyword) => taskTitle.toLowerCase().includes(keyword)) ? 'p1' : 'p2';
+}
+
+function resolveTaskCandidate(tasks, slots = {}) {
+  if (!tasks?.length) {
+    return { match: null, options: [] };
+  }
+
+  if (slots.taskId) {
+    const match = tasks.find((task) => task.id === slots.taskId);
+    return { match: match || null, options: [] };
+  }
+
+  const query = slots.taskName || '';
+  if (!query) {
+    if (tasks.length === 1) {
+      return { match: tasks[0], options: [] };
+    }
+    return { match: null, options: tasks.slice(0, 5) };
+  }
+
+  const scored = tasks
+    .map((task) => ({ task, score: similarity(task.title, query) }))
+    .sort((a, b) => b.score - a.score);
+
+  const best = scored[0];
+  if (!best || best.score < 0.35) {
+    return { match: null, options: [] };
+  }
+
+  const closeMatches = scored.filter((entry) => Math.abs(entry.score - best.score) < 0.05 && entry.score >= 0.35);
+  if (closeMatches.length > 1) {
+    return { match: null, options: closeMatches.map((entry) => entry.task).slice(0, 5) };
+  }
+
+  return { match: best.task, options: [] };
+}
 
 function buildSession({ user, channel, transport, conversation }) {
   const replies = [];
@@ -500,16 +548,6 @@ async function routeIntent(session, parsed, extras) {
         intent: 'timetable_cancelled'
       });
       break;
-    case 'start_resolution_builder':
-      // Start Resolution Builder guided flow
-      const ResolutionBuilderAgent = require('./resolutionBuilderAgent');
-      if (!session.user) {
-        await session.send('User profile not found. Please sign up first.', { intent: 'resolution_builder_error' });
-        break;
-      }
-      session.user.resolutionBuilder = new ResolutionBuilderAgent(session.user);
-      await session.send('Welcome to Tenax Resolution Builder! What is your New Year resolution or big goal for 2026?', { intent: 'resolution_builder_start' });
-      break;
     default:
       await session.send(
         'I can log completions, add tasks, move things, pause reminders, or give you a plan snapshot. Try "status" or "add workout 6am".',
@@ -585,6 +623,31 @@ async function handleMessage({
   }
 
   const session = buildSession({ user: resolvedUser, channel, transport, conversation });
+  const resolutionActive = resolutionBuilderService.isActive(resolvedUser.id);
+
+  if (parsed.intent === 'start_resolution_builder') {
+    const response = resolutionBuilderService.startSession(resolvedUser);
+    await session.send(response.reply, {
+      intent: 'resolution_builder_start',
+      step: response.state?.step,
+      state: response.state
+    });
+    return { replies: session.replies, conversationId: conversation.id, intent: parsed.intent };
+  }
+
+  if (resolutionActive) {
+    const response = await resolutionBuilderService.handleMessage(resolvedUser, text);
+    if (response?.reply) {
+      await session.send(response.reply, {
+        intent: 'resolution_builder_step',
+        step: response.state?.step,
+        state: response.state,
+        created_tasks: response.created_tasks || null
+      });
+    }
+    await Conversation.touch(conversation.id);
+    return { replies: session.replies, conversationId: conversation.id, intent: 'resolution_builder_step' };
+  }
   const ruleState = await ruleStateService.getUserState(resolvedUser.id);
   const guardActive = ruleStateService.shouldBlockNonCompletion(ruleState);
   const p1Tasks = await ruleStateService.getActiveP1Tasks(resolvedUser.id);
@@ -631,60 +694,6 @@ async function getRecentMessages(userId, limit = 40) {
   const conversation = await Conversation.ensureActive(userId);
   const messages = await Message.findRecentByConversation(conversation.id, limit);
   return { conversation, messages };
-}
-
-// Resolution Builder handlers
-const ResolutionBuilderAgent = require('./resolutionBuilderAgent');
-
-async function handleResolutionBuilder(session, slots) {
-  // Start guided flow
-  if (!session.user.resolutionAgent) {
-    session.user.resolutionAgent = new ResolutionBuilderAgent(session.user);
-  }
-  const agent = session.user.resolutionAgent;
-  let reply = '';
-  switch (agent.state.step) {
-    case 1:
-      reply = agent.captureResolution(slots.resolution_goal);
-      break;
-    case 2:
-      reply = agent.clarifyOutcome(slots.target_outcome);
-      break;
-    case 3:
-      reply = agent.setTimeReality(slots.time_commitment, slots.days_free, slots.preferred_blocks);
-      break;
-    case 4:
-      reply = agent.generateRoadmap(slots.phases);
-      break;
-    case 5:
-      reply = agent.addResources(slots.resources);
-      break;
-    case 6:
-      reply = agent.previewSchedule(slots.schedule_preview);
-      break;
-    case 7:
-      reply = agent.setPermission(slots.permission);
-      break;
-    case 8:
-      reply = 'Resolution Builder complete.';
-      break;
-    default:
-      reply = 'Resolution Builder flow not started.';
-  }
-  await session.send(reply, { intent: 'resolution_builder_step', step: agent.state.step });
-}
-
-async function handleResolutionPermission(session, slots) {
-  // Explicit permission gate
-  if (slots.permission) {
-    await session.send('Adding roadmap to your daily schedule...', { intent: 'resolution_permission_granted' });
-    // Handoff to execution agent
-    if (session.user.resolutionAgent) {
-      session.user.resolutionAgent.setPermission(true);
-    }
-  } else {
-    await session.send('No changes made. You can restart anytime.', { intent: 'resolution_permission_denied' });
-  }
 }
 
 module.exports = {
