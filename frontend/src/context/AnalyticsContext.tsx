@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import { DEMO_USER_ID } from '../lib/env';
+
 import type { AdminOverview, Summary, Task, LeaderboardEntry, TrendPoint } from '../types/analytics';
 import { apiClient } from '../lib/api';
 import { useAuth } from './AuthContext';
@@ -41,16 +41,20 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
     setLoading(true);
     setError(null);
     try {
-      const targetUserId = user?.id || DEMO_USER_ID;
+      if (!user?.id) {
+        setError('User not authenticated. Please log in.');
+        setLoading(false);
+        return;
+      }
       const [userRes, adminRes] = await Promise.all([
-        apiClient.get(`/analytics/user/${targetUserId}/summary`),
+        apiClient.get(`/analytics/user/${user.id}/summary`),
         apiClient.get('/analytics/admin/overview'),
       ]);
       setSummary(userRes.data);
       setOverview(adminRes.data);
     } catch (err) {
       console.error('Analytics load failed:', err);
-      setError('Unable to load analytics right now.');
+      setError('Unable to load analytics right now. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -98,7 +102,7 @@ export const AnalyticsProvider = ({ children }: { children: React.ReactNode }) =
         ? Math.round(points.reduce((acc, day) => acc + day.completionRate, 0) / points.length)
         : 70;
     const userEntry: LeaderboardEntry = {
-      id: summary.user.id || DEMO_USER_ID,
+      id: summary.user.id,
       name: summary.user.name || 'Current Operator',
       completionRate: userCompletion,
       streak: summary.today?.streak ?? 0,

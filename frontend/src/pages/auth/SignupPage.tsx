@@ -68,12 +68,12 @@ const SignupPage = () => {
     setError(null);
 
     try {
-      await register({
+      const payload = {
         name: form.name,
         preferred_name: form.preferredName,
         email: form.email,
         phone_number: form.phone,
-        role: selectedRoles.length === 1 ? selectedRoles[0] : selectedRoles, // backend supports array or string
+        role: selectedRoles.length === 1 ? selectedRoles[0] : selectedRoles,
         reason_for_using: selectedReasons,
         primary_goal: form.primaryGoal,
         daily_start_time: form.dailyStart,
@@ -86,11 +86,17 @@ const SignupPage = () => {
         enforce_post_class_review: form.enforcePostClass,
         timetable_upload_enabled: form.timetableEnabled,
         google_calendar_connected: form.calendarConnected,
-      });
+      };
+      console.log('Register payload:', payload);
+      await register(payload);
       navigate('/dashboard/today');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Signup failed', err);
-      setError('Unable to complete signup right now. Try again shortly.');
+      if (err?.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError('Unable to complete signup right now. Try again shortly.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -105,7 +111,7 @@ const SignupPage = () => {
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-12">
         <header className="flex flex-col gap-2 text-center">
           <p className="text-xs uppercase tracking-[0.4em] text-white/60">Tenax onboarding</p>
-          <h1 className="text-4xl font-semibold">Day 1 setup</h1>
+          <h1 className="text-4xl font-semibold">Setup</h1>
           <p className="text-white/60">Only the inputs that help the agent execute correctly from day one.</p>
         </header>
         <form onSubmit={handleSubmit} className="mt-10 space-y-10">
@@ -176,7 +182,7 @@ const SignupPage = () => {
             <Toggle label="Enforce workout" checked={form.enforceWorkout} onChange={(checked) => setForm((prev) => ({ ...prev, enforceWorkout: checked }))} />
             <Toggle label="Enforce pre-class reading" checked={form.enforcePreClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePreClass: checked }))} />
             <Toggle label="Enforce post-class review" checked={form.enforcePostClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePostClass: checked }))} />
-            <Toggle label="Timetable upload ready" checked={form.timetableEnabled} onChange={(checked) => setForm((prev) => ({ ...prev, timetableEnabled: checked }))} helper="Optional. You can add this later." />
+            <Toggle label="Timetable or schedule" checked={form.timetableEnabled} onChange={(checked) => setForm((prev) => ({ ...prev, timetableEnabled: checked }))} helper="Optional. You can add this later." />
             <Toggle label="Google Calendar connected" checked={form.calendarConnected} onChange={(checked) => setForm((prev) => ({ ...prev, calendarConnected: checked }))} helper="Optional, read-only." />
           </section>
 

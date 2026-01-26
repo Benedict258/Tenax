@@ -16,7 +16,6 @@ const readFromProcess = (key: string): string | undefined => {
 export const getEnv = (key: string): string | undefined => readFromImportMeta(key) ?? readFromProcess(key);
 
 export const API_BASE = getEnv('VITE_API_URL') ?? getEnv('REACT_APP_API_URL') ?? '/api';
-export const DEMO_USER_ID = getEnv('VITE_DEMO_USER_ID') ?? getEnv('REACT_APP_DEMO_USER_ID') ?? 'demo';
 export const ADMIN_ENABLED = (
   getEnv('VITE_ENABLE_ADMIN_DASH') ?? getEnv('REACT_APP_ENABLE_ADMIN_DASH') ?? 'false'
 ).toLowerCase() === 'true';

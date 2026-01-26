@@ -58,10 +58,10 @@ const WeeklyProgressPage = () => {
 };
 
 const InsightCard = ({ label, value, hint }: { label: string; value: string; hint: string }) => (
-  <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4">
-    <p className="text-xs uppercase tracking-[0.3em] text-white/40">{label}</p>
-    <p className="mt-2 text-3xl font-semibold">{value}</p>
-    <p className="text-white/60 text-sm">{hint}</p>
+  <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 px-6 py-5">
+    <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">{label}</p>
+    <p className="mt-2 text-3xl font-semibold text-neutral-900 dark:text-white">{value}</p>
+    <p className="text-neutral-600 dark:text-neutral-300 text-sm">{hint}</p>
   </div>
 );
 

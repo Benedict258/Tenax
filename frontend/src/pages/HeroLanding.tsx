@@ -38,7 +38,7 @@ const HeroLanding = () => {
           <div className="max-w-4xl space-y-6">
             <p className="text-sm uppercase tracking-[0.4em] text-white/40">Tenax</p>
             <h1 className="text-4xl lg:text-6xl font-semibold leading-tight">Tenax Execution Companion</h1>
-            <p className="text-2xl text-white/80">{user?.preferred_name ? `${user.preferred_name}, stay locked in.` : 'Demo Learner, stay locked in.'}</p>
+            <p className="text-2xl text-white/80">{user?.preferred_name ? `${user.preferred_name}, stay locked in.` : 'Welcome, stay locked in.'}</p>
             <p className="text-xl text-white/70">
               Stay consistent. Adaptive reminders, Opik-aligned messaging, and a WhatsApp + web copilot keeping every
               commitment accountable.
@@ -53,13 +53,20 @@ const HeroLanding = () => {
             </div>
           </div>
           <div className="flex flex-col items-center gap-3">
-            <Button size="lg" className="gap-3" onClick={() => navigate('/dashboard')}>
-              <Zap className="h-5 w-5" />
-              Launch Command Deck
-            </Button>
-            {!user && (
-              <Button variant="ghost" className="border border-white/20" onClick={() => navigate('/signup')}>
-                Start Day 1 setup
+            {!user ? (
+              <>
+                <Button size="lg" className="gap-3" onClick={() => navigate('/login')}>
+                  <Zap className="h-5 w-5" />
+                  Login
+                </Button>
+                <Button variant="ghost" className="border border-white/20" onClick={() => navigate('/signup')}>
+                  Get Started
+                </Button>
+              </>
+            ) : (
+              <Button size="lg" className="gap-3" onClick={() => navigate('/dashboard')}>
+                <Zap className="h-5 w-5" />
+                Launch Command Deck
               </Button>
             )}
             <p className="text-white/60 text-sm">Your dashboard stays encrypted. This hero is simply the welcome airlock.</p>

@@ -111,7 +111,7 @@ const TodayPage = () => {
         } else {
           console.warn('Coverage fetch failed', coverageResult.reason);
           setCoverageStats(null);
-          triggerToast('Coverage metrics failed to load. Using fallback values.');
+          triggerToast('Coverage metrics failed to load.');
         }
       } catch (err) {
         console.warn('Schedule intel request failed', err);
@@ -143,13 +143,8 @@ const TodayPage = () => {
   const scheduleBlockCount = coverageStats?.schedule?.block_count ?? todaysBlocks.length;
   const coverageCompletionMinutes = coverageStats?.completion?.total_minutes ?? null;
   const coverageCompletionCount = coverageStats?.completion?.task_count ?? null;
-  const fallbackCoverageRatio = useMemo(() => {
-    if (!localScheduleMinutes) return completion.completion_rate;
-    const scheduledBlocks = Math.max(todaysBlocks.length, 1);
-    const completed = completion.completed || 0;
-    return Math.min(100, Math.round((completed / scheduledBlocks) * 100));
-  }, [localScheduleMinutes, todaysBlocks.length, completion.completed, completion.completion_rate]);
-  const coverageRatio = coverageStats?.coverage_percent ?? fallbackCoverageRatio;
+  // No fallback coverage ratio in production
+  const coverageRatio = coverageStats?.coverage_percent;
 
   const heroTitle = summary?.user?.name ? `${summary.user.name}, stay locked in.` : 'Craft your highest-leverage day';
 
@@ -336,7 +331,7 @@ const TodayPage = () => {
               Completed {coverageCompletionCount ?? completion.completed}/{completion.total} tasks ·{' '}
               {coverageCompletionMinutes !== null
                 ? `${formatHours(coverageCompletionMinutes)} executed`
-                : 'Using fallback task counts'}
+                : ''}
             </p>
           </div>
         </div>
@@ -394,12 +389,12 @@ const getBestDay = (trend: TrendPoint[]) => {
 };
 
 const TrendSummaryCard = ({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) => (
-  <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 flex items-center justify-between">
+  <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 px-6 py-5 flex items-center justify-between">
     <div>
-      <p className="text-xs uppercase tracking-[0.3em] text-white/50">{label}</p>
-      <p className="text-2xl font-semibold">{value}</p>
+      <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">{label}</p>
+      <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{value}</p>
     </div>
-    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white/80">{icon}</div>
+    <div className="h-10 w-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-neutral-700 dark:text-white">{icon}</div>
   </div>
 );
 

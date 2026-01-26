@@ -88,7 +88,7 @@ const WebChatPage = () => {
         <p className="text-lg font-semibold">Sign in to use the unified agent</p>
         <p className="text-white/60 text-sm mt-2">Create an account from the hero screen to unlock shared WhatsApp + web memory.</p>
         <Button className="mt-4" onClick={() => navigate('/signup')}>
-          Start Day 1 setup
+          Get Started
         </Button>
       </div>
     );
@@ -115,7 +115,7 @@ const WebChatPage = () => {
                       ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&q=80&crop=faces&fit=crop'
                       : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&q=80&crop=faces&fit=crop'
                   }
-                  fallback={message.role === 'user' ? 'US' : 'AI'}
+                  fallback={message.role === 'user' ? 'US' : ''}
                 />
                 <ChatBubbleMessage variant={message.role === 'user' ? 'sent' : 'received'}>
                   {message.text}
@@ -127,7 +127,7 @@ const WebChatPage = () => {
                 <ChatBubbleAvatar
                   className="h-10 w-10"
                   src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&q=80&crop=faces&fit=crop"
-                  fallback="AI"
+                  fallback=""
                 />
                 <ChatBubbleMessage variant="received">Tenax is typing…</ChatBubbleMessage>
               </ChatBubble>
@@ -157,7 +157,7 @@ const WebChatPage = () => {
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Active operator</p>
-          <p className="text-lg font-semibold">{summary?.user?.name || 'Demo Learner'}</p>
+          <p className="text-lg font-semibold">{summary?.user?.name || ''}</p>
           <p className="text-white/60 text-sm">Goal: {summary?.user?.goal || 'Stay consistent'}</p>
         </div>
         <div className="space-y-3 text-sm text-white/80">

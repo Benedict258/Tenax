@@ -38,7 +38,7 @@ const LeaderboardPage = () => {
         ))}
       </div>
       <p className="text-white/50 text-xs mt-4">
-        Rankings update nightly. Once auth is wired, your spot will reflect real-time evaluator scores instead of demo data.
+        Rankings update nightly. Once auth is wired, your spot will reflect real-time evaluator scores only.
       </p>
     </section>
   );
