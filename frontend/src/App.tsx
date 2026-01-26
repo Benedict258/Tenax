@@ -11,6 +11,8 @@ import BehaviorPage from './pages/admin/BehaviorPage';
 import OpikPulsePage from './pages/admin/OpikPulsePage';
 import SignalsPage from './pages/admin/SignalsPage';
 import AddTaskPage from './pages/dashboard/AddTaskPage';
+import ScheduleEditorPage from './pages/dashboard/ScheduleEditorPage';
+import ResolutionBuilderPage from './pages/dashboard/ResolutionBuilderPage';
 import SignupPage from './pages/auth/SignupPage';
 import { AnalyticsProvider } from './context/AnalyticsContext';
 import { ADMIN_ENABLED } from './lib/env';
@@ -30,9 +32,11 @@ function App() {
               <Route path="today" element={<TodayPage />} />
               <Route path="chat" element={<WebChatPage />} />
               <Route path="add-task" element={<AddTaskPage />} />
+              <Route path="schedule" element={<ScheduleEditorPage />} />
               <Route path="execution" element={<ExecutionBoardPage />} />
               <Route path="weekly" element={<WeeklyProgressPage />} />
               <Route path="leaderboard" element={<LeaderboardPage />} />
+              <Route path="resolution-builder" element={<ResolutionBuilderPage />} />
               {ADMIN_ENABLED ? (
                 <>
                   <Route path="behavior" element={<BehaviorPage />} />

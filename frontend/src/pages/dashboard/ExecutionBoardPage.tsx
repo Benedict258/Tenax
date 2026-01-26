@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
-import { format } from 'date-fns';
 import { useTasks } from '../../context/TasksContext';
+
+const formatTaskTime = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '--';
+  }
+
+  const hours = date.getHours();
+  const twelveHour = hours % 12 || 12;
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const period = hours >= 12 ? 'PM' : 'AM';
+
+  return `${twelveHour}:${minutes}${period}`;
+};
 
 const ExecutionBoardPage = () => {
   const { tasks, createTask, loading, refresh } = useTasks();
@@ -50,7 +63,7 @@ const ExecutionBoardPage = () => {
                 <p className="text-xs text-white/50">{task.category || 'General'}</p>
               </div>
               <div className="text-right text-sm text-white/70 space-y-1">
-                <p>{task.start_time ? format(new Date(task.start_time), 'h:mmaaa') : '—'}</p>
+                <p>{task.start_time ? formatTaskTime(task.start_time) : '—'}</p>
                 {task.severity && (
                   <span className="inline-flex rounded-full border border-white/20 px-3 py-0.5 text-xs uppercase">
                     {task.severity}

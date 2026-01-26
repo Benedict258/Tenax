@@ -56,4 +56,70 @@ router.get('/availability/:userId', async (req, res) => {
   }
 });
 
+router.get('/extractions/:userId', async (req, res) => {
+  try {
+    const rows = await scheduleService.listExtractionRows(req.params.userId);
+    return res.json({ rows });
+  } catch (error) {
+    console.error('[Schedule] list extractions error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ message: 'Failed to load timetable rows', error: error.message });
+  }
+});
+
+router.post('/extractions/:userId', async (req, res) => {
+  try {
+    const row = await scheduleService.createManualExtractionRow(req.params.userId, req.body || {});
+    return res.status(201).json({ row });
+  } catch (error) {
+    console.error('[Schedule] create extraction error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ message: 'Failed to create timetable row', error: error.message });
+  }
+});
+
+router.patch('/extractions/row/:rowId', async (req, res) => {
+  try {
+    const row = await scheduleService.updateExtractionRow(req.params.rowId, req.body || {});
+    return res.json({ row });
+  } catch (error) {
+    console.error('[Schedule] update extraction error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ message: 'Failed to update timetable row', error: error.message });
+  }
+});
+
+router.delete('/extractions/row/:rowId', async (req, res) => {
+  try {
+    await scheduleService.deleteExtractionRow(req.params.rowId);
+    return res.status(204).send();
+  } catch (error) {
+    console.error('[Schedule] delete extraction error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ message: 'Failed to delete timetable row', error: error.message });
+  }
+});
+
+router.get('/uploads/:userId/latest', async (req, res) => {
+  try {
+    const upload = await scheduleService.getLatestUploadForUser(req.params.userId);
+    return res.json({ upload });
+  } catch (error) {
+    console.error('[Schedule] latest upload error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ message: 'Failed to fetch latest upload', error: error.message });
+  }
+});
+
+router.get('/coverage/:userId', async (req, res) => {
+  try {
+    const coverage = await scheduleService.getScheduleCoverage(req.params.userId, req.query.date);
+    return res.json({ coverage });
+  } catch (error) {
+    console.error('[Schedule] coverage error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ message: 'Failed to compute coverage', error: error.message });
+  }
+});
+
 module.exports = router;

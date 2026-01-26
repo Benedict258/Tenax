@@ -319,9 +319,18 @@ function resolvePendingAction(rawText, pendingAction) {
   return null;
 }
 
+function parseResolutionBuilderIntent(text) {
+  const normalized = normalize(text);
+  if (/resolution builder|new year resolution|plan my goal|create resolution plan|start resolution builder|plan my 2026 goal/i.test(normalized)) {
+    return buildIntentResponse('start_resolution_builder', 0.99, {});
+  }
+  return null;
+}
+
 module.exports = {
   parseMessage,
   resolvePendingAction,
   detectRecurrence,
-  extractTimeData
+  extractTimeData,
+  parseResolutionBuilderIntent
 };

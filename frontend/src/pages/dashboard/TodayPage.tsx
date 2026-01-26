@@ -1,9 +1,37 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HeroGeometric } from '../../components/ui/shape-landing-hero';
 import { useAnalytics } from '../../context/AnalyticsContext';
 import { Activity, Bell, Flame, Target, TrendingUp, Zap } from 'lucide-react';
 import type { TrendPoint } from '../../types/analytics';
 import { useTasks } from '../../context/TasksContext';
+import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../lib/api';
+
+interface TimetableRow {
+  id: string | number;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  title: string;
+  location?: string;
+  category?: string;
+}
+
+interface CoverageSnapshot {
+  date: string;
+  day_of_week: number;
+  schedule: {
+    total_minutes: number;
+    block_count: number;
+  };
+  completion: {
+    total_minutes: number;
+    task_count: number;
+  };
+  coverage_percent: number;
+  pending_minutes: number;
+  generated_at: string;
+}
 
 const heroChips = [
   { label: 'Reminder routing', value: 'Adaptive cadence' },
@@ -14,6 +42,7 @@ const heroChips = [
 const TodayPage = () => {
   const { summary, weeklyTrend } = useAnalytics();
   const { tasks } = useTasks();
+  const { user } = useAuth();
   const today = summary?.today ?? {};
   const completion = today.completion ?? { completion_rate: 0, completed: 0, total: 0 };
   const reminderStats = today.reminderStats ?? { sent: 0, completed: 0, avgLatency: 0 };
@@ -23,11 +52,131 @@ const TodayPage = () => {
     ? tasks.filter((task) => task.severity?.toLowerCase() === 'p1')
     : summary?.tasks?.pinned ?? [];
   const categoryEntries = Object.entries(summary?.categoryBreakdown ?? {});
+  const [scheduleRows, setScheduleRows] = useState<TimetableRow[]>([]);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [coverageStats, setCoverageStats] = useState<CoverageSnapshot | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerToast = useCallback((message: string) => {
+    if (!message) return;
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    setToastMessage(message);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastTimeoutRef.current = null;
+    }, 5000);
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadScheduleIntel = async () => {
+      if (!user?.id) {
+        setScheduleRows([]);
+        setCoverageStats(null);
+        setScheduleError(null);
+        return;
+      }
+
+      try {
+        const todayIso = new Date().toISOString();
+        const [rowsResult, coverageResult] = await Promise.allSettled([
+          apiClient.get(`/schedule/extractions/${user.id}`),
+          apiClient.get(`/schedule/coverage/${user.id}`, { params: { date: todayIso } })
+        ]);
+
+        if (!active) return;
+
+        if (rowsResult.status === 'fulfilled') {
+          setScheduleRows(rowsResult.value.data?.rows || []);
+          setScheduleError(null);
+        } else {
+          console.warn('Schedule fetch failed', rowsResult.reason);
+          setScheduleRows([]);
+          setScheduleError('Schedule intel unavailable right now.');
+          triggerToast('Schedule intel unavailable right now. Try again shortly.');
+        }
+
+        if (coverageResult.status === 'fulfilled') {
+          setCoverageStats(coverageResult.value.data?.coverage || null);
+        } else {
+          console.warn('Coverage fetch failed', coverageResult.reason);
+          setCoverageStats(null);
+          triggerToast('Coverage metrics failed to load. Using fallback values.');
+        }
+      } catch (err) {
+        console.warn('Schedule intel request failed', err);
+        if (!active) return;
+        setScheduleRows([]);
+        setCoverageStats(null);
+        setScheduleError('Schedule intel unavailable right now.');
+        triggerToast('Schedule intel unavailable right now. Try again shortly.');
+      }
+    };
+
+    loadScheduleIntel();
+    return () => {
+      active = false;
+    };
+  }, [user?.id, triggerToast]);
+
+  const todayDay = new Date().getDay();
+  const todaysBlocks = useMemo(
+    () =>
+      scheduleRows
+        .filter((row) => row.day_of_week === todayDay)
+        .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || '')),
+    [scheduleRows, todayDay]
+  );
+
+  const localScheduleMinutes = useMemo(() => calcMinutes(todaysBlocks), [todaysBlocks]);
+  const scheduleMinutesToShow = coverageStats?.schedule?.total_minutes ?? localScheduleMinutes;
+  const scheduleBlockCount = coverageStats?.schedule?.block_count ?? todaysBlocks.length;
+  const coverageCompletionMinutes = coverageStats?.completion?.total_minutes ?? null;
+  const coverageCompletionCount = coverageStats?.completion?.task_count ?? null;
+  const fallbackCoverageRatio = useMemo(() => {
+    if (!localScheduleMinutes) return completion.completion_rate;
+    const scheduledBlocks = Math.max(todaysBlocks.length, 1);
+    const completed = completion.completed || 0;
+    return Math.min(100, Math.round((completed / scheduledBlocks) * 100));
+  }, [localScheduleMinutes, todaysBlocks.length, completion.completed, completion.completion_rate]);
+  const coverageRatio = coverageStats?.coverage_percent ?? fallbackCoverageRatio;
 
   const heroTitle = summary?.user?.name ? `${summary.user.name}, stay locked in.` : 'Craft your highest-leverage day';
 
   return (
-    <div className="space-y-8">
+    <>
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm">
+          <div className="rounded-2xl border border-white/20 bg-black/80 px-4 py-3 text-sm text-white shadow-2xl shadow-brand-500/30">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Schedule intel</p>
+            <p className="mt-1 text-sm text-white/90">{toastMessage}</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (toastTimeoutRef.current) {
+                  clearTimeout(toastTimeoutRef.current);
+                  toastTimeoutRef.current = null;
+                }
+                setToastMessage(null);
+              }}
+              className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-300"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="space-y-8">
       <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
         <HeroGeometric
           badge="Tenax Execution Companion"
@@ -161,7 +310,53 @@ const TodayPage = () => {
           ))}
         </div>
       </section>
-    </div>
+
+      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-semibold">Schedule Coverage</h3>
+          <Bell className="h-5 w-5 text-white/60" />
+        </div>
+        {scheduleError && <p className="mt-2 text-sm text-amber-300">{scheduleError}</p>}
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Scheduled hours today</p>
+            <p className="text-3xl font-semibold">{formatHours(scheduleMinutesToShow)}</p>
+            <p className="text-white/60 text-sm">{scheduleBlockCount} blocks parsed from timetable</p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Execution vs timetable</p>
+            <p className="text-3xl font-semibold">{coverageRatio}%</p>
+            <div className="mt-3 h-2 rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-brand-500 to-cyan-400"
+                style={{ width: `${Math.min(coverageRatio, 100)}%` }}
+              />
+            </div>
+            <p className="text-white/60 text-sm mt-2">
+              Completed {coverageCompletionCount ?? completion.completed}/{completion.total} tasks ·{' '}
+              {coverageCompletionMinutes !== null
+                ? `${formatHours(coverageCompletionMinutes)} executed`
+                : 'Using fallback task counts'}
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 space-y-3">
+          {todaysBlocks.length === 0 && <p className="text-white/60">No timetable intel captured for today.</p>}
+          {todaysBlocks.slice(0, 4).map((block) => (
+            <div key={block.id} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="font-semibold">{block.title}</p>
+                <p className="text-xs text-white/50">{block.location || '—'} · {block.category || 'class'}</p>
+              </div>
+              <p className="text-sm text-white/70">
+                {block.start_time?.slice(0, 5)} - {block.end_time?.slice(0, 5)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+      </div>
+    </>
   );
 };
 
@@ -207,5 +402,23 @@ const TrendSummaryCard = ({ label, value, icon }: { label: string; value: string
     <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white/80">{icon}</div>
   </div>
 );
+
+const calcMinutes = (blocks: TimetableRow[]) =>
+  blocks.reduce((total, block) => {
+    if (!block.start_time || !block.end_time) return total;
+    const start = parseInt(block.start_time.slice(0, 2), 10) * 60 + parseInt(block.start_time.slice(3, 5), 10);
+    const end = parseInt(block.end_time.slice(0, 2), 10) * 60 + parseInt(block.end_time.slice(3, 5), 10);
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return total;
+    return total + (end - start);
+  }, 0);
+
+const formatHours = (minutes: number) => {
+  if (!minutes) return '0h';
+  const hours = minutes / 60;
+  if (hours < 1) {
+    return `${Math.round(minutes)}m`;
+  }
+  return `${hours.toFixed(1)}h`;
+};
 
 export default TodayPage;
