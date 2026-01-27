@@ -1,6 +1,7 @@
 const Task = require('../models/Task');
 const ruleStateService = require('./ruleState');
 const { DateTime } = require('luxon');
+const llmService = require('./llm');
 
 const sessions = new Map();
 
@@ -190,6 +191,82 @@ function buildRoadmap(goal, outcome) {
   return { title, phases };
 }
 
+function extractJsonBlock(text = '') {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  const candidate = text.slice(start, end + 1);
+  try {
+    return JSON.parse(candidate);
+  } catch (error) {
+    return null;
+  }
+}
+
+function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome) {
+  if (!raw || typeof raw !== 'object') {
+    return buildRoadmap(fallbackGoal, fallbackOutcome);
+  }
+
+  const title =
+    typeof raw.title === 'string' && raw.title.trim()
+      ? raw.title.trim()
+      : fallbackOutcome
+      ? `${fallbackGoal} -> ${fallbackOutcome}`
+      : `${fallbackGoal} Roadmap`;
+
+  const phasesRaw = Array.isArray(raw.phases) ? raw.phases : [];
+  const phases = phasesRaw
+    .map((phase) => ({
+      name: typeof phase?.name === 'string' ? phase.name.trim() : '',
+      description: typeof phase?.description === 'string' ? phase.description.trim() : '',
+      duration_weeks: Number.isFinite(Number(phase?.duration_weeks)) ? Number(phase.duration_weeks) : null
+    }))
+    .filter((phase) => phase.name && phase.description)
+    .map((phase) => ({
+      ...phase,
+      duration_weeks: Math.min(8, Math.max(1, Math.round(phase.duration_weeks || 2)))
+    }))
+    .slice(0, 8);
+
+  if (!phases.length) {
+    return buildRoadmap(fallbackGoal, fallbackOutcome);
+  }
+
+  return { title, phases };
+}
+
+async function buildRoadmapWithResearch(goal, outcome, user) {
+  const prompt = `You are Tenax Resolution Builder. Create a concise, research-backed learning roadmap for this goal.
+Goal: ${goal}
+Outcome definition: ${outcome || 'Not specified'}
+
+Requirements:
+- Produce 4 to 7 sequential phases.
+- Each phase must include: name, description, duration_weeks (1-6).
+- Keep scope realistic and execution-friendly.
+- Return JSON only with this exact shape:
+{"title":"...","phases":[{"name":"...","description":"...","duration_weeks":2}]}
+`;
+
+  try {
+    const response = await llmService.generate(prompt, {
+      maxTokens: 700,
+      temperature: 0.25,
+      opikMeta: {
+        action: 'resolution_roadmap',
+        user_id: user?.id,
+        resolution_goal: goal
+      }
+    });
+    const parsed = extractJsonBlock(response.text);
+    return sanitizeRoadmap(parsed, goal, outcome);
+  } catch (error) {
+    console.warn('[ResolutionBuilder] LLM roadmap generation failed:', error.message);
+    return buildRoadmap(goal, outcome);
+  }
+}
+
 function buildResources(goal) {
   const normalized = normalize(goal);
   if (normalized.includes('javascript') || normalized.includes('js')) {
@@ -239,20 +316,35 @@ function buildSchedulePreview(state) {
   const sessionsPerWeek = resolveSessionsPerWeek(state.time_commitment_hours, days.length);
   const selectedDays = days.slice(0, sessionsPerWeek);
   const focusTemplates = ['Learn new concept', 'Guided practice', 'Applied build', 'Review + recap'];
+  const preview = [];
+  const maxEntries = Math.max(6, Math.min(12, selectedDays.length * 3));
+  let focusIndex = 0;
 
-  return selectedDays.map((day, index) => {
-    const block = blocks[index % blocks.length];
-    const focus = focusTemplates[index % focusTemplates.length];
-    return {
-      day_of_week: day.dayOfWeek,
-      day_label: day.label,
-      time: block.time,
-      time_label: block.label,
-      phase_index: 0,
-      phase_name: roadmap[0].name,
-      focus
-    };
+  roadmap.forEach((phase, phaseIndex) => {
+    const phaseWeeks = phase.duration_weeks || 2;
+    for (let week = 0; week < phaseWeeks; week += 1) {
+      selectedDays.forEach((day, dayIndex) => {
+        if (preview.length >= maxEntries) return;
+        const block = blocks[(dayIndex + week) % blocks.length];
+        const focus = focusTemplates[focusIndex % focusTemplates.length];
+        preview.push({
+          day_of_week: day.dayOfWeek,
+          day_label: day.label,
+          time: block.time,
+          time_label: block.label,
+          phase_index: phaseIndex,
+          phase_name: phase.name,
+          focus
+        });
+        focusIndex += 1;
+      });
+      if (preview.length >= maxEntries) {
+        return;
+      }
+    }
   });
+
+  return preview;
 }
 
 function getNextOccurrenceISO(dayOfWeek, time, timezone = 'UTC', weekOffset = 0) {
@@ -350,7 +442,7 @@ class ResolutionBuilderSession {
     };
   }
 
-  captureTimeReality(input) {
+  async captureTimeReality(input) {
     if (this.state.time_step === 'hours') {
       const hours = parseHoursPerWeek(input);
       if (!hours) {
@@ -378,7 +470,11 @@ class ResolutionBuilderSession {
     this.state.preferred_blocks = blocks;
     this.state.step = 4;
 
-    const roadmapResult = buildRoadmap(this.state.resolution_goal, this.state.target_outcome);
+    const roadmapResult = await buildRoadmapWithResearch(
+      this.state.resolution_goal,
+      this.state.target_outcome,
+      this.user
+    );
     this.state.roadmap_title = roadmapResult.title;
     this.state.roadmap = roadmapResult.phases;
     this.state.step = 5;
@@ -539,7 +635,7 @@ class ResolutionBuilderSession {
       return this.captureOutcome(trimmed);
     }
     if (this.state.step === 3) {
-      return this.captureTimeReality(trimmed);
+      return await this.captureTimeReality(trimmed);
     }
     if (this.state.step === 5) {
       return this.handleResources(trimmed);

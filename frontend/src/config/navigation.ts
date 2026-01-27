@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
   Bot,
-  ClipboardList,
   Calendar,
   LineChart,
   MessageSquare,
@@ -24,7 +23,6 @@ export const dashboardNavItems: DashboardNavItem[] = [
   { label: 'Add Task', path: '/dashboard/add-task', icon: PlusSquare },
   { label: 'Schedule Intel', path: '/dashboard/schedule', icon: Calendar },
   { label: 'Web Chat', path: '/dashboard/chat', icon: MessageSquare },
-  { label: 'Execution Board', path: '/dashboard/execution', icon: ClipboardList },
   { label: 'Weekly Progress', path: '/dashboard/weekly', icon: Target },
   { label: 'Leaderboard', path: '/dashboard/leaderboard', icon: LineChart },
   { label: 'Resolution Builder', path: '/dashboard/resolution-builder', icon: Sparkles },

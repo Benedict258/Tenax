@@ -79,7 +79,7 @@ def log_task_completion(user_id, task_id, task_title, completed_via, reminder_wa
     }
 
 @track(name="intent_parsed", project_name="Tenax")
-def log_intent_parsing(user_id, message, intent, confidence, slots):
+def log_intent_parsing(user_id, message, intent, confidence, slots, channel=None):
     """Log WhatsApp intent parsing for accuracy tracking"""
     return {
         "user_id": user_id,
@@ -87,6 +87,7 @@ def log_intent_parsing(user_id, message, intent, confidence, slots):
         "intent": intent,
         "confidence": confidence,
         "slots": slots,
+        "channel": channel,
         "agent_version": AGENT_VERSION,
         "parsed_at": datetime.now().isoformat()
     }

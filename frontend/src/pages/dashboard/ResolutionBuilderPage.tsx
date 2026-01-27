@@ -197,6 +197,11 @@ const ResolutionBuilderPage = () => {
     ];
   }, [builderState, currentStep, roadmapPhases.length, schedulePreview.length]);
 
+  const normalizedStep = Math.min(Math.max(currentStep || 1, 1), 8);
+  const activeStepIndex = normalizedStep - 1;
+  const activeStepLabel = stepLabels[activeStepIndex];
+  const activeStepStatus = stepStatuses[activeStepIndex] || 'pending';
+
   const quickSuggestions = useMemo(() => {
     if (!builderState) {
       return ['Master JavaScript', 'Become consistent with fitness', 'Learn AI engineering', 'Build my portfolio'];
@@ -244,6 +249,11 @@ const ResolutionBuilderPage = () => {
       }
     } catch (err) {
       console.error('Resolution builder message failed', err);
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        setError('Session expired. Please sign in again to continue.');
+        return;
+      }
       setError('Unable to reach the Resolution Builder.');
     } finally {
       setBusy(false);
@@ -329,41 +339,33 @@ const ResolutionBuilderPage = () => {
               <h2 className="mt-2 text-xl font-semibold">Resolution Builder stages</h2>
             </div>
             <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs uppercase text-white/70">
-              Step {currentStep || 1} / 8
+              Step {normalizedStep} / 8
             </span>
           </header>
 
-          <div className="grid gap-3">
-            {stepLabels.map((label, index) => {
-              const status = stepStatuses[index];
-              return (
-                <div
-                  key={label}
-                  className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
-                    status === 'done'
-                      ? 'border-emerald-400/30 bg-emerald-500/10'
-                      : status === 'active'
-                      ? 'border-brand-500/40 bg-brand-500/10'
-                      : 'border-white/10 bg-white/5'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {status === 'done' ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                    ) : status === 'active' ? (
-                      <Clock className="h-4 w-4 text-brand-200" />
-                    ) : (
-                      <div className="h-2 w-2 rounded-full bg-white/30" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium">{label}</p>
-                      <p className="text-xs text-white/50">Step {index + 1}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs uppercase text-white/40">{status}</span>
-                </div>
-              );
-            })}
+          <div
+            className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
+              activeStepStatus === 'done'
+                ? 'border-emerald-400/30 bg-emerald-500/10'
+                : activeStepStatus === 'active'
+                ? 'border-brand-500/40 bg-brand-500/10'
+                : 'border-white/10 bg-white/5'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {activeStepStatus === 'done' ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+              ) : activeStepStatus === 'active' ? (
+                <Clock className="h-4 w-4 text-brand-200" />
+              ) : (
+                <div className="h-2 w-2 rounded-full bg-white/30" />
+              )}
+              <div>
+                <p className="text-sm font-medium">{activeStepLabel}</p>
+                <p className="text-xs text-white/50">Step {normalizedStep}</p>
+              </div>
+            </div>
+            <span className="text-xs uppercase text-white/40">{activeStepStatus}</span>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">

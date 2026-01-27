@@ -22,7 +22,7 @@ interface TasksContextValue {
 const TasksContext = createContext<TasksContextValue | undefined>(undefined);
 
 const TasksProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user, token, loading: authLoading } = useAuth();
+  const { user, token, loading: authLoading, logout } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,12 +38,19 @@ const TasksProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await apiClient.get('/tasks/today');
       setTasks(response.data || []);
     } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        setTasks([]);
+        setError('Session expired. Please sign in again.');
+        logout();
+        return;
+      }
       console.error('Failed to fetch tasks', err);
       setError('Unable to load tasks');
     } finally {
       setLoading(false);
     }
-  }, [user, token]);
+  }, [logout, token, user]);
 
   useEffect(() => {
     if (!authLoading) {

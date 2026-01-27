@@ -23,7 +23,8 @@ const GUARD_ALLOWED_INTENTS = new Set([
   'daily_start',
   'daily_end',
   'reminder_snooze',
-  'reminder_pause'
+  'reminder_pause',
+  'greeting'
 ]);
 
 const P1_KEYWORDS = ['p1', 'deep work', 'priority 1', 'critical focus'];
@@ -139,7 +140,14 @@ async function requestTaskClarification(session, intent, tasks, prompt, slots = 
     slots
   });
 
-  const taskList = options.map((option) => `${option.index}. ${option.title}`).join('\n');
+  const taskMap = new Map(tasks.map((task) => [task.id, task]));
+  const taskList = options.map((option) => {
+    const task = taskMap.get(option.id);
+    const timeLabel = task?.start_time
+      ? new Date(task.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : null;
+    return `${option.index}. ${option.title}${timeLabel ? ` (${timeLabel})` : ''}`;
+  }).join('\n');
   await session.send(
     `${prompt}\n\n${taskList}\n\nReply with the number or the task name.`,
     { intent: 'clarify_task', options: options.map((option) => option.id) }
@@ -411,14 +419,35 @@ async function handleReminderPause(session) {
 async function handleHelp(session) {
   const helpText = [
     'Tenax quick actions:',
-    '• "done deep work"',
-    '• "add workout 6am daily"',
-    '• "move AI paper to 9pm"',
-    '• "status" or "what’s my plan"',
-    '• "snooze 30" or "stop reminders"'
+    '- "done deep work"',
+    '- "add workout 6am daily"',
+    '- "move AI paper to 9pm"',
+    '- "status" or "what\'s my plan"',
+    '- "snooze 30" or "stop reminders"',
+    '- "start resolution builder" for long-term goals'
   ].join('\n');
   await session.send(helpText, { intent: 'help' });
 }
+
+async function handleGreeting(session) {
+  const name = session.user?.preferred_name || session.user?.name || 'there';
+  await session.send(
+    `Hey ${name}! Want a status update, to add a task, or to start the Resolution Builder?`,
+    { intent: 'greeting' }
+  );
+}
+
+async function handleScheduleNote(session, slots) {
+  const timeLabel = slots?.targetTime
+    ? new Date(slots.targetTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+  const timeText = timeLabel ? ` at ${timeLabel}` : '';
+  await session.send(
+    `Got it${timeText}. Want me to block that on your schedule? You can say "add class${timeText} weekly" or upload a timetable.`,
+    { intent: 'schedule_note' }
+  );
+}
+
 
 function getNextOccurrenceISO(dayOfWeek, time, timezone = 'UTC') {
   const now = DateTime.now().setZone(timezone);
@@ -537,6 +566,12 @@ async function routeIntent(session, parsed, extras) {
     case 'help':
       await handleHelp(session);
       break;
+    case 'greeting':
+      await handleGreeting(session);
+      break;
+    case 'schedule_note':
+      await handleScheduleNote(session, parsed.slots);
+      break;
     case 'upload_timetable':
       await handleTimetableUpload(session, extras.rawText || '');
       break;
@@ -550,7 +585,7 @@ async function routeIntent(session, parsed, extras) {
       break;
     default:
       await session.send(
-        'I can log completions, add tasks, move things, pause reminders, or give you a plan snapshot. Try "status" or "add workout 6am".',
+        'Got it. I can log completions, add or move tasks, show your plan, or start the Resolution Builder. If you are sharing schedule info, try "add class 11am weekly" or upload a timetable.',
         { intent: 'unknown' }
       );
   }
@@ -619,6 +654,13 @@ async function handleMessage({
     parsed = nluService.parseResolutionBuilderIntent(text);
     if (!parsed) {
       parsed = nluService.parseMessage(text, { allowPlanFallback: true });
+    }
+  }
+
+  if (parsed?.intent === 'unknown') {
+    const completionFallback = await nluService.inferCompletionWithLLM(text, resolvedUser.id);
+    if (completionFallback) {
+      parsed = completionFallback;
     }
   }
 

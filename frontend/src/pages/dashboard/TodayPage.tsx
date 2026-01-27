@@ -237,7 +237,7 @@ const TodayPage = () => {
             <span className="text-white/60">{tasksToday.length} tasks</span>
           </div>
           <div className="mt-4 flex flex-col gap-4">
-            {tasksToday.length === 0 && <p className="text-white/60">Nothing scheduled. Add via WhatsApp or the Execution Board section.</p>}
+            {tasksToday.length === 0 && <p className="text-white/60">Nothing scheduled. Add via WhatsApp or the Add Task page.</p>}
             {tasksToday.map((task) => (
               <div key={task.id} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 flex items-center justify-between">
                 <div>
@@ -287,22 +287,6 @@ const TodayPage = () => {
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <TrendSummaryCard label="Average completion" value={`${getAverageCompletion(weeklyTrend)}%`} icon={<Activity className="h-4 w-4" />} />
           <TrendSummaryCard label="Best streak day" value={getBestDay(weeklyTrend)} icon={<Zap className="h-4 w-4" />} />
-        </div>
-        <div className="mt-6 space-y-3">
-          {weeklyTrend.map((day) => (
-            <div key={day.date} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="font-semibold">{day.date}</p>
-                <p className="text-xs text-white/50">{day.completed}/{day.total} tasks</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">{day.completionRate}%</span>
-                <div className="h-2 w-32 rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-cyan-400" style={{ width: `${Math.min(day.completionRate, 100)}%` }} />
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -389,12 +373,12 @@ const getBestDay = (trend: TrendPoint[]) => {
 };
 
 const TrendSummaryCard = ({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) => (
-  <div className="rounded-md border border-neutral-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 px-6 py-5 flex items-center justify-between">
+  <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4 flex items-center justify-between">
     <div>
-      <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">{label}</p>
-      <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{value}</p>
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">{label}</p>
+      <p className="text-2xl font-semibold text-white">{value}</p>
     </div>
-    <div className="h-10 w-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center text-neutral-700 dark:text-white">{icon}</div>
+    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white/70">{icon}</div>
   </div>
 );
 

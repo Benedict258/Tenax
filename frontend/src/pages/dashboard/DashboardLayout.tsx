@@ -12,7 +12,7 @@ import { RefreshCw } from 'lucide-react';
 
 const DashboardLayout = () => {
   const { summary, loading, error, refresh } = useAnalytics();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -21,11 +21,24 @@ const DashboardLayout = () => {
     [],
   );
 
+  if (authLoading) {
+    return (
+      <FullScreenState>
+        <Loader />
+        <p className="text-white/70">Checking session...</p>
+      </FullScreenState>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   if (loading) {
     return (
       <FullScreenState>
         <Loader />
-        <p className="text-white/70">Syncing telemetry…</p>
+        <p className="text-white/70">Syncing telemetry...</p>
       </FullScreenState>
     );
   }
@@ -54,7 +67,7 @@ const DashboardLayout = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-brand-500/30 via-transparent to-cyan-400/20 blur-[160px]" />
         <div className="absolute inset-0 bg-noise" />
       </div>
-      <div className="relative z-10 flex min-h-screen">
+      <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
         <Sidebar open={sidebarOpen} setOpen={setSidebarOpen}>
           <SidebarBody className="justify-between">
             <div className="flex flex-col gap-8">
@@ -86,7 +99,7 @@ const DashboardLayout = () => {
             </div>
           </SidebarBody>
         </Sidebar>
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <header className="flex flex-col gap-4 border-b border-white/10 bg-[#050611]/60 backdrop-blur px-6 py-6 lg:flex-row lg:items-center lg:justify-between lg:px-10">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-white/40">Command Module</p>

@@ -85,7 +85,7 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        'h-full px-4 py-6 hidden lg:flex lg:flex-col bg-neutral-900/70 backdrop-blur-xl border-r border-white/5 text-white w-[280px] flex-shrink-0',
+        'h-full px-4 py-6 hidden lg:flex lg:flex-col bg-neutral-900/70 backdrop-blur-xl border-r border-white/5 text-white w-[280px] flex-shrink-0 lg:sticky lg:top-0',
         className,
       )}
       animate={{ width: animate ? (open ? 280 : 72) : 280 }}
@@ -106,7 +106,7 @@ export const MobileSidebar = ({
   const { open, setOpen } = useSidebar();
 
   return (
-    <div className="lg:hidden" {...props}>
+    <div className={cn('lg:hidden w-full shrink-0', className)} {...props}>
       <div className="flex items-center justify-between px-4 py-4 text-white">
         <p className="text-sm uppercase tracking-[0.2em] text-white/60">Menu</p>
         <Menu className="h-6 w-6 cursor-pointer" onClick={() => setOpen(!open)} />

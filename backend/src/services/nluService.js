@@ -1,4 +1,5 @@
 const chrono = require('chrono-node');
+const llmService = require('./llm');
 
 const COMPLETION_PREFIXES = ['done', 'finished', 'completed'];
 const STATUS_TRIGGERS = [
@@ -23,11 +24,14 @@ const REMINDER_SNOOZE_TRIGGERS = ['snooze', 'remind me later'];
 const REMINDER_PAUSE_TRIGGERS = ['stop reminders', 'pause reminders', "don't remind me", 'no reminders'];
 const REMOVE_TRIGGERS = ['remove', 'delete', 'cancel'];
 const RESCHEDULE_TRIGGERS = ['move', 'shift', 'reschedule'];
+const GREETING_TRIGGERS = ['hello', 'hi', 'hey', 'yo', 'good evening', 'good afternoon'];
+const GENERIC_TASK_NAMES = new Set(['task', 'a task', 'the task', 'my task', 'it', 'this', 'that']);
 const DAILY_KEYWORDS = ['daily', 'every day', 'each day'];
 const WEEKLY_KEYWORDS = ['weekly', 'every week'];
 const WEEKDAY_KEYWORDS = ['weekdays', 'every weekday'];
 const WEEKEND_KEYWORDS = ['weekends', 'weekend'];
 const TIMETABLE_TRIGGERS = ['timetable', 'course list', 'class schedule', 'courses i am taking', 'class timetable'];
+const SCHEDULE_NOTE_TRIGGERS = ['lecture', 'class', 'meeting', 'seminar', 'workshop', 'busy', 'unavailable'];
 
 const normalize = (text) => text.toLowerCase().trim();
 
@@ -143,8 +147,12 @@ function parseReminderPause() {
 }
 
 function parseCompletion(text) {
-  const collapsed = text.replace(/^(done|finished|completed)\s*/i, '').trim();
-  if (collapsed.length === 0) {
+  const collapsed = text
+    .replace(/^(i\s*(have|just)?\s*)?(completed|finished|done)\s*/i, '')
+    .replace(/^(the\s+)?task\s*/i, '')
+    .trim();
+  const normalized = normalize(collapsed);
+  if (collapsed.length === 0 || GENERIC_TASK_NAMES.has(normalized)) {
     return buildIntentResponse('mark_complete', 0.92, { taskName: '' });
   }
   return buildIntentResponse('mark_complete', 0.95, { taskName: collapsed });
@@ -173,6 +181,19 @@ function parseDailyStart() {
 
 function parseDailyEnd() {
   return buildIntentResponse('daily_end', 0.9, {});
+}
+
+function parseGreeting(text) {
+  return buildIntentResponse('greeting', 0.86, { text });
+}
+
+function parseScheduleNote(text) {
+  const timeData = extractTimeData(text);
+  return buildIntentResponse('schedule_note', 0.7, {
+    note: text.trim(),
+    targetTime: timeData?.iso || null,
+    matchedText: timeData?.matchedText || null
+  });
 }
 
 function parseUnknown(text) {
@@ -242,6 +263,14 @@ function parseMessage(rawText, options = {}) {
     return buildIntentResponse('help', 0.8, {});
   }
 
+  if (GREETING_TRIGGERS.some((phrase) => normalized.startsWith(phrase))) {
+    return parseGreeting(text);
+  }
+
+  if (SCHEDULE_NOTE_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+    return parseScheduleNote(text);
+  }
+
   if (options.allowPlanFallback && normalized.includes('plan')) {
     return parsePlanIntent();
   }
@@ -256,7 +285,10 @@ function resolvePendingAction(rawText, pendingAction) {
   const normalized = normalize(rawText);
 
   if (pendingAction.type === 'task_disambiguation') {
-    const numeric = Number(normalized);
+    const numericMatch = normalized.match(/(\d+)/);
+    const wordMap = { one: 1, two: 2, three: 3, four: 4, five: 5 };
+    const mappedWord = Object.keys(wordMap).find((word) => normalized.includes(word));
+    const numeric = numericMatch ? Number(numericMatch[1]) : mappedWord ? wordMap[mappedWord] : Number(normalized);
     if (!Number.isNaN(numeric)) {
       const selected = pendingAction.options.find((option) => option.index === numeric);
       if (selected) {
@@ -327,10 +359,49 @@ function parseResolutionBuilderIntent(text) {
   return null;
 }
 
+
+async function inferCompletionWithLLM(text, userId) {
+  if (!text || text.trim().length < 2) return null;
+  const prompt = [
+    'You are a strict JSON classifier.',
+    'Determine if the user message indicates they completed a task.',
+    'Return JSON only in the format:',
+    '{"is_completion": true|false, "task_name": "<task name or empty>"}',
+    'Message: ' + text.trim()
+  ].join('\n');
+
+  try {
+    const response = await llmService.generate(prompt, {
+      maxTokens: 60,
+      temperature: 0,
+      opikMeta: {
+        action: 'intent_fallback_completion',
+        user_id: userId
+      }
+    });
+    const raw = response?.text || '';
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]);
+    const taskName = parsed?.task_name ? String(parsed.task_name).trim() : '';
+    const normalizedTask = normalize(taskName);
+    if (parsed?.is_completion) {
+      return buildIntentResponse('mark_complete', 0.6, {
+        taskName: taskName && !GENERIC_TASK_NAMES.has(normalizedTask) ? taskName : ''
+      }, { llm_fallback: true });
+    }
+    return null;
+  } catch (error) {
+    console.warn('[NLU] LLM completion fallback failed:', error.message);
+    return null;
+  }
+}
+
 module.exports = {
   parseMessage,
   resolvePendingAction,
   detectRecurrence,
   extractTimeData,
-  parseResolutionBuilderIntent
+  parseResolutionBuilderIntent,
+  inferCompletionWithLLM
 };

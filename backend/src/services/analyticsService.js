@@ -182,6 +182,55 @@ async function getUserSummary(userId) {
   }
 }
 
+
+async function getLeaderboard(limit = 10) {
+  const users = await User.listAll(Math.max(limit, 10));
+  if (!users.length) return [];
+
+  const since = new Date();
+  since.setDate(since.getDate() - LOOKBACK_DAYS + 1);
+  const recentTasks = await Task.findRecent(LOOKBACK_DAYS);
+
+  const statsByUser = users.reduce((acc, user) => {
+    acc[user.id] = { total: 0, done: 0, user };
+    return acc;
+  }, {});
+
+  recentTasks.forEach((task) => {
+    const bucket = statsByUser[task.user_id];
+    if (!bucket) return;
+    bucket.total += 1;
+    if (task.status === 'done') {
+      bucket.done += 1;
+    }
+  });
+
+  const entries = Object.values(statsByUser).map((entry) => {
+    const completionRate = entry.total ? Math.round((entry.done / entry.total) * 100) : 0;
+    return {
+      id: entry.user.id,
+      name: entry.user.preferred_name || entry.user.name || 'Tenax Operator',
+      completionRate,
+      streak: metricsStore.getStreak(entry.user.id),
+      total: entry.total
+    };
+  });
+
+  const ranked = entries
+    .sort((a, b) => {
+      if (b.completionRate !== a.completionRate) return b.completionRate - a.completionRate;
+      if (b.streak !== a.streak) return b.streak - a.streak;
+      return b.total - a.total;
+    })
+    .slice(0, limit);
+
+  const maxRank = ranked.length || 1;
+  return ranked.map((entry, index) => ({
+    ...entry,
+    percentile: Math.max(1, Math.round(((maxRank - index) / maxRank) * 100))
+  }));
+}
+
 async function getAdminOverview() {
   try {
     const since = new Date();
@@ -231,5 +280,6 @@ async function getAdminOverview() {
 
 module.exports = {
   getUserSummary,
-  getAdminOverview
+  getAdminOverview,
+  getLeaderboard
 };

@@ -5,7 +5,6 @@ import DashboardLayout from './pages/dashboard/DashboardLayout';
 import TodayPage from './pages/dashboard/TodayPage';
 import BentoDashboard from './pages/dashboard/BentoDashboard';
 import WebChatPage from './pages/dashboard/WebChatPage';
-import ExecutionBoardPage from './pages/dashboard/ExecutionBoardPage';
 import WeeklyProgressPage from './pages/dashboard/WeeklyProgressPage';
 import LeaderboardPage from './pages/dashboard/LeaderboardPage';
 import BehaviorPage from './pages/admin/BehaviorPage';
@@ -37,7 +36,6 @@ function App() {
               <Route path="chat" element={<WebChatPage />} />
               <Route path="add-task" element={<AddTaskPage />} />
               <Route path="schedule" element={<ScheduleEditorPage />} />
-              <Route path="execution" element={<ExecutionBoardPage />} />
               <Route path="weekly" element={<WeeklyProgressPage />} />
               <Route path="leaderboard" element={<LeaderboardPage />} />
               <Route path="resolution-builder" element={<ResolutionBuilderPage />} />

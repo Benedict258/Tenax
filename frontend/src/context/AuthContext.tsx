@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { apiClient, setApiAuthToken } from '../lib/api';
 
 interface AuthUser {
@@ -85,6 +85,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const hydrateSession = (nextUser: AuthUser, nextToken: string) => {
     setUser(nextUser);
     setToken(nextToken);
+    setApiAuthToken(nextToken);
   };
 
   const register = async (payload: RegisterPayload) => {
@@ -98,14 +99,28 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     hydrateSession(response.data.user, response.data.token);
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem(STORAGE_KEY);
     setApiAuthToken(undefined);
-  };
+  }, []);
 
-  const value = useMemo(() => ({ user, token, loading, register, login, logout }), [user, token, loading]);
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('tenax:unauthorized', handleUnauthorized);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('tenax:unauthorized', handleUnauthorized);
+      }
+    };
+  }, [logout]);
+
+  const value = useMemo(() => ({ user, token, loading, register, login, logout }), [user, token, loading, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
