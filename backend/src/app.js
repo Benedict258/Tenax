@@ -10,6 +10,7 @@ const whatsappRoutes = require('./routes/whatsapp');
 const agentRoutes = require('./routes/agent');
 const scheduleRoutes = require('./routes/schedule');
 const analyticsRoutes = require('./routes/analytics');
+const resolutionRoutes = require('./routes/resolution');
 const scheduleQueues = require('./services/scheduleQueues');
 const optimizerJobs = require('./services/optimizerJobs');
 
@@ -19,7 +20,7 @@ app.set('etag', false);
 // Middleware
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
@@ -34,6 +35,7 @@ app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/resolution', resolutionRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -617,6 +617,40 @@ async function handleMessage({
     throw new Error('User not found for message ingestion');
   }
 
+  let parsed = nluService.parseResolutionBuilderIntent(text);
+  const resolutionActive = await resolutionBuilderService.isActive(resolvedUser.id);
+
+  if (parsed?.intent === 'unknown') {
+    const completionFallback = await nluService.inferCompletionWithLLM(text, resolvedUser.id);
+    if (completionFallback) {
+      parsed = completionFallback;
+    }
+  }
+
+  if (parsed?.intent === 'start_resolution_builder' || resolutionActive) {
+    const isStart = parsed?.intent === 'start_resolution_builder';
+    const response = isStart
+      ? await resolutionBuilderService.startSession(resolvedUser)
+      : await resolutionBuilderService.handleMessage(resolvedUser, text);
+
+    const metadataPayload = {
+      intent: isStart ? 'resolution_builder_start' : 'resolution_builder_step',
+      step: response?.state?.step,
+      state: response?.state,
+      created_tasks: response?.created_tasks || null
+    };
+    const replyText = response?.reply || '';
+    if (replyText && transport?.send) {
+      await transport.send(replyText, metadataPayload);
+    }
+    const replies = replyText ? [{ text: replyText, metadata: metadataPayload }] : [];
+    return {
+      replies,
+      conversationId: null,
+      intent: isStart ? 'resolution_builder_start' : 'resolution_builder_step'
+    };
+  }
+
   const conversation = await Conversation.ensureActive(resolvedUser.id);
   metricsStore.recordUserMessage(resolvedUser.id);
 
@@ -635,7 +669,6 @@ async function handleMessage({
   });
 
   const pendingAction = conversationContext.getPendingAction(resolvedUser.id);
-  let parsed = null;
 
   if (pendingAction) {
     parsed = nluService.resolvePendingAction(text, pendingAction);
@@ -651,10 +684,7 @@ async function handleMessage({
   }
 
   if (!parsed) {
-    parsed = nluService.parseResolutionBuilderIntent(text);
-    if (!parsed) {
-      parsed = nluService.parseMessage(text, { allowPlanFallback: true });
-    }
+    parsed = nluService.parseMessage(text, { allowPlanFallback: true });
   }
 
   if (parsed?.intent === 'unknown') {
@@ -665,31 +695,6 @@ async function handleMessage({
   }
 
   const session = buildSession({ user: resolvedUser, channel, transport, conversation });
-  const resolutionActive = resolutionBuilderService.isActive(resolvedUser.id);
-
-  if (parsed.intent === 'start_resolution_builder') {
-    const response = resolutionBuilderService.startSession(resolvedUser);
-    await session.send(response.reply, {
-      intent: 'resolution_builder_start',
-      step: response.state?.step,
-      state: response.state
-    });
-    return { replies: session.replies, conversationId: conversation.id, intent: parsed.intent };
-  }
-
-  if (resolutionActive) {
-    const response = await resolutionBuilderService.handleMessage(resolvedUser, text);
-    if (response?.reply) {
-      await session.send(response.reply, {
-        intent: 'resolution_builder_step',
-        step: response.state?.step,
-        state: response.state,
-        created_tasks: response.created_tasks || null
-      });
-    }
-    await Conversation.touch(conversation.id);
-    return { replies: session.replies, conversationId: conversation.id, intent: 'resolution_builder_step' };
-  }
   const ruleState = await ruleStateService.getUserState(resolvedUser.id);
   const guardActive = ruleStateService.shouldBlockNonCompletion(ruleState);
   const p1Tasks = await ruleStateService.getActiveP1Tasks(resolvedUser.id);

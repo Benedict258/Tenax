@@ -2,8 +2,11 @@ const Task = require('../models/Task');
 const ruleStateService = require('./ruleState');
 const { DateTime } = require('luxon');
 const llmService = require('./llm');
-
-const sessions = new Map();
+const ResolutionBuilderSession = require('../models/ResolutionBuilderSession');
+const ResolutionBuilderMessage = require('../models/ResolutionBuilderMessage');
+const ResolutionPlan = require('../models/ResolutionPlan');
+const ResolutionPhase = require('../models/ResolutionPhase');
+const ResolutionTask = require('../models/ResolutionTask');
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_PATTERNS = [
@@ -16,10 +19,7 @@ const DAY_PATTERNS = [
   { label: 'Sunday', dayOfWeek: 0, pattern: /\b(sun|sunday)\b/ }
 ];
 
-const DEFAULT_BLOCKS = [
-  { label: 'Evening', time: { hour: 19, minute: 0 } }
-];
-
+const DEFAULT_BLOCKS = [{ label: 'Evening', time: { hour: 19, minute: 0 } }];
 const DAY_PART_BLOCKS = [
   { key: 'morning', label: 'Morning', time: { hour: 7, minute: 30 } },
   { key: 'afternoon', label: 'Afternoon', time: { hour: 13, minute: 0 } },
@@ -30,6 +30,7 @@ const DAY_PART_BLOCKS = [
 const YES_TRIGGERS = ['yes', 'yep', 'sure', 'ok', 'okay', 'approve', 'approved', 'go ahead', 'do it'];
 const NO_TRIGGERS = ['no', 'nope', 'cancel', 'stop', 'not now'];
 const EDIT_TRIGGERS = ['edit', 'change', 'adjust', 'partial'];
+const PACE_OPTIONS = ['light', 'standard', 'intense'];
 
 const normalize = (value = '') => value.toLowerCase().trim();
 
@@ -40,6 +41,45 @@ const formatTimeLabel = (hour, minute = 0) => {
   const suffix = safeHour >= 12 ? 'PM' : 'AM';
   return `${displayHour}:${String(safeMinute).padStart(2, '0')} ${suffix}`;
 };
+
+function parseDuration(input, timezone = 'UTC') {
+  const normalized = normalize(input);
+  const weekMatch = normalized.match(/(\d+)\s*(week|weeks|wk|wks)/);
+  if (weekMatch) {
+    const weeks = Number(weekMatch[1]);
+    return Number.isFinite(weeks) && weeks > 0 ? { weeks, endDate: null } : null;
+  }
+  const monthMatch = normalized.match(/(\d+)\s*(month|months|mo)/);
+  if (monthMatch) {
+    const months = Number(monthMatch[1]);
+    if (Number.isFinite(months) && months > 0) {
+      return { weeks: months * 4, endDate: null };
+    }
+  }
+
+  const isoMatch = normalized.match(/(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) {
+    const end = DateTime.fromISO(isoMatch[1], { zone: timezone });
+    if (end.isValid) {
+      const weeks = Math.max(1, Math.round(end.diff(DateTime.now().setZone(timezone), 'weeks').weeks));
+      return { weeks, endDate: end.toISODate() };
+    }
+  }
+
+  const monthDayMatch = normalized.match(/(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})/);
+  if (monthDayMatch) {
+    const month = monthDayMatch[1];
+    const day = monthDayMatch[2];
+    const year = DateTime.now().setZone(timezone).year;
+    const end = DateTime.fromFormat(`${month} ${day} ${year}`, 'LLLL d yyyy', { zone: timezone });
+    if (end.isValid) {
+      const weeks = Math.max(1, Math.round(end.diff(DateTime.now().setZone(timezone), 'weeks').weeks));
+      return { weeks, endDate: end.toISODate() };
+    }
+  }
+
+  return null;
+}
 
 function parseHoursPerWeek(text) {
   const normalized = normalize(text);
@@ -130,65 +170,37 @@ function parseBlocks(text) {
   return unique;
 }
 
-function resolveSessionsPerWeek(hoursPerWeek, daysAvailable) {
+function resolveSessionsPerWeek(hoursPerWeek, daysAvailable, pace = 'standard') {
   if (!daysAvailable) return 1;
-  if (!hoursPerWeek) return daysAvailable;
-  const sessions = Math.round(hoursPerWeek / 2);
+  const base = hoursPerWeek ? Math.max(1, Math.round(hoursPerWeek / 2)) : daysAvailable;
+  const paceFactor = pace === 'light' ? 0.8 : pace === 'intense' ? 1.2 : 1;
+  const sessions = Math.round(base * paceFactor);
   return Math.max(1, Math.min(daysAvailable, sessions));
 }
 
-function buildRoadmap(goal, outcome) {
-  const normalized = normalize(goal);
-  let title = `${goal} Roadmap`;
-  let phases = [];
-
-  if (normalized.includes('javascript') || normalized.includes('js')) {
-    phases = [
-      { name: 'Fundamentals', description: 'Syntax, core concepts, and problem solving.', duration_weeks: 2 },
-      { name: 'DOM and Browser APIs', description: 'Events, state, and browser tooling.', duration_weeks: 2 },
-      { name: 'Async and APIs', description: 'Promises, async/await, data fetching.', duration_weeks: 2 },
-      { name: 'Mini Projects', description: 'Small apps that reinforce the basics.', duration_weeks: 2 },
-      { name: 'Capstone Build', description: 'A real-world project you can demo.', duration_weeks: 3 }
-    ];
-  } else if (normalized.includes('fitness') || normalized.includes('workout') || normalized.includes('gym')) {
-    phases = [
-      { name: 'Baseline and Goals', description: 'Assess starting point and set targets.', duration_weeks: 2 },
-      { name: 'Strength Foundation', description: 'Build core lifts and form consistency.', duration_weeks: 3 },
-      { name: 'Endurance and Mobility', description: 'Cardio base plus mobility routines.', duration_weeks: 3 },
-      { name: 'Nutrition and Recovery', description: 'Dial in fuel, sleep, and recovery.', duration_weeks: 2 },
-      { name: 'Progressive Overload', description: 'Scale intensity and track milestones.', duration_weeks: 3 }
-    ];
-  } else if (normalized.includes('ai') || normalized.includes('machine learning') || normalized.includes('ml')) {
-    phases = [
-      { name: 'Math + Python Core', description: 'Linear algebra, stats, Python workflows.', duration_weeks: 3 },
-      { name: 'ML Fundamentals', description: 'Supervised learning, evaluation, feature work.', duration_weeks: 3 },
-      { name: 'Deep Learning', description: 'Neural nets, embeddings, transformers.', duration_weeks: 3 },
-      { name: 'Applied Projects', description: 'Build and iterate on real problems.', duration_weeks: 3 },
-      { name: 'Deployment + Portfolio', description: 'Ship models and explain results.', duration_weeks: 2 }
-    ];
-  } else if (normalized.includes('portfolio')) {
-    phases = [
-      { name: 'Portfolio Strategy', description: 'Pick a theme and define target audience.', duration_weeks: 2 },
-      { name: 'Project Selection', description: 'Curate 3 to 5 proof-of-skill projects.', duration_weeks: 2 },
-      { name: 'Case Studies', description: 'Write problem, approach, and outcomes.', duration_weeks: 3 },
-      { name: 'Visual Polish', description: 'Refine design, storytelling, and UX.', duration_weeks: 2 },
-      { name: 'Distribution', description: 'Launch, share, and iterate from feedback.', duration_weeks: 2 }
-    ];
-  } else {
-    phases = [
-      { name: 'Foundations', description: 'Core concepts and quick wins.', duration_weeks: 2 },
-      { name: 'Core Skills', description: 'Structured practice and repetition.', duration_weeks: 2 },
-      { name: 'Applied Practice', description: 'Use the skill in real scenarios.', duration_weeks: 2 },
-      { name: 'Projects and Proof', description: 'Build artifacts that show progress.', duration_weeks: 2 },
-      { name: 'Capstone Milestone', description: 'Deliver a measurable result.', duration_weeks: 3 }
-    ];
-  }
-
-  if (outcome) {
-    title = `${goal} -> ${outcome}`;
-  }
-
-  return { title, phases };
+function buildRoadmap(goal, outcome, durationWeeks) {
+  const title = outcome ? `${goal} -> ${outcome}` : `${goal} Roadmap`;
+  const phases = [
+    {
+      phase_index: 0,
+      title: 'Foundations',
+      description: 'Core concepts and quick wins.',
+      objectives: ['Learn the core concepts', 'Build momentum with small exercises'],
+      topics: [{ title: 'Basics', subtopics: ['Key terms', 'Core workflows'], type: 'core' }],
+      resources: [],
+      completion_criteria: { type: 'threshold', threshold: 0.8 }
+    },
+    {
+      phase_index: 1,
+      title: 'Applied Practice',
+      description: 'Structured practice and repetition.',
+      objectives: ['Practice consistently', 'Apply concepts to real tasks'],
+      topics: [{ title: 'Applied drills', subtopics: ['Repetition', 'Feedback'], type: 'core' }],
+      resources: [],
+      completion_criteria: { type: 'threshold', threshold: 0.8 }
+    }
+  ];
+  return { goal, duration_weeks: durationWeeks, title, phases };
 }
 
 function extractJsonBlock(text = '') {
@@ -203,55 +215,88 @@ function extractJsonBlock(text = '') {
   }
 }
 
-function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome) {
+function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
   if (!raw || typeof raw !== 'object') {
-    return buildRoadmap(fallbackGoal, fallbackOutcome);
+    return buildRoadmap(fallbackGoal, fallbackOutcome, durationWeeks || 6);
   }
-
-  const title =
-    typeof raw.title === 'string' && raw.title.trim()
-      ? raw.title.trim()
-      : fallbackOutcome
-      ? `${fallbackGoal} -> ${fallbackOutcome}`
-      : `${fallbackGoal} Roadmap`;
 
   const phasesRaw = Array.isArray(raw.phases) ? raw.phases : [];
   const phases = phasesRaw
-    .map((phase) => ({
-      name: typeof phase?.name === 'string' ? phase.name.trim() : '',
-      description: typeof phase?.description === 'string' ? phase.description.trim() : '',
-      duration_weeks: Number.isFinite(Number(phase?.duration_weeks)) ? Number(phase.duration_weeks) : null
-    }))
-    .filter((phase) => phase.name && phase.description)
-    .map((phase) => ({
-      ...phase,
-      duration_weeks: Math.min(8, Math.max(1, Math.round(phase.duration_weeks || 2)))
-    }))
-    .slice(0, 8);
+    .map((phase, index) => {
+      const resources = Array.isArray(phase?.resources)
+        ? phase.resources.filter((resource) => resource?.title && resource?.url)
+        : [];
+
+      return {
+        phase_index: Number.isFinite(Number(phase?.phase_index)) ? Number(phase.phase_index) : index,
+        title: typeof phase?.title === 'string' ? phase.title.trim() : '',
+        description: typeof phase?.description === 'string' ? phase.description.trim() : '',
+        objectives: Array.isArray(phase?.objectives) ? phase.objectives.filter(Boolean) : [],
+        topics: Array.isArray(phase?.topics) ? phase.topics : [],
+        resources,
+        duration_weeks: Number.isFinite(Number(phase?.duration_weeks)) ? Number(phase.duration_weeks) : null,
+        completion_criteria: phase?.completion_criteria || { type: 'threshold', threshold: 0.8 }
+      };
+    })
+    .filter((phase) => phase.title && phase.description);
 
   if (!phases.length) {
-    return buildRoadmap(fallbackGoal, fallbackOutcome);
+    return buildRoadmap(fallbackGoal, fallbackOutcome, durationWeeks || 6);
   }
 
-  return { title, phases };
+  const totalWeeks = durationWeeks || raw.duration_weeks || phases.length;
+  const missingDuration = phases.some((phase) => !phase.duration_weeks);
+  if (missingDuration) {
+    const baseWeeks = Math.max(1, Math.floor(totalWeeks / phases.length));
+    let remainder = Math.max(0, totalWeeks - baseWeeks * phases.length);
+    phases.forEach((phase) => {
+      const extra = remainder > 0 ? 1 : 0;
+      phase.duration_weeks = baseWeeks + extra;
+      remainder -= extra;
+    });
+  }
+
+  return {
+    goal: raw.goal || fallbackGoal,
+    duration_weeks: raw.duration_weeks || durationWeeks,
+    title: raw.title || `${fallbackGoal} Roadmap`,
+    phases
+  };
 }
 
-async function buildRoadmapWithResearch(goal, outcome, user) {
-  const prompt = `You are Tenax Resolution Builder. Create a concise, research-backed learning roadmap for this goal.
+async function buildRoadmapWithResearch(goal, outcome, durationWeeks, user) {
+  const prompt = `You are Tenax Resolution Builder. Create a structured learning roadmap with real resources.
 Goal: ${goal}
 Outcome definition: ${outcome || 'Not specified'}
+Duration: ${durationWeeks} weeks
 
-Requirements:
-- Produce 4 to 7 sequential phases.
-- Each phase must include: name, description, duration_weeks (1-6).
-- Keep scope realistic and execution-friendly.
-- Return JSON only with this exact shape:
-{"title":"...","phases":[{"name":"...","description":"...","duration_weeks":2}]}
+Return JSON only with this shape:
+{
+  "goal": "...",
+  "duration_weeks": ${durationWeeks},
+  "title": "...",
+  "phases": [
+    {
+      "phase_index": 0,
+      "title": "...",
+      "description": "...",
+      "objectives": ["..."],
+      "topics": [{"title":"...","subtopics":["..."],"type":"core"}],
+      "resources": [{"title":"...","url":"https://...","kind":"docs|video|course","difficulty":"beginner|intermediate|advanced"}],
+      "completion_criteria": {"type":"threshold","threshold":0.8}
+    }
+  ]
+}
+
+Rules:
+- 4 to 7 phases.
+- Provide real, valid URLs.
+- Ensure objectives and topics are practical.
 `;
 
   try {
     const response = await llmService.generate(prompt, {
-      maxTokens: 700,
+      maxTokens: 900,
       temperature: 0.25,
       opikMeta: {
         action: 'resolution_roadmap',
@@ -260,60 +305,20 @@ Requirements:
       }
     });
     const parsed = extractJsonBlock(response.text);
-    return sanitizeRoadmap(parsed, goal, outcome);
+    return sanitizeRoadmap(parsed, goal, outcome, durationWeeks);
   } catch (error) {
     console.warn('[ResolutionBuilder] LLM roadmap generation failed:', error.message);
-    return buildRoadmap(goal, outcome);
+    return buildRoadmap(goal, outcome, durationWeeks);
   }
-}
-
-function buildResources(goal) {
-  const normalized = normalize(goal);
-  if (normalized.includes('javascript') || normalized.includes('js')) {
-    return [
-      { title: 'MDN JavaScript Guide', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide', type: 'Docs' },
-      { title: 'javascript.info', url: 'https://javascript.info', type: 'Guide' },
-      { title: 'freeCodeCamp JS Algorithms', url: 'https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/', type: 'Course' }
-    ];
-  }
-  if (normalized.includes('fitness') || normalized.includes('workout') || normalized.includes('gym')) {
-    return [
-      { title: 'Strength Training Basics (ACSM)', url: 'https://www.acsm.org', type: 'Guide' },
-      { title: 'NHS Workout Plans', url: 'https://www.nhs.uk/live-well/exercise/free-fitness-ideas/', type: 'Plan' },
-      { title: 'Mobility Routine Library', url: 'https://www.youtube.com/results?search_query=mobility+routine', type: 'Video' }
-    ];
-  }
-  if (normalized.includes('ai') || normalized.includes('machine learning') || normalized.includes('ml')) {
-    return [
-      { title: 'fast.ai Practical Deep Learning', url: 'https://course.fast.ai', type: 'Course' },
-      { title: 'Hugging Face Course', url: 'https://huggingface.co/course', type: 'Course' },
-      { title: 'Kaggle Learn', url: 'https://www.kaggle.com/learn', type: 'Practice' }
-    ];
-  }
-  if (normalized.includes('portfolio')) {
-    return [
-      { title: 'Portfolio Case Study Framework', url: 'https://www.nngroup.com/articles/case-study-portfolio/', type: 'Guide' },
-      { title: 'Personal Branding Checklist', url: 'https://www.adobe.com/creativecloud/design/discover/personal-brand.html', type: 'Guide' },
-      { title: 'Project Storytelling Tips', url: 'https://www.behance.net/galleries', type: 'Inspiration' }
-    ];
-  }
-  return [
-    { title: 'Goal Setting Worksheet', url: 'https://www.mindtools.com/a5y3vrs/smart-goals', type: 'Guide' },
-    { title: 'Learning How to Learn (coursera)', url: 'https://www.coursera.org/learn/learning-how-to-learn', type: 'Course' },
-    { title: 'Habit Building Basics', url: 'https://jamesclear.com/atomic-habits', type: 'Guide' }
-  ];
 }
 
 function buildSchedulePreview(state) {
-  const roadmap = state.roadmap || [];
+  const roadmap = state.roadmap?.phases || [];
   const days = state.days_free || [];
   const blocks = state.preferred_blocks && state.preferred_blocks.length ? state.preferred_blocks : DEFAULT_BLOCKS;
+  if (!roadmap.length || !days.length) return [];
 
-  if (!roadmap.length || !days.length) {
-    return [];
-  }
-
-  const sessionsPerWeek = resolveSessionsPerWeek(state.time_commitment_hours, days.length);
+  const sessionsPerWeek = resolveSessionsPerWeek(state.time_commitment_hours, days.length, state.pace);
   const selectedDays = days.slice(0, sessionsPerWeek);
   const focusTemplates = ['Learn new concept', 'Guided practice', 'Applied build', 'Review + recap'];
   const preview = [];
@@ -321,7 +326,7 @@ function buildSchedulePreview(state) {
   let focusIndex = 0;
 
   roadmap.forEach((phase, phaseIndex) => {
-    const phaseWeeks = phase.duration_weeks || 2;
+    const phaseWeeks = phase.duration_weeks || 1;
     for (let week = 0; week < phaseWeeks; week += 1) {
       selectedDays.forEach((day, dayIndex) => {
         if (preview.length >= maxEntries) return;
@@ -333,48 +338,16 @@ function buildSchedulePreview(state) {
           time: block.time,
           time_label: block.label,
           phase_index: phaseIndex,
-          phase_name: phase.name,
+          phase_name: phase.title,
           focus
         });
         focusIndex += 1;
       });
-      if (preview.length >= maxEntries) {
-        return;
-      }
+      if (preview.length >= maxEntries) return;
     }
   });
 
   return preview;
-}
-
-function getNextOccurrenceISO(dayOfWeek, time, timezone = 'UTC', weekOffset = 0) {
-  const now = DateTime.now().setZone(timezone).plus({ weeks: weekOffset });
-  let candidate = now;
-  const normalizedDay = ((dayOfWeek % 7) + 7) % 7;
-  while (candidate.weekday % 7 !== normalizedDay) {
-    candidate = candidate.plus({ days: 1 });
-  }
-  let withTime = candidate.set({ hour: time.hour, minute: time.minute, second: 0, millisecond: 0 });
-  if (withTime <= now) {
-    withTime = withTime.plus({ days: 7 });
-  }
-  return withTime.toUTC().toISO();
-}
-
-function buildRoadmapMessage(roadmap) {
-  if (!roadmap?.length) return 'No roadmap generated yet.';
-  const lines = roadmap.map((phase, index) => (
-    `Phase ${index + 1}: ${phase.name} - ${phase.description}`
-  ));
-  return lines.join('\n');
-}
-
-function buildResourcesMessage(resources) {
-  if (!resources?.length) return 'No resources added.';
-  const lines = resources.map((resource, index) => (
-    `${index + 1}. ${resource.title} (${resource.type})`
-  ));
-  return lines.join('\n');
 }
 
 function buildScheduleMessage(schedule) {
@@ -384,18 +357,144 @@ function buildScheduleMessage(schedule) {
   )).join('\n');
 }
 
-class ResolutionBuilderSession {
-  constructor(user) {
+function buildResourcesMessage(resources) {
+  if (!resources?.length) return 'No resources added.';
+  const lines = resources.map((resource, index) => (
+    `${index + 1}. ${resource.title} (${resource.kind || resource.type})`
+  ));
+  return lines.join('\n');
+}
+
+function buildRoadmapMessage(roadmap) {
+  if (!roadmap?.phases?.length) return 'No roadmap generated yet.';
+  return roadmap.phases.map((phase, index) => (
+    `Phase ${index + 1}: ${phase.title} - ${phase.description}`
+  )).join('\n');
+}
+
+function getDateForWeekDay(baseDate, dayOfWeek, weekOffset = 0) {
+  const start = baseDate.plus({ weeks: weekOffset }).startOf('week');
+  const targetWeekday = dayOfWeek === 0 ? 7 : dayOfWeek;
+  return start.set({ weekday: targetWeekday });
+}
+
+function generateResolutionTasks({
+  user,
+  planId,
+  phases,
+  durationWeeks,
+  daysFree,
+  preferredBlocks,
+  hoursPerWeek,
+  pace
+}) {
+  const tasks = [];
+  if (!phases.length || !daysFree.length || !durationWeeks) return tasks;
+
+  const blocks = preferredBlocks.length ? preferredBlocks : DEFAULT_BLOCKS;
+  const sessionsPerWeek = resolveSessionsPerWeek(hoursPerWeek, daysFree.length, pace);
+  const totalSessions = durationWeeks * sessionsPerWeek;
+  const totalPhaseWeeks = phases.reduce((sum, phase) => sum + (phase.duration_weeks || 1), 0) || phases.length;
+  let remainingSessions = totalSessions;
+
+  const phaseSessions = phases.map((phase, index) => {
+    const share = phase.duration_weeks || 1;
+    const estimated = Math.max(1, Math.round((share / totalPhaseWeeks) * totalSessions));
+    const sessions = index === phases.length - 1 ? remainingSessions : Math.min(remainingSessions, estimated);
+    remainingSessions -= sessions;
+    return sessions;
+  });
+
+  const baseDate = DateTime.now().setZone(user.timezone || 'UTC');
+  let slotIndex = 0;
+
+  const slotList = [];
+  for (let week = 0; week < durationWeeks; week += 1) {
+    const selectedDays = daysFree.slice(0, sessionsPerWeek);
+    selectedDays.forEach((day, dayIndex) => {
+      const block = blocks[(dayIndex + week) % blocks.length];
+      const date = getDateForWeekDay(baseDate, day.dayOfWeek, week);
+      slotList.push({
+        date,
+        day,
+        block
+      });
+    });
+  }
+
+  phases.forEach((phase, phaseIndex) => {
+    const sessions = phaseSessions[phaseIndex] || 1;
+    const topics = Array.isArray(phase.topics) ? phase.topics : [];
+    const objectives = Array.isArray(phase.objectives) ? phase.objectives : [];
+    for (let i = 0; i < sessions; i += 1) {
+      const slot = slotList[slotIndex];
+      if (!slot) break;
+      const topic = topics[i % (topics.length || 1)] || { title: phase.title };
+      const objective = objectives[i % (objectives.length || 1)] || `Advance ${phase.title}`;
+      const description = topic.subtopics && topic.subtopics.length
+        ? `Focus on ${topic.title}. Cover: ${topic.subtopics.join(', ')}.`
+        : `Focus on ${topic.title || phase.title} and apply it with practice.`;
+      const resources = Array.isArray(phase.resources) ? phase.resources : [];
+
+      tasks.push({
+        user_id: user.id,
+        plan_id: planId,
+        phase_id: phase.id,
+        date: slot.date.toISODate(),
+        start_time: slot.block.time ? `${String(slot.block.time.hour).padStart(2, '0')}:${String(slot.block.time.minute).padStart(2, '0')}:00` : null,
+        title: `${phase.title}: ${topic.title || 'Focused session'}`,
+        objective,
+        description,
+        resources_json: resources,
+        status: 'todo',
+        order_index: i,
+        locked: phaseIndex > 0
+      });
+      slotIndex += 1;
+    }
+  });
+
+  return tasks;
+}
+
+async function mirrorTasksToExecution(tasks, userId) {
+  const unlocked = tasks.filter((task) => !task.locked);
+  if (!unlocked.length) return;
+  const payload = unlocked.map((task) => ({
+    user_id: userId,
+    title: task.title,
+    description: task.description,
+    category: 'Resolution',
+    start_time: task.start_time ? DateTime.fromISO(`${task.date}T${task.start_time}`).toUTC().toISO() : null,
+    severity: 'p1',
+    priority: 'P1',
+    created_via: 'resolution_builder',
+    metadata: {
+      resolution_plan_id: task.plan_id,
+      resolution_task_id: task.id,
+      resources: task.resources_json,
+      objective: task.objective
+    }
+  }));
+  await Task.createMany(payload);
+  await ruleStateService.refreshUserState(userId);
+}
+
+class ResolutionBuilderFlow {
+  constructor(user, sessionRecord) {
     this.user = user;
-    this.state = {
+    this.sessionRecord = sessionRecord;
+    this.state = sessionRecord?.state_json || {
       step: 1,
       resolution_goal: '',
       target_outcome: '',
+      duration_weeks: null,
+      end_date: null,
       time_commitment_hours: null,
       days_free: [],
       preferred_blocks: [],
-      roadmap_title: '',
-      roadmap: [],
+      pace: 'standard',
+      roadmap: null,
       resources: [],
       schedule_preview: [],
       permission: null,
@@ -410,32 +509,63 @@ class ResolutionBuilderSession {
     return { ...this.state };
   }
 
-  start() {
+  async saveState() {
+    await ResolutionBuilderSession.updateState(this.sessionRecord.id, this.state);
+  }
+
+  async logMessage(role, contentText, stepKey, contentJson) {
+    await ResolutionBuilderMessage.create({
+      session_id: this.sessionRecord.id,
+      step_key: stepKey,
+      role,
+      content_text: contentText,
+      content_json: contentJson
+    });
+  }
+
+  async start() {
     return {
       reply: 'Welcome to Tenax Resolution Builder. What is your New Year resolution or big goal?',
       state: this.publicState()
     };
   }
 
-  captureResolution(input) {
+  async captureResolution(input) {
     if (!input) {
       return { reply: 'Share a resolution goal so we can build your roadmap.', state: this.publicState() };
     }
     this.state.resolution_goal = input;
     this.state.step = 2;
+    await this.saveState();
     return {
       reply: 'What does success look like for this goal? Examples: fundamentals, projects, job-ready, interview prep.',
       state: this.publicState()
     };
   }
 
-  captureOutcome(input) {
+  async captureOutcome(input) {
     if (!input) {
       return { reply: 'Give me a short success definition so the roadmap stays aligned.', state: this.publicState() };
     }
     this.state.target_outcome = input;
     this.state.step = 3;
+    await this.saveState();
+    return {
+      reply: 'How long do you want to complete this resolution? (e.g., 4 weeks, 8 weeks, or 2026-03-01)',
+      state: this.publicState()
+    };
+  }
+
+  async captureDuration(input) {
+    const parsed = parseDuration(input, this.user.timezone || 'UTC');
+    if (!parsed?.weeks) {
+      return { reply: 'Please share a duration in weeks or a target end date (YYYY-MM-DD).', state: this.publicState() };
+    }
+    this.state.duration_weeks = parsed.weeks;
+    this.state.end_date = parsed.endDate || null;
+    this.state.step = 4;
     this.state.time_step = 'hours';
+    await this.saveState();
     return {
       reply: 'Time reality check: how many hours per week can you realistically commit?',
       state: this.publicState()
@@ -450,6 +580,7 @@ class ResolutionBuilderSession {
       }
       this.state.time_commitment_hours = hours;
       this.state.time_step = 'days';
+      await this.saveState();
       return { reply: 'Which days are usually free for this? Example: Mon, Wed, Sat.', state: this.publicState() };
     }
 
@@ -460,6 +591,7 @@ class ResolutionBuilderSession {
       }
       this.state.days_free = days;
       this.state.time_step = 'blocks';
+      await this.saveState();
       return { reply: 'Preferred learning time blocks? Example: evenings, 7-9pm, or 6:30am.', state: this.publicState() };
     }
 
@@ -468,25 +600,37 @@ class ResolutionBuilderSession {
       return { reply: 'Share a preferred time block (e.g. evenings or 7:30pm).', state: this.publicState() };
     }
     this.state.preferred_blocks = blocks;
-    this.state.step = 4;
+    this.state.step = 5;
+    await this.saveState();
+    return { reply: 'Pick a pace: light, standard, or intense.', state: this.publicState() };
+  }
 
-    const roadmapResult = await buildRoadmapWithResearch(
+  async capturePace(input) {
+    const normalized = normalize(input);
+    const pace = PACE_OPTIONS.find((option) => normalized.includes(option));
+    if (!pace) {
+      return { reply: 'Choose a pace: light, standard, or intense.', state: this.publicState() };
+    }
+    this.state.pace = pace;
+    this.state.step = 6;
+
+    const roadmap = await buildRoadmapWithResearch(
       this.state.resolution_goal,
       this.state.target_outcome,
+      this.state.duration_weeks,
       this.user
     );
-    this.state.roadmap_title = roadmapResult.title;
-    this.state.roadmap = roadmapResult.phases;
-    this.state.step = 5;
+    this.state.roadmap = roadmap;
+    await this.saveState();
 
-    const roadmapText = buildRoadmapMessage(this.state.roadmap);
+    const roadmapText = buildRoadmapMessage(roadmap);
     return {
       reply: `Roadmap draft:\n${roadmapText}\n\nWould you like learning resources added? (yes/no)`,
       state: this.publicState()
     };
   }
 
-  handleResources(input) {
+  async handleResources(input) {
     const normalized = normalize(input);
     const wantsResources = YES_TRIGGERS.some((trigger) => normalized.includes(trigger));
     const rejectsResources = NO_TRIGGERS.some((trigger) => normalized.includes(trigger));
@@ -496,13 +640,18 @@ class ResolutionBuilderSession {
     }
 
     if (wantsResources) {
-      this.state.resources = buildResources(this.state.resolution_goal);
+      this.state.resources = (this.state.roadmap?.phases || []).flatMap((phase) => phase.resources || []);
     } else {
       this.state.resources = [];
     }
 
-    this.state.schedule_preview = buildSchedulePreview(this.state);
+    this.state.schedule_preview = buildSchedulePreview({
+      ...this.state,
+      roadmap: this.state.roadmap,
+      resources: this.state.resources
+    });
     this.state.step = 7;
+    await this.saveState();
 
     const resourcesText = wantsResources ? `Resources added:\n${buildResourcesMessage(this.state.resources)}\n\n` : '';
     const scheduleText = buildScheduleMessage(this.state.schedule_preview);
@@ -512,7 +661,7 @@ class ResolutionBuilderSession {
     };
   }
 
-  handlePermission(input) {
+  async handlePermission(input) {
     const normalized = normalize(input);
 
     if (this.state.edit_mode) {
@@ -525,6 +674,7 @@ class ResolutionBuilderSession {
       if (blocks.length) this.state.preferred_blocks = blocks;
       this.state.edit_mode = false;
       this.state.schedule_preview = buildSchedulePreview(this.state);
+      await this.saveState();
       const scheduleText = buildScheduleMessage(this.state.schedule_preview);
       return {
         reply: `Updated preview:\n${scheduleText}\n\nApprove this schedule, edit again, or cancel.`,
@@ -534,6 +684,7 @@ class ResolutionBuilderSession {
 
     if (EDIT_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
       this.state.edit_mode = true;
+      await this.saveState();
       return { reply: 'Tell me what to change (days or times) for the preview.', state: this.publicState() };
     }
 
@@ -542,11 +693,13 @@ class ResolutionBuilderSession {
       this.state.completed = true;
       this.state.active = false;
       this.state.step = 8;
+      await this.saveState();
       return { reply: 'No changes made. You can restart Tenax Resolution Builder anytime.', state: this.publicState() };
     }
 
     if (YES_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
       this.state.permission = true;
+      await this.saveState();
       return null;
     }
 
@@ -554,65 +707,68 @@ class ResolutionBuilderSession {
   }
 
   async handoffToExecution() {
-    const timezone = this.user?.timezone || 'UTC';
-    const schedule = this.state.schedule_preview || [];
-    if (!schedule.length) {
-      return { reply: 'Schedule preview is empty. Restart the builder to try again.', state: this.publicState() };
+    if (!this.state.duration_weeks) {
+      return { reply: 'Duration is missing. Share it to continue.', state: this.publicState() };
+    }
+    const roadmap = this.state.roadmap;
+    if (!roadmap?.phases?.length) {
+      return { reply: 'Roadmap missing. Restart the builder to try again.', state: this.publicState() };
     }
 
-    const hoursPerWeek = this.state.time_commitment_hours || 0;
-    const sessionsPerWeek = schedule.length || 1;
-    const minutesPerSession = Math.max(30, Math.min(120, Math.round((hoursPerWeek / sessionsPerWeek) * 60) || 60));
-
-    const tasks = [];
-    let offsetWeeks = 0;
-    this.state.roadmap.forEach((phase, phaseIndex) => {
-      const phaseWeeks = phase.duration_weeks || 2;
-      schedule.forEach((slot) => {
-        const start_time = getNextOccurrenceISO(slot.day_of_week, slot.time, timezone, offsetWeeks);
-        tasks.push({
-          user_id: this.user.id,
-          title: `${this.state.resolution_goal}: ${phase.name} - ${slot.focus}`,
-          description: phase.description,
-          category: 'Resolution',
-          start_time,
-          duration_minutes: minutesPerSession,
-          recurrence: {
-            pattern: 'weekly',
-            day_of_week: slot.day_of_week
-          },
-          severity: phaseIndex === 0 ? 'p1' : 'p2',
-          priority: phaseIndex === 0 ? 'P1' : 'P2',
-          created_via: 'resolution_builder',
-          metadata: {
-            resolution_goal: this.state.resolution_goal,
-            target_outcome: this.state.target_outcome,
-            phase: phase.name,
-            phase_index: phaseIndex,
-            phase_duration_weeks: phaseWeeks,
-            phase_start_week_offset: offsetWeeks,
-            resources: this.state.resources,
-            focus: slot.focus,
-            schedule_anchor: `${slot.day_label} ${slot.time_label}`
-          }
-        });
-      });
-      offsetWeeks += phaseWeeks;
+    const plan = await ResolutionPlan.create({
+      user_id: this.user.id,
+      title: roadmap.title,
+      goal_text: this.state.resolution_goal,
+      target_outcome: this.state.target_outcome,
+      duration_weeks: this.state.duration_weeks,
+      end_date: this.state.end_date,
+      availability_json: {
+        hours_per_week: this.state.time_commitment_hours,
+        days_free: this.state.days_free,
+        preferred_blocks: this.state.preferred_blocks,
+        pace: this.state.pace
+      },
+      status: 'active',
+      roadmap_json: roadmap
     });
 
-    await Task.createMany(tasks);
-    if (tasks.some((task) => task.severity === 'p1')) {
-      await ruleStateService.refreshUserState(this.user.id);
-    }
+    const phasesPayload = roadmap.phases.map((phase) => ({
+      plan_id: plan.id,
+      phase_index: phase.phase_index,
+      title: phase.title,
+      description: phase.description,
+      objectives_json: phase.objectives || [],
+      topics_json: phase.topics || [],
+      resources_json: phase.resources || [],
+      completion_status: 'pending',
+      completion_criteria_json: phase.completion_criteria || { type: 'threshold', threshold: 0.8 }
+    }));
+
+    const phases = await ResolutionPhase.createMany(phasesPayload);
+    const tasks = generateResolutionTasks({
+      user: this.user,
+      planId: plan.id,
+      phases,
+      durationWeeks: this.state.duration_weeks,
+      daysFree: this.state.days_free,
+      preferredBlocks: this.state.preferred_blocks,
+      hoursPerWeek: this.state.time_commitment_hours,
+      pace: this.state.pace
+    });
+
+    const createdTasks = await ResolutionTask.createMany(tasks);
+    await mirrorTasksToExecution(createdTasks, this.user.id);
 
     this.state.completed = true;
     this.state.active = false;
     this.state.step = 8;
+    await this.saveState();
 
     return {
-      reply: `Approved. ${tasks.length} roadmap sessions added. Execution Agent will handle reminders and accountability from here.`,
+      reply: `Approved. ${createdTasks.length} roadmap sessions added. Execution Agent will handle reminders from here.`,
       state: this.publicState(),
-      created_tasks: tasks.length
+      created_tasks: createdTasks.length,
+      plan_id: plan.id
     };
   }
 
@@ -625,6 +781,7 @@ class ResolutionBuilderSession {
     if (NO_TRIGGERS.includes(normalized) && this.state.step < 7) {
       this.state.completed = true;
       this.state.active = false;
+      await this.saveState();
       return { reply: 'No changes made. You can restart Tenax Resolution Builder anytime.', state: this.publicState() };
     }
 
@@ -635,67 +792,68 @@ class ResolutionBuilderSession {
       return this.captureOutcome(trimmed);
     }
     if (this.state.step === 3) {
-      return await this.captureTimeReality(trimmed);
+      return this.captureDuration(trimmed);
+    }
+    if (this.state.step === 4) {
+      return this.captureTimeReality(trimmed);
     }
     if (this.state.step === 5) {
+      return this.capturePace(trimmed);
+    }
+    if (this.state.step === 6) {
       return this.handleResources(trimmed);
     }
     if (this.state.step === 7) {
-      const permissionResult = this.handlePermission(trimmed);
-      if (permissionResult) {
-        return permissionResult;
-      }
+      const permissionResult = await this.handlePermission(trimmed);
+      if (permissionResult) return permissionResult;
       return this.handoffToExecution();
     }
     return { reply: 'Resolution Builder is complete. Start again if you want a new roadmap.', state: this.publicState() };
   }
 }
 
-function getSession(userId) {
-  return sessions.get(userId) || null;
+async function getOrCreateSession(user) {
+  const existing = await ResolutionBuilderSession.getActiveByUser(user.id);
+  if (existing) return existing;
+  return ResolutionBuilderSession.create(user.id, null);
 }
 
-function startSession(user) {
-  const session = new ResolutionBuilderSession(user);
-  sessions.set(user.id, session);
-  return session.start();
+async function startSession(user) {
+  const sessionRecord = await getOrCreateSession(user);
+  const flow = new ResolutionBuilderFlow(user, sessionRecord);
+  const response = await flow.start();
+  await flow.logMessage('assistant', response.reply, 'start', response.state);
+  return response;
 }
 
 async function handleMessage(user, text) {
-  let session = getSession(user.id);
-  if (!session) {
-    session = new ResolutionBuilderSession(user);
-    sessions.set(user.id, session);
-    if (!text || !text.trim()) {
-      return session.start();
-    }
+  const sessionRecord = await getOrCreateSession(user);
+  const flow = new ResolutionBuilderFlow(user, sessionRecord);
+  await flow.logMessage('user', text, `step_${flow.state.step}`);
+  const response = await flow.handleInput(text);
+  if (response?.reply) {
+    await flow.logMessage('assistant', response.reply, `step_${flow.state.step}`, response.state);
   }
-  const response = await session.handleInput(text);
-  if (response?.state && response.state.completed) {
-    sessions.set(user.id, session);
+  if (flow.state.completed) {
+    await ResolutionBuilderSession.setStatus(sessionRecord.id, 'finished');
   }
   return response;
 }
 
-function getState(userId) {
-  const session = getSession(userId);
-  if (!session) return null;
-  return session.publicState();
+async function isActive(userId) {
+  const session = await ResolutionBuilderSession.getActiveByUser(userId);
+  return Boolean(session?.status === 'active');
 }
 
-function clearSession(userId) {
-  sessions.delete(userId);
-}
-
-function isActive(userId) {
-  const session = getSession(userId);
-  return Boolean(session?.publicState().active);
+async function clearSession(userId) {
+  const session = await ResolutionBuilderSession.getActiveByUser(userId);
+  if (!session) return;
+  await ResolutionBuilderSession.setStatus(session.id, 'cancelled');
 }
 
 module.exports = {
   startSession,
   handleMessage,
-  getState,
-  clearSession,
-  isActive
+  isActive,
+  clearSession
 };
