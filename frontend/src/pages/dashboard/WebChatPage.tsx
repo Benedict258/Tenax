@@ -84,9 +84,11 @@ const WebChatPage = () => {
 
   if (!user) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center">
-        <p className="text-lg font-semibold">Sign in to use the unified agent</p>
-        <p className="text-white/60 text-sm mt-2">Create an account from the hero screen to unlock shared WhatsApp + web memory.</p>
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 text-center">
+        <p className="text-lg font-semibold text-black">Sign in to use the unified agent</p>
+        <p className="text-gray-500 text-sm mt-2">
+          Create an account from the hero screen to unlock shared WhatsApp + web memory.
+        </p>
         <Button className="mt-4" onClick={() => navigate('/signup')}>
           Get Started
         </Button>
@@ -96,13 +98,13 @@ const WebChatPage = () => {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr),minmax(0,1fr)]">
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur flex flex-col">
-        <header className="flex items-center justify-between pb-4 border-b border-white/10">
+      <section className="rounded-3xl border border-gray-200 bg-white p-6 flex flex-col">
+        <header className="flex items-center justify-between pb-4 border-b border-gray-200">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/50">Web Chat</p>
-            <h2 className="text-2xl font-semibold">WhatsApp agent, now on web</h2>
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Web Chat</p>
+            <h2 className="text-2xl font-semibold text-black">WhatsApp agent, now on web</h2>
           </div>
-          <Bot className="h-6 w-6 text-white/70" />
+          <Bot className="h-6 w-6 text-gray-500" />
         </header>
         <div className="flex-1 overflow-y-auto py-6">
           <ChatMessageList>
@@ -129,13 +131,13 @@ const WebChatPage = () => {
                   src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&q=80&crop=faces&fit=crop"
                   fallback=""
                 />
-                <ChatBubbleMessage variant="received">Tenax is typing…</ChatBubbleMessage>
+                <ChatBubbleMessage variant="received">Tenax is typing...</ChatBubbleMessage>
               </ChatBubble>
             )}
           </ChatMessageList>
         </div>
-        {chatError && <p className="text-red-400 text-sm">{chatError}</p>}
-        <form onSubmit={handleChatSubmit} className="pt-4 border-t border-white/10">
+        {chatError && <p className="text-red-600 text-sm">{chatError}</p>}
+        <form onSubmit={handleChatSubmit} className="pt-4 border-t border-gray-200">
           <ChatInput
             placeholder="Type an execution request, same as WhatsApp."
             value={chatInput}
@@ -147,23 +149,23 @@ const WebChatPage = () => {
         </form>
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
+      <section className="rounded-3xl border border-gray-200 bg-white p-6 space-y-4">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-white/50">Playbook</p>
-          <h3 className="mt-1 text-xl font-semibold">How the web agent responds</h3>
-          <p className="text-white/60 text-sm">
+          <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Playbook</p>
+          <h3 className="mt-1 text-xl font-semibold text-black">How the web agent responds</h3>
+          <p className="text-gray-500 text-sm">
             Identical routing, tone, and evaluator hooks as WhatsApp. Every prompt here is treated as a signed command.
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-white/40">Active operator</p>
-          <p className="text-lg font-semibold">{summary?.user?.name || ''}</p>
-          <p className="text-white/60 text-sm">Goal: {summary?.user?.goal || 'Stay consistent'}</p>
+        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Active operator</p>
+          <p className="text-lg font-semibold text-black">{summary?.user?.name || ''}</p>
+          <p className="text-gray-500 text-sm">Goal: {summary?.user?.goal || 'Stay consistent'}</p>
         </div>
-        <div className="space-y-3 text-sm text-white/80">
-          <p>• Ask for adaptive reminders, pinned P1s, or schedule edits.</p>
-          <p>• Use natural language or the WhatsApp quick phrases.</p>
-          <p>• Agent loops into evaluator scoring automatically.</p>
+        <div className="space-y-3 text-sm text-gray-600">
+          <p>- Ask for adaptive reminders, pinned P1s, or schedule edits.</p>
+          <p>- Use natural language or the WhatsApp quick phrases.</p>
+          <p>- Agent loops into evaluator scoring automatically.</p>
         </div>
       </section>
     </div>

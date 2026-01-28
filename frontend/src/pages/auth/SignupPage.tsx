@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
 import { useAuth } from '../../context/AuthContext';
+import { AuthShell, PrimaryButton } from '../../components/ui/auth-form';
 
 const roleOptions = ['Student', 'Developer/Builder', 'Professional', 'Creator', 'Self-learner', 'Other'];
 const reasons = [
@@ -103,105 +103,113 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#03040b] text-white relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 opacity-50">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-500/30 via-transparent to-cyan-400/20 blur-[200px]" />
-        <div className="absolute inset-0 bg-noise" />
-      </div>
-      <div className="relative z-10 max-w-5xl mx-auto px-6 py-12">
-        <header className="flex flex-col gap-2 text-center">
-          <p className="text-xs uppercase tracking-[0.4em] text-white/60">Tenax onboarding</p>
-          <h1 className="text-4xl font-semibold">Setup</h1>
-          <p className="text-white/60">Only the inputs that help the agent execute correctly from day one.</p>
-        </header>
-        <form onSubmit={handleSubmit} className="mt-10 space-y-10">
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-            <p className="text-sm uppercase tracking-[0.4em] text-white/40">Identity</p>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Input label="Full name" value={form.name} onChange={(value) => setForm((prev) => ({ ...prev, name: value }))} required />
-              <Input label="Preferred name" value={form.preferredName} onChange={(value) => setForm((prev) => ({ ...prev, preferredName: value }))} required />
-              <Input label="Email" type="email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} required />
-              <Input label="Phone number" placeholder="+234..." value={form.phone} onChange={(value) => setForm((prev) => ({ ...prev, phone: value }))} required />
-              <Select label="Timezone" value={form.timezone} options={timezoneOptions} onChange={(value) => setForm((prev) => ({ ...prev, timezone: value }))} />
-              <div>
-                <label className="text-sm text-white/60">Daily start time</label>
-                <input
-                  type="time"
-                  value={form.dailyStart}
-                  onChange={(event) => setForm((prev) => ({ ...prev, dailyStart: event.target.value }))}
-                  className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3"
-                />
-              </div>
-            </div>
-          </section>
+    <AuthShell
+      title="Create your Tenax account"
+      subtitle="Already have an account?"
+      link={
+        <Link to="/login" className="text-blue-600 hover:underline">
+          Sign in.
+        </Link>
+      }
+      onBack={() => navigate(-1)}
+      showSocial={false}
+      containerClassName="max-w-5xl"
+      cardClassName="p-8"
+    >
+      <form onSubmit={handleSubmit} className="space-y-10">
+        <div className="text-center">
+          <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">Tenax onboarding</p>
+          <p className="mt-2 text-zinc-500">
+            Only the inputs that help the agent execute correctly from day one.
+          </p>
+        </div>
 
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-6">
+        <section className="rounded-3xl border border-zinc-200 bg-white p-6">
+          <p className="text-sm uppercase tracking-[0.4em] text-zinc-500">Identity</p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <Input label="Full name" value={form.name} onChange={(value) => setForm((prev) => ({ ...prev, name: value }))} required />
+            <Input label="Preferred name" value={form.preferredName} onChange={(value) => setForm((prev) => ({ ...prev, preferredName: value }))} required />
+            <Input label="Email" type="email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} required />
+            <Input label="Phone number" placeholder="+234..." value={form.phone} onChange={(value) => setForm((prev) => ({ ...prev, phone: value }))} required />
+            <Select label="Timezone" value={form.timezone} options={timezoneOptions} onChange={(value) => setForm((prev) => ({ ...prev, timezone: value }))} />
             <div>
-              <p className="text-sm uppercase tracking-[0.4em] text-white/40">Role</p>
-              <p className="text-white/60 text-sm">Pick everything that applies.</p>
+              <label className="text-sm text-zinc-500">Daily start time</label>
+              <input
+                type="time"
+                value={form.dailyStart}
+                onChange={(event) => setForm((prev) => ({ ...prev, dailyStart: event.target.value }))}
+                className="mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3"
+              />
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {roleOptions.map((role) => (
-                <CheckboxChip
-                  key={role}
-                  label={role}
-                  checked={selectedRoles.includes(role)}
-                  onChange={() => toggleSelection(role, selectedRoles, setSelectedRoles)}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-6">
-            <div>
-              <p className="text-sm uppercase tracking-[0.4em] text-white/40">Reason for using Tenax</p>
-              <p className="text-white/60 text-sm">This keeps the agent on-mission.</p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {reasons.map((reason) => (
-                <CheckboxChip
-                  key={reason}
-                  label={reason}
-                  checked={selectedReasons.includes(reason)}
-                  onChange={() => toggleSelection(reason, selectedReasons, setSelectedReasons)}
-                />
-              ))}
-            </div>
-            <Input
-              label="Primary goal (1–2 max)"
-              value={form.primaryGoal}
-              onChange={(value) => setForm((prev) => ({ ...prev, primaryGoal: value }))}
-              required
-            />
-          </section>
-
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 grid gap-6 md:grid-cols-2">
-            <Select label="Availability pattern" value={form.availability} options={availabilityOptions} onChange={(value) => setForm((prev) => ({ ...prev, availability: value }))} />
-            <Select label="Tone preference" value={form.tone} options={toneOptions} onChange={(value) => setForm((prev) => ({ ...prev, tone: value }))} />
-            <Toggle label="Enforce daily P1" checked={form.enforceP1} onChange={(checked) => setForm((prev) => ({ ...prev, enforceP1: checked }))} />
-            <Toggle label="Enforce workout" checked={form.enforceWorkout} onChange={(checked) => setForm((prev) => ({ ...prev, enforceWorkout: checked }))} />
-            <Toggle label="Enforce pre-class reading" checked={form.enforcePreClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePreClass: checked }))} />
-            <Toggle label="Enforce post-class review" checked={form.enforcePostClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePostClass: checked }))} />
-            <Toggle label="Timetable or schedule" checked={form.timetableEnabled} onChange={(checked) => setForm((prev) => ({ ...prev, timetableEnabled: checked }))} helper="Optional. You can add this later." />
-            <Toggle label="Google Calendar connected" checked={form.calendarConnected} onChange={(checked) => setForm((prev) => ({ ...prev, calendarConnected: checked }))} helper="Optional, read-only." />
-          </section>
-
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-
-          <div className="flex flex-col gap-3">
-            <Button type="submit" disabled={!canSubmit || submitting} className="w-full md:w-auto">
-              {submitting ? 'Setting up…' : 'Launch Tenax'}
-            </Button>
-            <p className="text-white/60 text-sm text-center">
-              Timetable upload is optional. Tenax works immediately after signup.
-            </p>
-            <p className="text-white/40 text-xs text-center">
-              Already onboarded? <Link to="/dashboard/today" className="text-cyan-300 underline">Enter the command deck</Link>.
-            </p>
           </div>
-        </form>
-      </div>
-    </div>
+        </section>
+
+        <section className="rounded-3xl border border-zinc-200 bg-white p-6 space-y-6">
+          <div>
+            <p className="text-sm uppercase tracking-[0.4em] text-zinc-500">Role</p>
+            <p className="text-zinc-500 text-sm">Pick everything that applies.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {roleOptions.map((role) => (
+              <CheckboxChip
+                key={role}
+                label={role}
+                checked={selectedRoles.includes(role)}
+                onChange={() => toggleSelection(role, selectedRoles, setSelectedRoles)}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-zinc-200 bg-white p-6 space-y-6">
+          <div>
+            <p className="text-sm uppercase tracking-[0.4em] text-zinc-500">Reason for using Tenax</p>
+            <p className="text-zinc-500 text-sm">This keeps the agent on-mission.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {reasons.map((reason) => (
+              <CheckboxChip
+                key={reason}
+                label={reason}
+                checked={selectedReasons.includes(reason)}
+                onChange={() => toggleSelection(reason, selectedReasons, setSelectedReasons)}
+              />
+            ))}
+          </div>
+          <Input
+            label="Primary goal (1â€“2 max)"
+            value={form.primaryGoal}
+            onChange={(value) => setForm((prev) => ({ ...prev, primaryGoal: value }))}
+            required
+          />
+        </section>
+
+        <section className="rounded-3xl border border-zinc-200 bg-white p-6 grid gap-6 md:grid-cols-2">
+          <Select label="Availability pattern" value={form.availability} options={availabilityOptions} onChange={(value) => setForm((prev) => ({ ...prev, availability: value }))} />
+          <Select label="Tone preference" value={form.tone} options={toneOptions} onChange={(value) => setForm((prev) => ({ ...prev, tone: value }))} />
+          <Toggle label="Enforce daily P1" checked={form.enforceP1} onChange={(checked) => setForm((prev) => ({ ...prev, enforceP1: checked }))} />
+          <Toggle label="Enforce workout" checked={form.enforceWorkout} onChange={(checked) => setForm((prev) => ({ ...prev, enforceWorkout: checked }))} />
+          <Toggle label="Enforce pre-class reading" checked={form.enforcePreClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePreClass: checked }))} />
+          <Toggle label="Enforce post-class review" checked={form.enforcePostClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePostClass: checked }))} />
+          <Toggle label="Timetable or schedule" checked={form.timetableEnabled} onChange={(checked) => setForm((prev) => ({ ...prev, timetableEnabled: checked }))} helper="Optional. You can add this later." />
+          <Toggle label="Google Calendar connected" checked={form.calendarConnected} onChange={(checked) => setForm((prev) => ({ ...prev, calendarConnected: checked }))} helper="Optional, read-only." />
+        </section>
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+
+        <div className="flex flex-col gap-3">
+          <PrimaryButton type="submit" disabled={!canSubmit || submitting} className="w-full md:w-auto">
+            {submitting ? 'Setting upâ€¦' : 'Launch Tenax'}
+          </PrimaryButton>
+          <p className="text-zinc-500 text-sm text-center">
+            Timetable upload is optional. Tenax works immediately after signup.
+          </p>
+          <p className="text-zinc-500 text-xs text-center">
+            Already onboarded? <Link to="/dashboard/today" className="text-blue-600 underline">Enter the command deck</Link>.
+          </p>
+        </div>
+      </form>
+    </AuthShell>
   );
 };
 
@@ -216,24 +224,27 @@ interface InputProps {
 
 const Input = ({ label, value, onChange, required, placeholder, type = 'text' }: InputProps) => (
   <div>
-    <label className="text-sm text-white/60">{label}{required && ' *'}</label>
+    <label className="text-sm text-zinc-500">
+      {label}
+      {required && ' *'}
+    </label>
     <input
       type={type}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholder}
-      className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3 placeholder:text-white/40"
+      className="mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 placeholder:text-zinc-500"
     />
   </div>
 );
 
 const Select = ({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) => (
   <div>
-    <label className="text-sm text-white/60">{label}</label>
+    <label className="text-sm text-zinc-500">{label}</label>
     <select
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3"
+      className="mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3"
     >
       {options.map((option) => (
         <option key={option} value={option}>
@@ -248,15 +259,15 @@ const CheckboxChip = ({ label, checked, onChange }: { label: string; checked: bo
   <button
     type="button"
     onClick={onChange}
-    className={`rounded-2xl border px-4 py-3 text-left transition ${checked ? 'border-cyan-400/70 bg-cyan-500/10' : 'border-white/10 bg-black/30'}`}
+    className={`rounded-2xl border px-4 py-3 text-left transition ${checked ? 'border-cyan-400/70 bg-cyan-500/10' : 'border-zinc-200 bg-white'}`}
   >
     <p className="font-semibold">{label}</p>
-    <p className="text-white/50 text-xs">{checked ? 'Selected' : 'Tap to include'}</p>
+    <p className="text-zinc-500 text-xs">{checked ? 'Selected' : 'Tap to include'}</p>
   </button>
 );
 
 const Toggle = ({ label, checked, onChange, helper }: { label: string; checked: boolean; onChange: (value: boolean) => void; helper?: string }) => (
-  <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+  <label className="flex items-start gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
     <input
       type="checkbox"
       checked={checked}
@@ -265,7 +276,7 @@ const Toggle = ({ label, checked, onChange, helper }: { label: string; checked: 
     />
     <div>
       <p className="text-sm font-semibold">{label}</p>
-      {helper && <p className="text-white/50 text-xs">{helper}</p>}
+      {helper && <p className="text-zinc-500 text-xs">{helper}</p>}
     </div>
   </label>
 );

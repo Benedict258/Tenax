@@ -19,7 +19,7 @@ export interface DashboardNavItem {
 }
 
 export const dashboardNavItems: DashboardNavItem[] = [
-  { label: 'Today', path: '/dashboard/today', icon: Activity },
+  { label: 'Execution Core', path: '/dashboard/today', icon: Activity },
   { label: 'Add Task', path: '/dashboard/add-task', icon: PlusSquare },
   { label: 'Schedule Intel', path: '/dashboard/schedule', icon: Calendar },
   { label: 'Web Chat', path: '/dashboard/chat', icon: MessageSquare },

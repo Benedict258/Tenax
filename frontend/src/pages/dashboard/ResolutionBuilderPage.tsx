@@ -1,5 +1,5 @@
 import React, { FormEvent, useMemo, useState } from 'react';
-import { Sparkles, CheckCircle2, Clock, ArrowRight, Download } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Download, Sparkles } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { useAuth } from '../../context/AuthContext';
@@ -49,7 +49,7 @@ const stepLabels = [
   'Resource enrichment',
   'Schedule preview',
   'Permission gate',
-  'Execution handoff'
+  'Execution handoff',
 ];
 
 const formatList = (items: string[]) => (items.length ? items.join(', ') : 'Not set yet');
@@ -76,20 +76,20 @@ const buildRoadmapSvg = (state: ResolutionState | null) => {
     `Goal: ${escapeSvgText(state?.resolution_goal || 'Not set')}`,
     `Outcome: ${escapeSvgText(state?.target_outcome || 'Not set')}`,
     'Roadmap:',
-    ...lines
+    ...lines,
   ];
 
   const textMarkup = textLines
     .map((line, index) => {
       const y = padding + lineHeight * index;
-      return `<text x="${padding}" y="${y}" fill="#E6EEF9" font-size="14" font-family="Space Grotesk, Arial">${line}</text>`;
+      return `<text x="${padding}" y="${y}" fill="#1f2937" font-size="14" font-family="Space Grotesk, Arial">${line}</text>`;
     })
     .join('');
 
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <rect width="100%" height="100%" fill="#0b0f1a"/>
-  <rect x="12" y="12" width="${width - 24}" height="${height - 24}" rx="18" fill="#0f1322" stroke="#24304f"/>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <rect x="12" y="12" width="${width - 24}" height="${height - 24}" rx="18" fill="#f8fafc" stroke="#e2e8f0"/>
   ${textMarkup}
 </svg>`;
 };
@@ -102,7 +102,7 @@ const buildPdf = (state: ResolutionState | null) => {
     `Hours per week: ${state?.time_commitment_hours ?? 'Not set'}`,
     `Days: ${formatList((state?.days_free || []).map((day) => day.label))}`,
     `Time blocks: ${formatList((state?.preferred_blocks || []).map((block) => block.label))}`,
-    'Roadmap:'
+    'Roadmap:',
   ];
 
   (state?.roadmap || []).forEach((phase, index) => {
@@ -121,7 +121,7 @@ const buildPdf = (state: ResolutionState | null) => {
     '/F1 12 Tf',
     '50 760 Td',
     ...lines.map((line, index) => `${index === 0 ? '' : '0 -16 Td '}(${escapePdfText(line)}) Tj`),
-    'ET'
+    'ET',
   ].join(' ');
 
   const encoder = new TextEncoder();
@@ -146,7 +146,10 @@ const buildPdf = (state: ResolutionState | null) => {
 
   addObject(1, '<< /Type /Catalog /Pages 2 0 R >>');
   addObject(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-  addObject(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>');
+  addObject(
+    3,
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+  );
   addObject(4, `<< /Length ${byteLength(content)} >>\nstream\n${content}\nendstream`);
   addObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
 
@@ -193,7 +196,7 @@ const ResolutionBuilderPage = () => {
       currentStep > 5 ? 'done' : currentStep === 5 ? 'active' : 'pending',
       schedulePreview.length ? 'done' : currentStep >= 6 ? 'active' : 'pending',
       builderState.permission !== null ? 'done' : currentStep >= 7 ? 'active' : 'pending',
-      builderState.completed ? 'done' : currentStep >= 8 ? 'active' : 'pending'
+      builderState.completed ? 'done' : currentStep >= 8 ? 'active' : 'pending',
     ];
   }, [builderState, currentStep, roadmapPhases.length, schedulePreview.length]);
 
@@ -238,7 +241,7 @@ const ResolutionBuilderPage = () => {
       const response = await apiClient.post<ReplyPayload>('/agent/message', {
         channel: 'web',
         text,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       const reply = response.data?.replies?.[0];
       if (reply?.text) {
@@ -298,27 +301,27 @@ const ResolutionBuilderPage = () => {
 
   if (!user) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
-        <h2 className="text-xl font-semibold">Sign in to start the Resolution Builder</h2>
-        <p className="mt-3 text-white/60 text-sm">The guided roadmap uses your Tenax profile to schedule execution.</p>
+      <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center">
+        <h2 className="text-xl font-semibold text-black">Sign in to start the Resolution Builder</h2>
+        <p className="mt-3 text-gray-500 text-sm">The guided roadmap uses your Tenax profile to schedule execution.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
+      <section className="rounded-3xl border border-gray-200 bg-white p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.35em] text-white/50">Tenax Resolution Builder</p>
-            <h1 className="mt-3 text-3xl font-semibold">From resolution to daily execution</h1>
-            <p className="mt-3 text-white/60 max-w-2xl text-sm">
+            <p className="text-sm uppercase tracking-[0.35em] text-gray-500">Tenax Resolution Builder</p>
+            <h1 className="mt-3 text-3xl font-semibold text-black">From resolution to daily execution</h1>
+            <p className="mt-3 text-gray-500 max-w-2xl text-sm">
               A controlled planning mode that converts a New Year resolution into a roadmap, schedule preview, and explicit
               execution handoff.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button variant="secondary" onClick={handleStart} disabled={busy}>
+            <Button onClick={handleStart} disabled={busy}>
               <Sparkles className="mr-2 h-4 w-4" /> Start Resolution Builder
             </Button>
             <Button variant="outline" onClick={handleDownloadImage} disabled={!roadmapPhases.length}>
@@ -332,13 +335,13 @@ const ResolutionBuilderPage = () => {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr),minmax(0,0.8fr)]">
-        <section className="rounded-3xl border border-white/10 bg-black/30 p-6 space-y-6">
+        <section className="rounded-3xl border border-gray-200 bg-white p-6 space-y-6">
           <header className="flex items-center justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-white/50">Guided flow</p>
-              <h2 className="mt-2 text-xl font-semibold">Resolution Builder stages</h2>
+              <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Guided flow</p>
+              <h2 className="mt-2 text-xl font-semibold text-black">Resolution Builder stages</h2>
             </div>
-            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs uppercase text-white/70">
+            <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs uppercase text-gray-600">
               Step {normalizedStep} / 8
             </span>
           </header>
@@ -346,31 +349,31 @@ const ResolutionBuilderPage = () => {
           <div
             className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
               activeStepStatus === 'done'
-                ? 'border-emerald-400/30 bg-emerald-500/10'
+                ? 'border-emerald-200 bg-emerald-50'
                 : activeStepStatus === 'active'
-                ? 'border-brand-500/40 bg-brand-500/10'
-                : 'border-white/10 bg-white/5'
+                ? 'border-brand-200 bg-brand-50'
+                : 'border-gray-200 bg-white'
             }`}
           >
             <div className="flex items-center gap-3">
               {activeStepStatus === 'done' ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
               ) : activeStepStatus === 'active' ? (
-                <Clock className="h-4 w-4 text-brand-200" />
+                <Clock className="h-4 w-4 text-brand-500" />
               ) : (
-                <div className="h-2 w-2 rounded-full bg-white/30" />
+                <div className="h-2 w-2 rounded-full bg-gray-300" />
               )}
               <div>
-                <p className="text-sm font-medium">{activeStepLabel}</p>
-                <p className="text-xs text-white/50">Step {normalizedStep}</p>
+                <p className="text-sm font-medium text-black">{activeStepLabel}</p>
+                <p className="text-xs text-gray-500">Step {normalizedStep}</p>
               </div>
             </div>
-            <span className="text-xs uppercase text-white/40">{activeStepStatus}</span>
+            <span className="text-xs uppercase text-gray-500">{activeStepStatus}</span>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/40">Tenax prompt</p>
-            <p className="mt-2 text-sm text-white/80 whitespace-pre-line">{assistantPrompt}</p>
+          <div className="rounded-2xl border border-gray-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Tenax prompt</p>
+            <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{assistantPrompt}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -386,7 +389,7 @@ const ResolutionBuilderPage = () => {
                   key={suggestion}
                   type="button"
                   onClick={() => handleSuggestion(suggestion)}
-                  className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 hover:bg-white"
                 >
                   {suggestion}
                 </button>
@@ -396,52 +399,52 @@ const ResolutionBuilderPage = () => {
               <Button type="submit" disabled={busy || !input.trim()}>
                 Send response <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              {error && <span className="text-sm text-red-300">{error}</span>}
+              {error && <span className="text-sm text-red-500">{error}</span>}
             </div>
           </form>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-black/30 p-6 space-y-6">
+        <section className="rounded-3xl border border-gray-200 bg-white p-6 space-y-6">
           <header>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/50">Roadmap tree</p>
-            <h2 className="mt-2 text-xl font-semibold">Notebook-style plan view</h2>
-            <p className="mt-2 text-sm text-white/60">
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Roadmap tree</p>
+            <h2 className="mt-2 text-xl font-semibold text-black">Notebook-style plan view</h2>
+            <p className="mt-2 text-sm text-gray-500">
               A visual path that mirrors roadmap.sh while staying anchored to your available time.
             </p>
           </header>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/40">Resolution</p>
-            <p className="mt-2 text-base font-semibold">{builderState?.resolution_goal || 'Awaiting goal'}</p>
-            <p className="text-sm text-white/60">{builderState?.target_outcome || 'Awaiting success definition'}</p>
+          <div className="rounded-2xl border border-gray-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Resolution</p>
+            <p className="mt-2 text-base font-semibold text-black">{builderState?.resolution_goal || 'Awaiting goal'}</p>
+            <p className="text-sm text-gray-500">{builderState?.target_outcome || 'Awaiting success definition'}</p>
           </div>
-          <div className="relative rounded-2xl border border-white/10 bg-black/40 p-5">
-            <div className="absolute left-7 top-6 bottom-6 w-px bg-white/10" />
+          <div className="relative rounded-2xl border border-gray-200 bg-white p-5">
+            <div className="absolute left-7 top-6 bottom-6 w-px bg-gray-200" />
             <div className="space-y-6 pl-10">
               {roadmapPhases.length ? (
                 roadmapPhases.map((phase, index) => (
                   <div key={`${phase.name}-${index}`} className="relative">
-                    <div className="absolute -left-6 top-2 h-3 w-3 rounded-full bg-brand-400 shadow-[0_0_12px_rgba(82,110,255,0.5)]" />
-                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Phase {index + 1}</p>
-                      <p className="mt-1 text-sm font-semibold">{phase.name}</p>
-                      <p className="mt-1 text-xs text-white/60">{phase.description}</p>
+                    <div className="absolute -left-6 top-2 h-3 w-3 rounded-full bg-brand-400 shadow-[0_0_12px_rgba(200,90,71,0.4)]" />
+                    <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Phase {index + 1}</p>
+                      <p className="mt-1 text-sm font-semibold text-black">{phase.name}</p>
+                      <p className="mt-1 text-xs text-gray-500">{phase.description}</p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-white/50">Roadmap phases appear here after the time check.</p>
+                <p className="text-sm text-gray-500">Roadmap phases appear here after the time check.</p>
               )}
             </div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/40">Time reality check</p>
-            <p className="mt-2 text-sm text-white/70">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Time reality check</p>
+            <p className="mt-2 text-sm text-gray-600">
               Hours per week: {builderState?.time_commitment_hours ?? 'Not set'}
             </p>
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-gray-600">
               Days: {formatList((builderState?.days_free || []).map((day) => day.label))}
             </p>
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-gray-600">
               Blocks: {formatList((builderState?.preferred_blocks || []).map((block) => block.label))}
             </p>
           </div>
@@ -449,36 +452,36 @@ const ResolutionBuilderPage = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <section className="rounded-3xl border border-gray-200 bg-white p-6">
           <header className="flex items-center justify-between">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-white/50">Schedule preview</p>
-              <h3 className="mt-2 text-xl font-semibold">Execution-ready draft</h3>
+              <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Schedule preview</p>
+              <h3 className="mt-2 text-xl font-semibold text-black">Execution-ready draft</h3>
             </div>
-            <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs uppercase text-white/70">
+            <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs uppercase text-gray-600">
               Preview only
             </span>
           </header>
           <div className="mt-4 space-y-3">
             {schedulePreview.length ? (
               schedulePreview.map((slot, index) => (
-                <div key={`${slot.day_label}-${index}`} className="rounded-2xl border border-white/10 bg-black/40 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/40">{slot.day_label}</p>
-                  <p className="mt-1 text-sm font-semibold">{slot.phase_name}</p>
-                  <p className="text-xs text-white/60">{slot.focus}</p>
-                  <p className="mt-2 text-xs text-white/70">Time: {slot.time_label}</p>
+                <div key={`${slot.day_label}-${index}`} className="rounded-2xl border border-gray-200 bg-white p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{slot.day_label}</p>
+                  <p className="mt-1 text-sm font-semibold text-black">{slot.phase_name}</p>
+                  <p className="text-xs text-gray-500">{slot.focus}</p>
+                  <p className="mt-2 text-xs text-gray-600">Time: {slot.time_label}</p>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-white/50">Schedule preview appears after resources are handled.</p>
+              <p className="text-sm text-gray-500">Schedule preview appears after resources are handled.</p>
             )}
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
+        <section className="rounded-3xl border border-gray-200 bg-white p-6">
           <header>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/50">Learning resources</p>
-            <h3 className="mt-2 text-xl font-semibold">Optional enrichment</h3>
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Learning resources</p>
+            <h3 className="mt-2 text-xl font-semibold text-black">Optional enrichment</h3>
           </header>
           <div className="mt-4 space-y-3">
             {resources.length ? (
@@ -488,15 +491,15 @@ const ResolutionBuilderPage = () => {
                   href={resource.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block rounded-2xl border border-white/10 bg-black/40 p-4 transition hover:border-brand-400/50"
+                  className="block rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-brand-300"
                 >
-                  <p className="text-sm font-semibold">{resource.title}</p>
-                  <p className="text-xs text-white/60">{resource.type}</p>
-                  <p className="mt-1 text-xs text-brand-200">{resource.url}</p>
+                  <p className="text-sm font-semibold text-black">{resource.title}</p>
+                  <p className="text-xs text-gray-500">{resource.type}</p>
+                  <p className="mt-1 text-xs text-brand-500">{resource.url}</p>
                 </a>
               ))
             ) : (
-              <p className="text-sm text-white/50">Resources appear if you approve enrichment in step 5.</p>
+              <p className="text-sm text-gray-500">Resources appear if you approve enrichment in step 5.</p>
             )}
           </div>
         </section>
@@ -506,3 +509,4 @@ const ResolutionBuilderPage = () => {
 };
 
 export default ResolutionBuilderPage;
+

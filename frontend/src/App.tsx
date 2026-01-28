@@ -7,6 +7,8 @@ import BentoDashboard from './pages/dashboard/BentoDashboard';
 import WebChatPage from './pages/dashboard/WebChatPage';
 import WeeklyProgressPage from './pages/dashboard/WeeklyProgressPage';
 import LeaderboardPage from './pages/dashboard/LeaderboardPage';
+import ExecutionBoardPage from './pages/dashboard/ExecutionBoardPage';
+import PinnedP1Page from './pages/dashboard/PinnedP1Page';
 import BehaviorPage from './pages/admin/BehaviorPage';
 import OpikPulsePage from './pages/admin/OpikPulsePage';
 import SignalsPage from './pages/admin/SignalsPage';
@@ -38,6 +40,8 @@ function App() {
               <Route path="schedule" element={<ScheduleEditorPage />} />
               <Route path="weekly" element={<WeeklyProgressPage />} />
               <Route path="leaderboard" element={<LeaderboardPage />} />
+              <Route path="execution-board" element={<ExecutionBoardPage />} />
+              <Route path="p1" element={<PinnedP1Page />} />
               <Route path="resolution-builder" element={<ResolutionBuilderPage />} />
               {ADMIN_ENABLED ? (
                 <>

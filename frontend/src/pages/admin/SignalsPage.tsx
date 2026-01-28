@@ -16,19 +16,19 @@ const SignalsPage = () => {
   const experiments = Object.keys(overview?.variants ?? {}).length;
 
   const signals = [
-    `Reminder follow-through dips after ${reminderLatency > 15 ? 'midday' : 'late afternoon'} — consider proactive check-ins.`,
+    `Reminder follow-through dips after ${reminderLatency > 15 ? 'midday' : 'late afternoon'} - consider proactive check-ins.`,
     completionRate >= 75
-      ? 'Maintain throttle — keep stretching goals and cadence.'
+      ? 'Maintain throttle - keep stretching goals and cadence.'
       : 'Opportunity: reinforce morning ramp to protect streak.',
     `Experiments tracked: ${experiments}. Ensure WhatsApp threads are labeled for clean attribution.`,
   ];
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
+    <section className="rounded-3xl border border-white/10 bg-white/5/5 p-6 space-y-4">
       <div className="flex items-center justify-between pb-4 border-b border-white/10">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-white/40">Admin panel</p>
-          <h2 className="text-2xl font-semibold">Signals board</h2>
+          <h2 className="text-2xl font-semibold text-white">Signals board</h2>
           <p className="text-white/60 text-sm">Internal-only insight stream.</p>
         </div>
         <Bot className="h-6 w-6 text-white/70" />

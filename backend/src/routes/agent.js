@@ -6,6 +6,12 @@ const agentPipeline = require('../services/agentPipeline');
 
 const router = express.Router();
 
+const isUpstreamError = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+  const code = error?.code || error?.cause?.code;
+  return message.includes('fetch failed') || message.includes('timeout') || code === 'UND_ERR_CONNECT_TIMEOUT';
+};
+
 async function optionalAuth(req, _res, next) {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (!token) {
@@ -20,6 +26,9 @@ async function optionalAuth(req, _res, next) {
     }
   } catch (error) {
     console.warn('Optional auth skipped:', error.message);
+    if (isUpstreamError(error)) {
+      req.authError = error;
+    }
   }
 
   next();
@@ -34,6 +43,9 @@ router.post('/message', optionalAuth, async (req, res) => {
 
     let sessionUser = null;
     if (channel === 'web') {
+      if (req.authError) {
+        return res.status(503).json({ error: 'Auth service unavailable. Try again shortly.' });
+      }
       if (!req.user) {
         return res.status(401).json({ error: 'Authentication required for web channel' });
       }
@@ -68,6 +80,9 @@ router.post('/message', optionalAuth, async (req, res) => {
 
 router.get('/conversations/active', optionalAuth, async (req, res) => {
   try {
+    if (req.authError) {
+      return res.status(503).json({ error: 'Auth service unavailable. Try again shortly.' });
+    }
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }

@@ -8,6 +8,23 @@ export const apiClient = axios.create({
   withCredentials: false
 });
 
+apiClient.interceptors.request.use((config) => {
+  if (!config.headers?.Authorization) {
+    try {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.token) {
+          config.headers.Authorization = `Bearer ${parsed.token}`;
+        }
+      }
+    } catch (error) {
+      // Ignore storage parsing errors.
+    }
+  }
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {

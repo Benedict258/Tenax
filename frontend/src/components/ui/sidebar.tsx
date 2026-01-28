@@ -85,10 +85,10 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        'h-full px-4 py-6 hidden lg:flex lg:flex-col bg-neutral-900/70 backdrop-blur-xl border-r border-white/5 text-white w-[280px] flex-shrink-0 lg:sticky lg:top-0',
+        'hidden md:flex md:flex-col h-full px-4 py-4 bg-white border-r border-gray-200 w-[280px] shrink-0',
         className,
       )}
-      animate={{ width: animate ? (open ? 280 : 72) : 280 }}
+      animate={{ width: animate ? (open ? 280 : 60) : 280 }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       {...props}
@@ -106,10 +106,15 @@ export const MobileSidebar = ({
   const { open, setOpen } = useSidebar();
 
   return (
-    <div className={cn('lg:hidden w-full shrink-0', className)} {...props}>
-      <div className="flex items-center justify-between px-4 py-4 text-white">
-        <p className="text-sm uppercase tracking-[0.2em] text-white/60">Menu</p>
-        <Menu className="h-6 w-6 cursor-pointer" onClick={() => setOpen(!open)} />
+    <div
+      className={cn(
+        'flex md:hidden items-center justify-between h-12 px-4 bg-white border-b border-gray-200 w-full',
+        className,
+      )}
+      {...props}
+    >
+      <div className="flex justify-end w-full">
+        <Menu className="h-5 w-5 text-gray-800 cursor-pointer" onClick={() => setOpen(!open)} />
       </div>
       <Presence>
         {open && (
@@ -119,13 +124,13 @@ export const MobileSidebar = ({
             exit={{ x: '-100%', opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className={cn(
-              'fixed inset-0 z-50 bg-neutral-950/95 backdrop-blur-xl p-10 flex flex-col justify-between',
+              'fixed inset-0 z-50 bg-white p-10 flex flex-col justify-between',
               className,
             )}
           >
             <button
               aria-label="Close menu"
-              className="absolute right-8 top-8 text-white"
+              className="absolute right-8 top-8 text-gray-700"
               onClick={() => setOpen(false)}
             >
               <X className="h-6 w-6" />
@@ -150,21 +155,18 @@ export const SidebarLink = ({ link, className, ...props }: SidebarLinkProps) => 
     <Link
       to={link.href}
       className={cn(
-        'flex items-center gap-3 text-sm text-white/80 hover:text-white transition-colors py-2',
+        'flex items-center justify-start gap-2 py-2 text-sm text-gray-700 hover:text-brand transition-colors',
         className,
       )}
       {...props}
     >
-      <span className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
-        {link.icon}
-      </span>
+      {link.icon}
       <motion.span
         animate={{
-          width: animate ? (open ? 'auto' : 0) : 'auto',
+          display: animate ? (open ? 'inline-block' : 'none') : 'inline-block',
           opacity: animate ? (open ? 1 : 0) : 1,
-          display: animate ? (open ? 'inline-flex' : 'none') : 'inline-flex',
         }}
-        className="whitespace-pre"
+        className="whitespace-pre inline-block"
       >
         {link.label}
       </motion.span>

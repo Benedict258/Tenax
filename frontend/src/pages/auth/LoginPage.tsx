@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
 import { useAuth } from '../../context/AuthContext';
+import { AuthShell, PrimaryButton } from '../../components/ui/auth-form';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -37,49 +38,52 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#03040b] text-white flex items-center justify-center px-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-md bg-white/5 border border-white/10 rounded-3xl p-8 space-y-8 shadow-xl">
-        <header className="text-center space-y-2">
-          <h1 className="text-3xl font-semibold">Login</h1>
-          <p className="text-white/60">Sign in to your Tenax account</p>
-        </header>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-white/60 mb-1">Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white"
-              placeholder="Enter your email"
-              autoComplete="email"
-            />
-          </div>
-          <div className="text-center text-white/50 text-xs">or</div>
-          <div>
-            <label className="block text-sm text-white/60 mb-1">Phone Number</label>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-              className="w-full rounded-xl border border-white/20 bg-black/30 px-4 py-3 text-white"
-              placeholder="Enter your phone number"
-              autoComplete="tel"
-            />
-          </div>
+    <AuthShell
+      title="Sign in to your account"
+      subtitle="Don't have an account?"
+      link={
+        <Link to="/signup" className="text-blue-600 hover:underline">
+          Create one.
+        </Link>
+      }
+      onBack={() => navigate(-1)}
+    >
+      <form onSubmit={handleSubmit}>
+        <div className="mb-3">
+          <label htmlFor="email-input" className="mb-1.5 block text-zinc-500">
+            Email
+          </label>
+          <input
+            id="email-input"
+            type="email"
+            value={form.email}
+            onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+            placeholder="your.email@provider.com"
+            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-800 placeholder-zinc-400 ring-1 ring-transparent transition-shadow focus:outline-0 focus:ring-blue-700"
+            autoComplete="email"
+          />
         </div>
-        {error && <div className="text-red-400 text-sm text-center">{error}</div>}
-        <Button type="submit" className="w-full" disabled={submitting}>
-          {submitting ? 'Signing in...' : 'Login'}
-        </Button>
-        <div className="text-center text-white/60 text-sm pt-2">
-          Don&apos;t have an account?{' '}
-          <span className="underline cursor-pointer" onClick={() => navigate('/signup')}>
-            Sign up
-          </span>
+        <div className="mb-3 text-center text-xs text-zinc-500">or</div>
+        <div className="mb-6">
+          <label htmlFor="phone-input" className="mb-1.5 block text-zinc-500">
+            Phone Number
+          </label>
+          <input
+            id="phone-input"
+            type="tel"
+            value={form.phone}
+            onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+            placeholder="+1 555 000 0000"
+            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-800 placeholder-zinc-400 ring-1 ring-transparent transition-shadow focus:outline-0 focus:ring-blue-700"
+            autoComplete="tel"
+          />
         </div>
+        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+        <PrimaryButton type="submit" className="w-full" disabled={submitting}>
+          {submitting ? 'Signing in...' : 'Sign in'}
+        </PrimaryButton>
       </form>
-    </div>
+    </AuthShell>
   );
 };
 

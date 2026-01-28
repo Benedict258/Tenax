@@ -37,7 +37,7 @@ const emptyForm: TimetableFormState = {
   start_time: '',
   end_time: '',
   location: '',
-  category: 'class'
+  category: 'class',
 };
 
 const dayOptions = [
@@ -47,7 +47,7 @@ const dayOptions = [
   { label: 'Thursday', value: 4 },
   { label: 'Friday', value: 5 },
   { label: 'Saturday', value: 6 },
-  { label: 'Sunday', value: 0 }
+  { label: 'Sunday', value: 0 },
 ];
 
 const dayLookup = dayOptions.reduce<Record<number, string>>((acc, option) => {
@@ -194,7 +194,7 @@ const ScheduleEditorPage = () => {
       }
       return conflict;
     },
-    [rows]
+    [rows],
   );
 
   const pushOptimisticRow = (row: TimetableRow) => {
@@ -227,7 +227,7 @@ const ScheduleEditorPage = () => {
       start_time: withSeconds(form.start_time),
       end_time: withSeconds(form.end_time),
       location: form.location,
-      category: form.category
+      category: form.category,
     };
     pushOptimisticRow(optimisticRow);
     try {
@@ -237,7 +237,7 @@ const ScheduleEditorPage = () => {
         start_time: withSeconds(form.start_time),
         end_time: withSeconds(form.end_time),
         location: form.location || undefined,
-        category: form.category || undefined
+        category: form.category || undefined,
       });
       setStatus('Block added to timetable.');
       resetForm();
@@ -259,7 +259,7 @@ const ScheduleEditorPage = () => {
       start_time: toTimeInput(row.start_time),
       end_time: toTimeInput(row.end_time),
       location: row.location || '',
-      category: row.category || 'class'
+      category: row.category || 'class',
     });
     setStatus(null);
   };
@@ -287,10 +287,10 @@ const ScheduleEditorPage = () => {
               start_time: withSeconds(editForm.start_time),
               end_time: withSeconds(editForm.end_time),
               location: editForm.location,
-              category: editForm.category
+              category: editForm.category,
             }
-          : row
-      )
+          : row,
+      ),
     );
     try {
       await apiClient.patch(`/schedule/extractions/row/${editingRow.id}`, {
@@ -299,7 +299,7 @@ const ScheduleEditorPage = () => {
         start_time: withSeconds(editForm.start_time),
         end_time: withSeconds(editForm.end_time),
         location: editForm.location || undefined,
-        category: editForm.category || undefined
+        category: editForm.category || undefined,
       });
       setStatus('Block updated.');
       await fetchRows();
@@ -335,47 +335,48 @@ const ScheduleEditorPage = () => {
 
   if (!user) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center space-y-3">
-        <p className="text-xl font-semibold">Sign in to unlock timetable tooling</p>
-        <p className="text-white/60">Manual schedule edits feed Tenax reminders and conflict detection.</p>
+      <div className="rounded-3xl border border-gray-200 bg-white p-6 text-center space-y-3">
+        <p className="text-xl font-semibold text-black">Sign in to unlock timetable tooling</p>
+        <p className="text-gray-500">Manual schedule edits feed Tenax reminders and conflict detection.</p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-10 flex flex-col items-center gap-4">
+      <div className="rounded-3xl border border-gray-200 bg-white p-10 flex flex-col items-center gap-4">
         <Loader />
-        <p className="text-white/70">Syncing timetable...</p>
+        <p className="text-gray-600">Syncing timetable...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
+      <section className="rounded-3xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/40">Timetable intelligence</p>
-            <h2 className="text-2xl font-semibold">Manual schedule editor</h2>
-            <p className="text-white/60 text-sm">Curate class blocks so reminders stay conflict-aware.</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Timetable intelligence</p>
+            <h2 className="text-2xl font-semibold text-black">Manual schedule editor</h2>
+            <p className="text-gray-500 text-sm">Curate class blocks so reminders stay conflict-aware.</p>
           </div>
-          <Button variant="ghost" className="border border-white/20" onClick={fetchRows}>
+          <Button variant="ghost" className="border border-gray-200 text-gray-600" onClick={fetchRows}>
             Refresh
           </Button>
         </div>
-        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
-        {status && <p className="mt-4 text-sm text-cyan-300">{status}</p>}
-        {validationError && <p className="mt-2 text-sm text-amber-300">{validationError}</p>}
+        {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
+        {status && <p className="mt-4 text-sm text-emerald-600">{status}</p>}
+        {validationError && <p className="mt-2 text-sm text-amber-500">{validationError}</p>}
         {latestUpload && latestUpload.status !== 'done' && (
-          <p className="mt-4 text-sm text-white/70">
-            Latest upload is <span className="font-semibold">{latestUpload.status}</span>. Rows will auto-populate once processing completes.
+          <p className="mt-4 text-sm text-gray-600">
+            Latest upload is <span className="font-semibold">{latestUpload.status}</span>. Rows will auto-populate once
+            processing completes.
           </p>
         )}
         <div className="mt-6 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="text-left text-white/60">
+              <tr className="text-left text-gray-500">
                 <th className="px-3 py-2 font-medium">Day</th>
                 <th className="px-3 py-2 font-medium">Window</th>
                 <th className="px-3 py-2 font-medium">Title</th>
@@ -387,25 +388,25 @@ const ScheduleEditorPage = () => {
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-white/60">
+                  <td colSpan={6} className="px-3 py-6 text-center text-gray-500">
                     No timetable blocks yet. Use the form below to seed the day.
                   </td>
                 </tr>
               )}
               {rows.map((row) => (
-                <tr key={row.id} className="border-t border-white/5">
-                  <td className="px-3 py-3 font-semibold">{dayLookup[row.day_of_week] || '—'}</td>
-                  <td className="px-3 py-3 text-white/70">
+                <tr key={row.id} className="border-t border-gray-200">
+                  <td className="px-3 py-3 font-semibold">{dayLookup[row.day_of_week] || '-'}</td>
+                  <td className="px-3 py-3 text-gray-600">
                     {row.start_time?.slice(0, 5)} - {row.end_time?.slice(0, 5)}
                   </td>
                   <td className="px-3 py-3">{row.title}</td>
-                  <td className="px-3 py-3 text-white/60">{row.location || '—'}</td>
-                  <td className="px-3 py-3 text-white/60">{row.category || 'class'}</td>
+                  <td className="px-3 py-3 text-gray-500">{row.location || '-'}</td>
+                  <td className="px-3 py-3 text-gray-500">{row.category || 'class'}</td>
                   <td className="px-3 py-3 space-x-2">
-                    <Button size="sm" variant="ghost" className="border border-white/10" onClick={() => handleEditSelect(row)}>
+                    <Button size="sm" variant="ghost" className="border border-gray-200 text-gray-700" onClick={() => handleEditSelect(row)}>
                       Edit
                     </Button>
-                    <Button size="sm" variant="ghost" className="border border-red-400/40 text-red-200" onClick={() => handleDelete(row.id)}>
+                    <Button size="sm" variant="ghost" className="border border-red-200 text-red-500" onClick={() => handleDelete(row.id)}>
                       Delete
                     </Button>
                   </td>
@@ -417,25 +418,25 @@ const ScheduleEditorPage = () => {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-white/40">Add block</p>
-          <h3 className="text-xl font-semibold">Seed recurring slots</h3>
+        <div className="rounded-3xl border border-gray-200 bg-white p-6">
+          <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Add block</p>
+          <h3 className="text-xl font-semibold text-black">Seed recurring slots</h3>
           <form className="mt-4 space-y-4" onSubmit={handleCreate}>
             <TimetableForm form={form} setForm={setForm} disabled={saving} />
             <Button type="submit" className="w-full" disabled={!canSubmitCreate || saving}>
-              {saving ? 'Saving…' : 'Add to timetable'}
+              {saving ? 'Saving...' : 'Add to timetable'}
             </Button>
           </form>
         </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-white/40">Edit selection</p>
-          <h3 className="text-xl font-semibold">Fine-tune existing blocks</h3>
-          {!editingRow && <p className="mt-3 text-white/60 text-sm">Select a block above to populate this editor.</p>}
+        <div className="rounded-3xl border border-gray-200 bg-white p-6">
+          <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Edit selection</p>
+          <h3 className="text-xl font-semibold text-black">Fine-tune existing blocks</h3>
+          {!editingRow && <p className="mt-3 text-gray-500 text-sm">Select a block above to populate this editor.</p>}
           {editingRow && (
             <form className="mt-4 space-y-4" onSubmit={handleUpdate}>
               <TimetableForm form={editForm} setForm={setEditForm} disabled={saving} />
               <Button type="submit" className="w-full" disabled={!canSubmitUpdate || saving}>
-                {saving ? 'Updating…' : 'Update block'}
+                {saving ? 'Updating...' : 'Update block'}
               </Button>
             </form>
           )}
@@ -455,22 +456,22 @@ const TimetableForm = ({ form, setForm, disabled }: TimetableFormProps) => (
   <>
     <div className="grid gap-3 md:grid-cols-2">
       <div>
-        <label className="text-sm text-white/60">Title *</label>
+        <label className="text-sm text-gray-500">Title *</label>
         <input
           value={form.title}
           onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
           disabled={disabled}
-          className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3"
+          className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3"
           placeholder="Course or block label"
           type="text"
         />
       </div>
       <div>
-        <label className="text-sm text-white/60">Day of week</label>
+        <label className="text-sm text-gray-500">Day of week</label>
         <select
           value={form.day_of_week}
           onChange={(event) => setForm((prev) => ({ ...prev, day_of_week: Number(event.target.value) }))}
-          className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3"
+          className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3"
           disabled={disabled}
         >
           {dayOptions.map((option) => (
@@ -483,44 +484,44 @@ const TimetableForm = ({ form, setForm, disabled }: TimetableFormProps) => (
     </div>
     <div className="grid gap-3 md:grid-cols-2">
       <div>
-        <label className="text-sm text-white/60">Start time *</label>
+        <label className="text-sm text-gray-500">Start time *</label>
         <input
           type="time"
           value={form.start_time}
           onChange={(event) => setForm((prev) => ({ ...prev, start_time: event.target.value }))}
           disabled={disabled}
-          className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3"
+          className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3"
         />
       </div>
       <div>
-        <label className="text-sm text-white/60">End time *</label>
+        <label className="text-sm text-gray-500">End time *</label>
         <input
           type="time"
           value={form.end_time}
           onChange={(event) => setForm((prev) => ({ ...prev, end_time: event.target.value }))}
           disabled={disabled}
-          className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3"
+          className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3"
         />
       </div>
     </div>
     <div className="grid gap-3 md:grid-cols-2">
       <div>
-        <label className="text-sm text-white/60">Location</label>
+        <label className="text-sm text-gray-500">Location</label>
         <input
           value={form.location}
           onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))}
           disabled={disabled}
-          className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3"
+          className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3"
           placeholder="Room, hall, lab"
           type="text"
         />
       </div>
       <div>
-        <label className="text-sm text-white/60">Category</label>
+        <label className="text-sm text-gray-500">Category</label>
         <select
           value={form.category}
           onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-          className="mt-2 w-full rounded-2xl border border-white/20 bg-black/30 px-4 py-3"
+          className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3"
           disabled={disabled}
         >
           {categoryOptions.map((option) => (
@@ -535,3 +536,4 @@ const TimetableForm = ({ form, setForm, disabled }: TimetableFormProps) => (
 );
 
 export default ScheduleEditorPage;
+

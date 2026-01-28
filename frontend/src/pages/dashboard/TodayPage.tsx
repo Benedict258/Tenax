@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HeroGeometric } from '../../components/ui/shape-landing-hero';
+import { Activity, Bell, Flame, TrendingUp, Sparkles } from 'lucide-react';
+import type { TrendPoint, Task } from '../../types/analytics';
 import { useAnalytics } from '../../context/AnalyticsContext';
-import { Activity, Bell, Flame, Target, TrendingUp, Zap } from 'lucide-react';
-import type { TrendPoint } from '../../types/analytics';
 import { useTasks } from '../../context/TasksContext';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../lib/api';
+import { BentoCard, BentoGrid } from '../../components/ui/bento-grid';
+import { Link } from 'react-router-dom';
+import { Button } from '../../components/ui/button';
+import { ArrowRightIcon } from '@radix-ui/react-icons';
 
 interface TimetableRow {
   id: string | number;
@@ -33,27 +36,18 @@ interface CoverageSnapshot {
   generated_at: string;
 }
 
-const heroChips = [
-  { label: 'Reminder routing', value: 'Adaptive cadence' },
-  { label: 'Quality pulse', value: 'Opik compliant' },
-  { label: 'Channels', value: 'WhatsApp + Web' },
-];
-
 const TodayPage = () => {
   const { summary, weeklyTrend } = useAnalytics();
   const { tasks } = useTasks();
   const { user } = useAuth();
   const today = summary?.today ?? {};
   const completion = today.completion ?? { completion_rate: 0, completed: 0, total: 0 };
-  const reminderStats = today.reminderStats ?? { sent: 0, completed: 0, avgLatency: 0 };
   const hasLiveTasks = tasks.length > 0;
   const tasksToday = hasLiveTasks ? tasks : summary?.tasks?.today ?? [];
   const pinnedTasks = hasLiveTasks
     ? tasks.filter((task) => task.severity?.toLowerCase() === 'p1')
     : summary?.tasks?.pinned ?? [];
-  const categoryEntries = Object.entries(summary?.categoryBreakdown ?? {});
   const [scheduleRows, setScheduleRows] = useState<TimetableRow[]>([]);
-  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [coverageStats, setCoverageStats] = useState<CoverageSnapshot | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,12 +64,15 @@ const TodayPage = () => {
     }, 5000);
   }, []);
 
-  useEffect(() => () => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = null;
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = null;
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     let active = true;
@@ -83,7 +80,6 @@ const TodayPage = () => {
       if (!user?.id) {
         setScheduleRows([]);
         setCoverageStats(null);
-        setScheduleError(null);
         return;
       }
 
@@ -91,18 +87,16 @@ const TodayPage = () => {
         const todayIso = new Date().toISOString();
         const [rowsResult, coverageResult] = await Promise.allSettled([
           apiClient.get(`/schedule/extractions/${user.id}`),
-          apiClient.get(`/schedule/coverage/${user.id}`, { params: { date: todayIso } })
+          apiClient.get(`/schedule/coverage/${user.id}`, { params: { date: todayIso } }),
         ]);
 
         if (!active) return;
 
         if (rowsResult.status === 'fulfilled') {
           setScheduleRows(rowsResult.value.data?.rows || []);
-          setScheduleError(null);
         } else {
           console.warn('Schedule fetch failed', rowsResult.reason);
           setScheduleRows([]);
-          setScheduleError('Schedule intel unavailable right now.');
           triggerToast('Schedule intel unavailable right now. Try again shortly.');
         }
 
@@ -118,7 +112,6 @@ const TodayPage = () => {
         if (!active) return;
         setScheduleRows([]);
         setCoverageStats(null);
-        setScheduleError('Schedule intel unavailable right now.');
         triggerToast('Schedule intel unavailable right now. Try again shortly.');
       }
     };
@@ -135,26 +128,57 @@ const TodayPage = () => {
       scheduleRows
         .filter((row) => row.day_of_week === todayDay)
         .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || '')),
-    [scheduleRows, todayDay]
+    [scheduleRows, todayDay],
   );
 
   const localScheduleMinutes = useMemo(() => calcMinutes(todaysBlocks), [todaysBlocks]);
   const scheduleMinutesToShow = coverageStats?.schedule?.total_minutes ?? localScheduleMinutes;
-  const scheduleBlockCount = coverageStats?.schedule?.block_count ?? todaysBlocks.length;
-  const coverageCompletionMinutes = coverageStats?.completion?.total_minutes ?? null;
-  const coverageCompletionCount = coverageStats?.completion?.task_count ?? null;
-  // No fallback coverage ratio in production
   const coverageRatio = coverageStats?.coverage_percent ?? 0;
 
   const heroTitle = summary?.user?.name ? `${summary.user.name}, stay locked in.` : 'Craft your highest-leverage day';
+  const averageCompletion = getAverageCompletion(weeklyTrend);
+  const bestDayLabel = getBestDay(weeklyTrend);
+
+  const overviewCards = useMemo(
+    () => [
+      {
+        Icon: Bell,
+        name: 'Schedule intel',
+        description: `${formatHours(scheduleMinutesToShow)} scheduled - ${coverageRatio}% coverage`,
+        href: '/dashboard/schedule',
+        cta: 'Review schedule',
+        background: <div className="absolute inset-0 bg-blue-50 opacity-20" />,
+        className: 'lg:col-start-1 lg:col-end-2 lg:row-start-3 lg:row-end-4',
+      },
+      {
+        Icon: Sparkles,
+        name: 'Resolution Builder',
+        description: 'Turn a resolution into an execution plan.',
+        href: '/dashboard/resolution-builder',
+        cta: 'Start builder',
+        background: <div className="absolute inset-0 bg-rose-50 opacity-20" />,
+        className: 'lg:col-start-3 lg:col-end-3 lg:row-start-1 lg:row-end-2',
+      },
+      {
+        Icon: TrendingUp,
+        name: 'Weekly pulse',
+        description: `Avg ${averageCompletion}% - Best ${bestDayLabel}`,
+        href: '/dashboard/weekly',
+        cta: 'View weekly',
+        background: <div className="absolute inset-0 bg-purple-50 opacity-20" />,
+        className: 'lg:col-start-3 lg:col-end-3 lg:row-start-2 lg:row-end-4',
+      },
+    ],
+    [averageCompletion, bestDayLabel, coverageRatio, scheduleMinutesToShow],
+  );
 
   return (
     <>
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 max-w-sm">
-          <div className="rounded-2xl border border-white/20 bg-black/80 px-4 py-3 text-sm text-white shadow-2xl shadow-brand-500/30">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Schedule intel</p>
-            <p className="mt-1 text-sm text-white/90">{toastMessage}</p>
+          <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 shadow-lg">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Schedule intel</p>
+            <p className="mt-1 text-sm text-gray-700">{toastMessage}</p>
             <button
               type="button"
               onClick={() => {
@@ -164,7 +188,7 @@ const TodayPage = () => {
                 }
                 setToastMessage(null);
               }}
-              className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-300"
+              className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-brand-600"
             >
               Dismiss
             </button>
@@ -172,168 +196,32 @@ const TodayPage = () => {
         </div>
       )}
       <div className="space-y-8">
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-        <HeroGeometric
-          badge="Tenax Execution Companion"
-          title1={heroTitle}
-          title2={summary?.user?.goal || 'Stay consistent.'}
-          description="Adaptive reminders, Opik-aligned messaging, and a WhatsApp + web copilot keeping every commitment accountable."
-        />
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {heroChips.map((chip) => (
-            <div key={chip.label} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-left">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50">{chip.label}</p>
-              <p className="text-lg font-semibold">{chip.value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-          <p className="text-sm uppercase tracking-[0.4em] text-white/40">Completion</p>
-          <h2 className="mt-4 text-4xl font-semibold">{completion.completion_rate}%</h2>
-          <p className="text-white/60">{completion.completed}/{completion.total} tasks locked</p>
-          <div className="mt-6 space-y-4">
-            <MetricPill label="Streak" value={`${today.streak || 0} days`} icon={Flame} />
-            <MetricPill label="Engagement" value={`${today.engagement || 0}/5`} icon={Activity} />
-          </div>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-          <p className="text-sm uppercase tracking-[0.4em] text-white/40">Reminder Controls</p>
-          <div className="mt-4 space-y-4 text-sm text-white/80">
-            <p>
-              <span className="font-semibold">Follow-through:</span> {reminderStats.completed}/{reminderStats.sent}
-            </p>
-            <p>
-              <span className="font-semibold">Avg latency:</span> {reminderStats.avgLatency}m
-            </p>
-            <p className="text-white/60">
-              Use WhatsApp keywords (snooze 30 / stop reminders / start my day) to pivot cadence instantly.
-            </p>
-          </div>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur space-y-4">
-          <p className="text-sm uppercase tracking-[0.4em] text-white/40">Pinned P1</p>
-          {pinnedTasks.length === 0 && <p className="text-white/60">No active P1. Tell Tenax the next non-negotiable.</p>}
-          <div className="flex flex-col gap-3">
-            {pinnedTasks.map((task) => (
-              <div key={task.id} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{task.title}</p>
-                  <p className="text-xs text-white/50">{task.category || 'General'}</p>
-                </div>
-                <p className="text-sm text-white/70">{formatTime(task.start_time)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">Today’s Execution Board</h3>
-            <span className="text-white/60">{tasksToday.length} tasks</span>
-          </div>
-          <div className="mt-4 flex flex-col gap-4">
-            {tasksToday.length === 0 && <p className="text-white/60">Nothing scheduled. Add via WhatsApp or the Add Task page.</p>}
-            {tasksToday.map((task) => (
-              <div key={task.id} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold">{task.title}</p>
-                  <p className="text-xs text-white/50">{task.category || 'General'}</p>
-                </div>
-                <div className="text-right text-sm text-white/70 space-y-1">
-                  <p>{formatTime(task.start_time)}</p>
-                  {task.severity && (
-                    <span className="inline-flex rounded-full border border-white/20 px-3 py-0.5 text-xs uppercase">
-                      {task.severity}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">Category Breakdown</h3>
-            <Target className="h-5 w-5 text-white/60" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {categoryEntries.map(([label, stats]) => (
-              <div key={label} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                <p className="text-sm text-white/60">{label}</p>
-                <p className="text-2xl font-semibold">{stats.done}/{stats.total}</p>
-                <div className="mt-2 h-2 rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-brand-500"
-                    style={{ width: `${Math.min((stats.done / (stats.total || 1)) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-            {categoryEntries.length === 0 && <p className="text-white/60">No categories logged today.</p>}
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Weekly Pulse</h3>
-          <TrendingUp className="h-5 w-5 text-white/60" />
-        </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <TrendSummaryCard label="Average completion" value={`${getAverageCompletion(weeklyTrend)}%`} icon={<Activity className="h-4 w-4" />} />
-          <TrendSummaryCard label="Best streak day" value={getBestDay(weeklyTrend)} icon={<Zap className="h-4 w-4" />} />
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Schedule Coverage</h3>
-          <Bell className="h-5 w-5 text-white/60" />
-        </div>
-        {scheduleError && <p className="mt-2 text-sm text-amber-300">{scheduleError}</p>}
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Scheduled hours today</p>
-            <p className="text-3xl font-semibold">{formatHours(scheduleMinutesToShow)}</p>
-            <p className="text-white/60 text-sm">{scheduleBlockCount} blocks parsed from timetable</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Execution vs timetable</p>
-            <p className="text-3xl font-semibold">{coverageRatio}%</p>
-            <div className="mt-3 h-2 rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-brand-500 to-cyan-400"
-                style={{ width: `${Math.min(coverageRatio, 100)}%` }}
-              />
-            </div>
-            <p className="text-white/60 text-sm mt-2">
-              Completed {coverageCompletionCount ?? completion.completed}/{completion.total} tasks ·{' '}
-              {coverageCompletionMinutes !== null
-                ? `${formatHours(coverageCompletionMinutes)} executed`
-                : ''}
-            </p>
-          </div>
-        </div>
-        <div className="mt-6 space-y-3">
-          {todaysBlocks.length === 0 && <p className="text-white/60">No timetable intel captured for today.</p>}
-          {todaysBlocks.slice(0, 4).map((block) => (
-            <div key={block.id} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="font-semibold">{block.title}</p>
-                <p className="text-xs text-white/50">{block.location || '—'} · {block.category || 'class'}</p>
-              </div>
-              <p className="text-sm text-white/70">
-                {block.start_time?.slice(0, 5)} - {block.end_time?.slice(0, 5)}
+        <section className="rounded-3xl border border-gray-200 bg-white p-6">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Overview</p>
+              <h2 className="mt-2 text-3xl font-semibold text-black">{heroTitle}</h2>
+              <p className="mt-2 text-sm text-gray-600">
+                {summary?.user?.goal || 'Stay consistent.'} Adaptive reminders and WhatsApp + web accountability.
               </p>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
+          <BentoGrid className="lg:grid-rows-3">
+            <CompletionBentoCard
+              completionRate={completion.completion_rate}
+              completed={completion.completed}
+              total={completion.total}
+              streak={today.streak || 0}
+              engagement={today.engagement || 0}
+            />
+            <ExecutionBoardBentoCard tasks={tasksToday} />
+            <PinnedP1BentoCard tasks={pinnedTasks} />
+            {overviewCards.map((card) => (
+              <BentoCard key={card.name} {...card} />
+            ))}
+          </BentoGrid>
+        </section>
+
       </div>
     </>
   );
@@ -346,19 +234,116 @@ interface MetricPillProps {
 }
 
 const MetricPill = ({ label, value, icon: Icon }: MetricPillProps) => (
-  <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/5 px-4 py-3 backdrop-blur">
-    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+  <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-700">
       <Icon className="h-5 w-5" />
     </span>
     <div>
-      <p className="text-xs uppercase tracking-[0.3em] text-white/40">{label}</p>
-      <p className="text-lg font-semibold text-white">{value}</p>
+      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{label}</p>
+      <p className="text-lg font-semibold text-black">{value}</p>
     </div>
   </div>
 );
 
+const CompletionBentoCard = ({
+  completionRate,
+  completed,
+  total,
+  streak,
+  engagement,
+}: {
+  completionRate: number;
+  completed: number;
+  total: number;
+  streak: number;
+  engagement: number;
+}) => (
+  <div className="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] lg:row-start-1 lg:row-end-3 lg:col-start-2 lg:col-end-3">
+    <div className="absolute inset-0 bg-emerald-50 opacity-40" />
+    <div className="relative z-10 flex flex-col gap-4 p-6">
+      <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Completion</p>
+      <div>
+        <p className="text-4xl font-semibold text-black">{completionRate}%</p>
+        <p className="text-gray-600">{completed}/{total} tasks locked</p>
+      </div>
+      <div className="space-y-3">
+        <MetricPill label="Streak" value={`${streak} days`} icon={Flame} />
+        <MetricPill label="Engagement" value={`${engagement}/5`} icon={Activity} />
+      </div>
+    </div>
+  </div>
+);
+
+const PinnedP1BentoCard = ({ tasks }: { tasks: Task[] }) => {
+  const firstTask = tasks[0];
+  return (
+    <div className="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] lg:col-start-2 lg:col-end-3 lg:row-start-3 lg:row-end-4">
+      <div className="absolute inset-0 bg-amber-50 opacity-30" />
+      <div className="relative z-10 flex flex-col gap-3 p-6">
+        <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Pinned P1</p>
+        {firstTask ? (
+          <div className="space-y-2">
+            <p className="text-base font-semibold text-black">{firstTask.title}</p>
+            <p className="text-xs text-gray-500">{firstTask.category || 'General'}</p>
+            <p className="text-sm text-gray-600">{formatTime(firstTask.start_time)}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No active P1. Tell Tenax the next non-negotiable.</p>
+        )}
+        <div className="mt-auto flex items-center justify-between text-xs text-gray-500">
+          <Button variant="ghost" size="sm" asChild className="px-0 text-brand-600 hover:text-brand-700">
+            <Link to="/dashboard/p1">
+              View all <ArrowRightIcon className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <span className="text-gray-400">{tasks.length} total</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ExecutionBoardBentoCard = ({ tasks }: { tasks: Task[] }) => {
+  const firstTask = tasks[0];
+  return (
+    <div className="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] lg:col-start-1 lg:col-end-2 lg:row-start-1 lg:row-end-3">
+      <div className="absolute inset-0 bg-amber-50 opacity-30" />
+      <div className="relative z-10 flex flex-col gap-4 p-6">
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Today's Execution Board</p>
+          <span className="text-xs text-gray-500">{tasks.length} tasks</span>
+        </div>
+        {firstTask ? (
+          <div className="space-y-2">
+            <p className="text-base font-semibold text-black">{firstTask.title}</p>
+            <p className="text-xs text-gray-500">{firstTask.category || 'General'}</p>
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <p>{formatTime(firstTask.start_time)}</p>
+              {firstTask.severity && (
+                <span className="inline-flex rounded-full border border-gray-200 px-3 py-0.5 text-xs uppercase text-gray-600">
+                  {firstTask.severity}
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">Nothing scheduled. Add via WhatsApp or Add Task.</p>
+        )}
+        <div className="mt-auto flex items-center justify-between text-xs text-gray-500">
+          <Button variant="ghost" size="sm" asChild className="px-0 text-brand-600 hover:text-brand-700">
+            <Link to="/dashboard/execution-board">
+              View all <ArrowRightIcon className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <span className="text-gray-400">{tasks.length} total</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const formatTime = (value?: string) =>
-  value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+  value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
 
 const getAverageCompletion = (trend: TrendPoint[]) => {
   if (!trend.length) return 0;
@@ -367,20 +352,10 @@ const getAverageCompletion = (trend: TrendPoint[]) => {
 };
 
 const getBestDay = (trend: TrendPoint[]) => {
-  if (!trend.length) return '—';
+  if (!trend.length) return '-';
   const best = trend.reduce((prev, current) => (current.completionRate > prev.completionRate ? current : prev));
   return `${best.date} (${best.completionRate}%)`;
 };
-
-const TrendSummaryCard = ({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) => (
-  <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4 flex items-center justify-between">
-    <div>
-      <p className="text-xs uppercase tracking-[0.3em] text-white/50">{label}</p>
-      <p className="text-2xl font-semibold text-white">{value}</p>
-    </div>
-    <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center text-white/70">{icon}</div>
-  </div>
-);
 
 const calcMinutes = (blocks: TimetableRow[]) =>
   blocks.reduce((total, block) => {
