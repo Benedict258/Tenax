@@ -26,6 +26,7 @@ const REMOVE_TRIGGERS = ['remove', 'delete', 'cancel'];
 const RESCHEDULE_TRIGGERS = ['move', 'shift', 'reschedule'];
 const GREETING_TRIGGERS = ['hello', 'hi', 'hey', 'yo', 'good evening', 'good afternoon'];
 const GENERIC_TASK_NAMES = new Set(['task', 'a task', 'the task', 'my task', 'it', 'this', 'that']);
+const ADD_TRIGGERS = ['add', 'create', 'schedule', 'remind me', 'set a reminder', 'set reminder', 'set', 'book'];
 const DAILY_KEYWORDS = ['daily', 'every day', 'each day'];
 const WEEKLY_KEYWORDS = ['weekly', 'every week'];
 const WEEKDAY_KEYWORDS = ['weekdays', 'every weekday'];
@@ -80,6 +81,32 @@ function removeMatchedText(source, matches = []) {
   return output.trim();
 }
 
+function cleanTaskTitle(raw) {
+  if (!raw) return '';
+  let text = raw;
+  const prefixes = [
+    /^add\s+/i,
+    /^create\s+/i,
+    /^schedule\s+/i,
+    /^remind\s+me\s+to\s+/i,
+    /^remind\s+me\s+/i,
+    /^set\s+a\s+reminder\s+for\s+/i,
+    /^set\s+a\s+reminder\s+/i,
+    /^set\s+reminder\s+for\s+/i,
+    /^set\s+reminder\s+/i,
+    /^set\s+/i
+  ];
+  prefixes.forEach((pattern) => {
+    text = text.replace(pattern, '');
+  });
+
+  text = text.replace(/^(the\s+)?task\s+/i, '');
+  text = text.replace(/\b(please|pls)\b/gi, '');
+  text = text.replace(/\b(today|tomorrow|tonight)\b/gi, '');
+  text = text.replace(/\b(for|at)\b\s*$/i, '');
+  return text.replace(/\s+/g, ' ').trim();
+}
+
 function extractNumber(text) {
   const numberMatch = text.match(/(\d{1,3})/);
   if (numberMatch) {
@@ -105,16 +132,20 @@ function parseTaskAddition(text) {
   if (recurrence?.matchedText) {
     taskName = removeMatchedText(taskName, [recurrence.matchedText]);
   }
+  const cleaned = cleanTaskTitle(taskName);
   return buildIntentResponse('add_task', 0.94, {
-    taskName: taskName.replace(/^(add|create|schedule)\s+/i, '').trim(),
+    taskName: cleaned,
+    title: cleaned,
     recurrence: recurrence?.value || null,
-    targetTime: timeData?.iso || null
+    targetTime: timeData?.iso || null,
+    datetime: timeData?.iso || null
   });
 }
 
 function parseTaskRemoval(text) {
-  const taskName = text.replace(/^(remove|delete|cancel)\s+/i, '').trim();
-  return buildIntentResponse('remove_task', 0.9, { taskName });
+  const raw = text.replace(/^(remove|delete|cancel)\s+/i, '').trim();
+  const taskName = cleanTaskTitle(raw);
+  return buildIntentResponse('remove_task', 0.9, { taskName, title: taskName });
 }
 
 function parseTaskReschedule(text) {
@@ -129,8 +160,10 @@ function parseTaskReschedule(text) {
   if (recurrence?.matchedText) {
     taskName = removeMatchedText(taskName, [recurrence.matchedText]);
   }
+  taskName = cleanTaskTitle(taskName);
   return buildIntentResponse('reschedule_task', 0.87, {
     taskName,
+    title: taskName,
     targetTime: timeData?.iso || null,
     deferDays,
     recurrence: recurrence?.value || null
@@ -153,9 +186,9 @@ function parseCompletion(text) {
     .trim();
   const normalized = normalize(collapsed);
   if (collapsed.length === 0 || GENERIC_TASK_NAMES.has(normalized)) {
-    return buildIntentResponse('mark_complete', 0.92, { taskName: '' });
+    return buildIntentResponse('mark_complete', 0.92, { taskName: '', title: '', explicitTask: false });
   }
-  return buildIntentResponse('mark_complete', 0.95, { taskName: collapsed });
+  return buildIntentResponse('mark_complete', 0.95, { taskName: collapsed, title: collapsed, explicitTask: true });
 }
 
 function parseCantFinish(text) {
@@ -239,6 +272,11 @@ function parseMessage(rawText, options = {}) {
     return parseTaskAddition(text);
   }
 
+  if (ADD_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
+    const parsed = parseTaskAddition(text);
+    return buildIntentResponse(parsed.intent, 0.8, parsed.slots);
+  }
+
   if (TIMETABLE_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
     return buildIntentResponse('upload_timetable', 0.93, {});
   }
@@ -312,6 +350,13 @@ function resolvePendingAction(rawText, pendingAction) {
   }
 
   if (pendingAction.type === 'time_confirmation') {
+    if (/no fixed time|no time|anytime|flexible/i.test(rawText)) {
+      return buildIntentResponse(pendingAction.intent, 0.92, {
+        ...(pendingAction.slots || {}),
+        targetTime: null,
+        noFixedTime: true
+      }, { clarified: true });
+    }
     const timeData = extractTimeData(rawText);
     if (timeData) {
       return buildIntentResponse(pendingAction.intent, 0.92, {

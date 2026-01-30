@@ -15,11 +15,13 @@ const { parseCoursesFromText, buildConfirmationSummary } = require('./timetableP
 const { DateTime } = require('luxon');
 const QueueService = require('./queue');
 const notificationService = require('./notificationService');
+const toneController = require('./toneController');
+const { composeMessage } = require('./messageComposer');
 
 const UNKNOWN_REPLY_POOL = [
-  'Got it. I can log completions, add or move tasks, show your plan, or start the Resolution Builder. If you are sharing schedule info, try "add class 11am weekly" or upload a timetable. Tell me what to tackle next.',
-  'All right. I can add tasks, mark completions, or pull your plan. If this is schedule info, try "add class 11am weekly" or upload a timetable. What should I do next?',
-  'Understood. Want me to log a completion, add a task, or show your plan? You can also start the Resolution Builder or upload a timetable.'
+  'Got it. Want me to add a task, mark something complete, or show your plan? You can also start the Resolution Builder or upload a timetable.',
+  'I am here. Tell me what you want next — add a task, check off a task, or pull today’s plan.',
+  'Okay. If this was about your schedule, try “add class 11am weekly” or upload a timetable. Otherwise say “status” or tell me what to add.'
 ];
 
 const pickRandomReply = (messages) => messages[Math.floor(Math.random() * messages.length)];
@@ -166,17 +168,25 @@ async function requestTaskClarification(session, intent, tasks, prompt, slots = 
 
 async function complainAboutMissingTask(session) {
   await session.send(
-    "I couldn't find that task. Give me a bit more detail or try 'status' to see the active list.",
+    "I couldn't find that one. Can you give me a bit more detail? You can also say \"status\" to see the active list.",
     { intent: 'task_not_found' }
   );
 }
 
 async function handleMarkComplete(session, slots) {
   const tasks = await Task.findByUserId(session.user.id, 'todo');
-  const resolution = resolveTaskCandidate(tasks, slots);
+  if (!tasks.length) {
+    await session.send('You have no active tasks right now. Want me to add something?', { intent: 'mark_complete' });
+    return;
+  }
+  const recentTaskId = !slots?.taskName ? metricsStore.getRecentReminderTask(session.user.id) : null;
+  const recentTask = recentTaskId ? tasks.find((task) => task.id === recentTaskId) : null;
+  const resolution = recentTask ? { match: recentTask, options: [] } : resolveTaskCandidate(tasks, slots);
 
   if (resolution.options.length) {
-    await requestTaskClarification(session, 'mark_complete', resolution.options, 'Which task should I check off?', slots);
+    const tone = toneController.buildToneContext(session.user).tone;
+    const prompt = composeMessage('clarify', tone, { name: session.user?.name || 'there' }) || 'Which task should I check off?';
+    await requestTaskClarification(session, 'mark_complete', resolution.options, prompt, slots);
     return;
   }
 
@@ -202,14 +212,14 @@ async function handleMarkComplete(session, slots) {
     metadata: { task_id: matchedTask.id, channel: session.channel }
   });
 
-  const completionLine = matchedTask.severity === 'p1'
-    ? `🔥 P1 locked in: "${matchedTask.title}"`
-    : `✅ Marked "${matchedTask.title}" complete.`;
+  const toneContext = toneController.buildToneContext(session.user);
+  const completionTone = toneContext.tone;
+  const completionLine = composeMessage('complete', completionTone, {
+    title: matchedTask.title,
+    name: session.user?.name || 'there'
+  }) || `✅ Marked "${matchedTask.title}" complete.`;
 
-  await session.send(
-    `${completionLine}\nPing me when you wrap the next one.`,
-    { intent: 'mark_complete' }
-  );
+  await session.send(completionLine, { intent: 'mark_complete' });
 }
 
 async function handleStatus(session, p1Tasks = []) {
@@ -221,10 +231,15 @@ async function handleStatus(session, p1Tasks = []) {
 
   const streak = metricsStore.getStreak(session.user.id);
   const banner = p1Tasks.length ? `${ruleStateService.buildBanner(p1Tasks)}\n\n` : '';
+  const toneContext = toneController.buildToneContext(session.user, stats);
+  const statusIntro = composeMessage('status', toneContext.tone, { name: session.user?.name || 'there' }) || 'Here is the lineup:';
+  const goal = session.user?.goal || session.user?.primary_goal;
+  const role = session.user?.role;
+  const focusLine = goal ? `Focus: ${goal}${role ? ` (${role})` : ''}` : role ? `Role: ${role}` : '';
 
   if (!todoTasks.length) {
     await session.send(
-      `${banner}Everything's wrapped for today. ${doneTasks.length} tasks ✅\nCompletion rate: ${stats.completion_rate}%\nCurrent streak: ${streak} day${streak === 1 ? '' : 's'}.`,
+      `${banner}Everything's wrapped for today. ${doneTasks.length} tasks ✅\nCompletion rate: ${stats.completion_rate}%\nCurrent streak: ${streak} day${streak === 1 ? '' : 's'}.${focusLine ? `\n${focusLine}` : ''}`,
       { intent: 'status_clear' }
     );
     return;
@@ -245,7 +260,7 @@ async function handleStatus(session, p1Tasks = []) {
 
   const remainder = todoTasks.length > 6 ? `\n...and ${todoTasks.length - 6} more` : '';
   await session.send(
-    `${banner}${pinnedText}Still on deck (${todoTasks.length}):\n\n${taskList}${remainder}\n\n${stats.completed}/${stats.total} done • ${stats.completion_rate}% complete • Streak ${streak}d`,
+    `${banner}${statusIntro}\n\n${pinnedText}${taskList}${remainder}\n\n${stats.completed}/${stats.total} done • ${stats.completion_rate}% complete • Streak ${streak}d${focusLine ? `\n${focusLine}` : ''}`,
     { intent: 'status' }
   );
 }
@@ -253,7 +268,20 @@ async function handleStatus(session, p1Tasks = []) {
 async function handleAddTask(session, slots) {
   const title = slots.taskName?.trim();
   if (!title) {
-    await session.send('Tell me what to add. Example: "add workout 6am"', { intent: 'add_task_missing_title' });
+    await session.send('What should I add? Example: "add workout 6am" or "remind me to read 9pm".', { intent: 'add_task_missing_title' });
+    return;
+  }
+
+  if (!slots.targetTime && !slots.noFixedTime) {
+    conversationContext.setPendingAction(session.user.id, {
+      type: 'time_confirmation',
+      intent: 'add_task',
+      slots: {
+        taskName: title,
+        recurrence: slots.recurrence || null
+      }
+    });
+    await session.send('When should I set it? You can reply with a time or say "no fixed time".', { intent: 'add_task_missing_time' });
     return;
   }
 
@@ -288,11 +316,13 @@ async function handleAddTask(session, slots) {
     ? ` for ${new Date(slots.targetTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
     : '';
   const recurrenceText = slots.recurrence ? ` (${slots.recurrence})` : '';
-
-  await session.send(
-    `Added "${task.title}"${timingText}${recurrenceText}. Let me know when you knock it out.`,
-    { intent: 'add_task', severity }
-  );
+  const toneContext = toneController.buildToneContext(session.user);
+  const responseText = composeMessage('add_task', toneContext.tone, {
+    title: task.title,
+    timeText: timingText,
+    recurrenceText
+  }) || `Added "${task.title}"${timingText}${recurrenceText}. Let me know when you knock it out.`;
+  await session.send(responseText, { intent: 'add_task', severity });
 }
 
 async function handleRemoveTask(session, slots) {
@@ -384,10 +414,16 @@ async function handleProgressReview(session) {
   const reminderStats = metricsStore.getReminderStats(session.user.id);
   const streak = metricsStore.getStreak(session.user.id);
   const latency = reminderStats.avgLatency ? `${reminderStats.avgLatency}m` : 'n/a';
+  const toneContext = toneController.buildToneContext(session.user, stats, reminderStats);
+  const toneLine = toneContext.tone === 'playful_duolingo'
+    ? 'Keep the streak alive — short reps still count.'
+    : toneContext.tone === 'strict_but_supportive'
+      ? 'We can tighten this up. Want me to reshuffle the plan?'
+      : 'Keep the momentum going.';
   const message = [
     `Today: ${stats.completed}/${stats.total} complete (${stats.completion_rate}%).`,
     `Reminder follow-through: ${reminderStats.completed}/${reminderStats.sent} • Latency ${latency}.`,
-    `Streak: ${streak} day${streak === 1 ? '' : 's'}. Keep the reps going.`
+    `Streak: ${streak} day${streak === 1 ? '' : 's'}. ${toneLine}`
   ].join('\n');
   await session.send(message, { intent: 'progress_review' });
 }
@@ -447,23 +483,23 @@ async function handleReminderPause(session) {
 
 async function handleHelp(session) {
   const helpText = [
-    'Tenax quick actions:',
-    '- "done deep work"',
-    '- "add workout 6am daily"',
-    '- "move AI paper to 9pm"',
-    '- "status" or "what\'s my plan"',
-    '- "snooze 30" or "stop reminders"',
-    '- "start resolution builder" for long-term goals'
+    'Here are a few things I can do for you:',
+    '• Add tasks ("remind me to read 9pm")',
+    '• Mark completions ("done with deep work")',
+    '• Show your plan ("status" or "what\'s next")',
+    '• Move tasks ("move study to 8pm")',
+    '• Snooze reminders ("snooze 30")',
+    '• Start the Resolution Builder'
   ].join('\n');
   await session.send(helpText, { intent: 'help' });
 }
 
 async function handleGreeting(session) {
   const name = session.user?.preferred_name || session.user?.name || 'there';
-  await session.send(
-    `Hey ${name}! Want a status update, to add a task, or to start the Resolution Builder?`,
-    { intent: 'greeting' }
-  );
+  const toneContext = toneController.buildToneContext(session.user);
+  const reply = composeMessage('greeting', toneContext.tone, { name }) ||
+    `Hey ${name}! Want a status update, to add a task, or to start the Resolution Builder?`;
+  await session.send(reply, { intent: 'greeting' });
 }
 
 async function handleScheduleNote(session, slots) {

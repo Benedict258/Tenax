@@ -326,6 +326,7 @@ class AgentService {
 
   async sendReminder(user, task, reminderType = '30_min') {
     try {
+      const resolvedReminderType = reminderType === 'on_time' ? 'on_time' : '30_min';
       let enrichedTask = task;
       if (enrichedTask?.id && typeof enrichedTask.severity === 'undefined') {
         enrichedTask = await Task.findById(enrichedTask.id);
@@ -371,11 +372,27 @@ class AgentService {
         return null;
       }
 
-      const message = await this.generateReminder(user, enrichedTask, reminderType);
+      const scheduledFor = enrichedTask?.scheduled_for || enrichedTask?.metadata?.scheduled_for || enrichedTask?.start_time || null;
+      if (!metricsStore.shouldSendReminder({
+        userId: user.id,
+        taskId: enrichedTask.id,
+        reminderType: resolvedReminderType,
+        scheduledFor
+      })) {
+        console.log('[Agent] Reminder deduped:', {
+          userId: user.id,
+          taskId: enrichedTask.id,
+          reminderType: resolvedReminderType,
+          scheduledFor
+        });
+        return { message: 'Reminder already sent.', blocked: true };
+      }
+
+      const message = await this.generateReminder(user, enrichedTask, resolvedReminderType);
       metricsStore.recordReminder({
         userId: user.id,
         taskId: enrichedTask.id,
-        reminderType,
+        reminderType: resolvedReminderType,
         sentAt: new Date()
       });
       await whatsappService.sendMessage(user.phone_number, message);
@@ -390,7 +407,7 @@ class AgentService {
         user_id: user.id,
         task_id: enrichedTask.id,
         task_title: enrichedTask.title,
-        reminder_type: reminderType,
+        reminder_type: resolvedReminderType,
         message: message
       });
 
@@ -400,7 +417,7 @@ class AgentService {
           tasks: [enrichedTask],
           surfaceType: 'reminder',
           channel: 'whatsapp',
-          metadata: { reminder_type: reminderType }
+          metadata: { reminder_type: resolvedReminderType }
         });
       }
 

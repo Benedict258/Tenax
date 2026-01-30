@@ -9,8 +9,8 @@ import { generateRoadmapPdf } from '../../lib/roadmapPdf';
 
 const stepLabels = [
   'Capture resolution',
-  'Clarify outcome',
   'Set duration',
+  'Clarify outcome',
   'Time reality check',
   'Pick pace',
   'Roadmap + resources',
@@ -65,6 +65,7 @@ type ScheduleSlot = {
 type ResolutionState = {
   step: number;
   resolution_goal: string;
+  resolution_type?: string;
   target_outcome: string;
   duration_weeks: number | null;
   end_date: string | null;
@@ -253,10 +254,19 @@ const ResolutionBuilderPage = () => {
       return ['Master JavaScript', 'Become consistent with fitness', 'Learn AI engineering', 'Build my portfolio'];
     }
     if (builderState.step === 2) {
-      return ['Fundamentals + projects', 'Job-ready portfolio', 'Interview prep', 'Consistency and stamina'];
+      return ['4 weeks', '8 weeks', '12 weeks', '2026-06-01'];
     }
     if (builderState.step === 3) {
-      return ['4 weeks', '8 weeks', '12 weeks', '2026-06-01'];
+      if (builderState.resolution_type === 'habit_based') {
+        return ['4 days/week, 20 minutes', '3 days/week, 30 minutes', '5 days/week, 15 minutes'];
+      }
+      if (builderState.resolution_type === 'outcome_based') {
+        return ['Ship MVP + demo', 'Portfolio + case studies', 'Certification + capstone'];
+      }
+      if (builderState.resolution_type === 'hybrid') {
+        return ['Build 2 projects + jog 3 days/week', 'Learn core skills + 4 days/week routine'];
+      }
+      return ['Fundamentals + projects', 'Job-ready portfolio', 'Interview prep', 'Consistency and stamina'];
     }
     if (builderState.step === 4 && builderState.time_step === 'hours') {
       return ['4 hours', '6 hours', '8 hours'];

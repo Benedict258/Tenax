@@ -1,6 +1,7 @@
 const { v4: uuid } = require('uuid');
 const agentService = require('./agent');
 const scheduleService = require('./scheduleService');
+const metricsStore = require('./metricsStore');
 let Queue;
 let Worker;
 let Redis;
@@ -88,6 +89,11 @@ function scheduleInMemoryJob(job, delayMs) {
 }
 
 class QueueService {
+  static resolveReminderType(task) {
+    const requested = task?.reminderType || task?.reminder_type || '30_min';
+    return requested === 'on_time' ? 'on_time' : '30_min';
+  }
+
   static resolveTaskDuration(task) {
     if (!task) return 30;
     const parsed = Number(task.duration_minutes);
@@ -182,9 +188,21 @@ class QueueService {
     if (finalDelay <= 0) {
       finalDelay = 1000;
     }
+    const reminderType = this.resolveReminderType(task);
+    const scheduledFor = adjustedTime.toISOString();
+
+    if (!metricsStore.registerReminderSchedule({
+      userId: user.id,
+      taskId: task?.id,
+      reminderType,
+      scheduledFor
+    })) {
+      return null;
+    }
+
     return this.scheduleReminder(user, task, 'task-reminder', finalDelay, {
-      reminderType: task.reminderType || '30_min',
-      scheduled_for: adjustedTime.toISOString()
+      reminderType,
+      scheduled_for: scheduledFor
     });
   }
 

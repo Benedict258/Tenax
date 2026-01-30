@@ -38,7 +38,7 @@ const YES_TRIGGERS = ['yes', 'yep', 'sure', 'ok', 'okay', 'approve', 'approved',
 const NO_TRIGGERS = ['no', 'nope', 'cancel', 'stop', 'not now'];
 const EDIT_TRIGGERS = ['edit', 'change', 'adjust', 'partial'];
 const PACE_OPTIONS = ['light', 'standard', 'intense'];
-const RESOLUTION_TYPES = ['skill', 'habit', 'health', 'project', 'mixed'];
+const RESOLUTION_TYPES = ['skill_based', 'habit_based', 'outcome_based', 'hybrid'];
 
 const normalize = (value = '') => value.toLowerCase().trim();
 
@@ -49,26 +49,37 @@ const slugify = (value = '') =>
     .replace(/^_+|_+$/g, '')
     .slice(0, 60);
 
+function normalizeResolutionType(type = '') {
+  const normalized = normalize(type);
+  if (RESOLUTION_TYPES.includes(normalized)) return normalized;
+  if (normalized === 'skill' || normalized === 'skill-based') return 'skill_based';
+  if (normalized === 'habit' || normalized === 'routine') return 'habit_based';
+  if (normalized === 'health') return 'habit_based';
+  if (normalized === 'project' || normalized === 'outcome') return 'outcome_based';
+  if (normalized === 'mixed') return 'hybrid';
+  return 'skill_based';
+}
+
 function classifyResolution(goal = '') {
   const text = normalize(goal);
-  const skillHints = ['learn', 'master', 'study', 'course', 'javascript', 'python', 'programming', 'ai', 'engineering'];
-  const habitHints = ['daily', 'consistent', 'habit', 'routine', 'wake', 'sleep'];
+  const skillHints = ['learn', 'master', 'study', 'course', 'javascript', 'python', 'programming', 'ai', 'engineering', 'design', 'data'];
+  const habitHints = ['daily', 'consistent', 'habit', 'routine', 'wake', 'sleep', 'meditate', 'journal'];
   const healthHints = ['jog', 'run', 'workout', 'gym', 'fitness', 'lose', 'weight', 'diet', 'healthy'];
-  const projectHints = ['build', 'ship', 'launch', 'mvp', 'portfolio', 'app', 'product'];
+  const projectHints = ['build', 'ship', 'launch', 'mvp', 'portfolio', 'app', 'product', 'internship', 'job'];
 
   const matches = {
-    skill: skillHints.some((hint) => text.includes(hint)),
-    habit: habitHints.some((hint) => text.includes(hint)),
+    skill_based: skillHints.some((hint) => text.includes(hint)),
+    habit_based: habitHints.some((hint) => text.includes(hint)),
     health: healthHints.some((hint) => text.includes(hint)),
-    project: projectHints.some((hint) => text.includes(hint))
+    outcome_based: projectHints.some((hint) => text.includes(hint))
   };
 
   const active = Object.entries(matches).filter(([, value]) => value).map(([key]) => key);
-  if (active.length > 1) return 'mixed';
-  if (matches.health) return 'health';
-  if (matches.habit) return 'habit';
-  if (matches.project) return 'project';
-  return 'skill';
+  if (active.length > 1) return 'hybrid';
+  if (matches.health) return 'habit_based';
+  if (matches.habit_based) return 'habit_based';
+  if (matches.outcome_based) return 'outcome_based';
+  return 'skill_based';
 }
 
 function parseDaysPerWeek(text) {
@@ -94,16 +105,13 @@ function parseSessionMinutes(text) {
 }
 
 function buildOutcomePrompt(type) {
-  if (type === 'habit') {
+  if (type === 'habit_based') {
     return 'How many days per week and how long per session? Example: 4 days/week, 20 minutes.';
   }
-  if (type === 'health') {
-    return 'How many days per week and how long per session? Any constraints (injury/rest days)?';
+  if (type === 'outcome_based') {
+    return 'What is the concrete deliverable and key milestones? Example: ship an MVP + 3 case studies.';
   }
-  if (type === 'project') {
-    return 'What is the concrete deliverable? Example: MVP, portfolio site, certification.';
-  }
-  if (type === 'mixed') {
+  if (type === 'hybrid') {
     return 'Split it for me: skill outcome + habit frequency. Example: build 2 projects + jog 3 days/week.';
   }
   return 'What outcome do you want at the end? Example: build projects, pass interviews, or be able to do X.';
@@ -310,7 +318,7 @@ function buildRoadmap(goal, outcome, durationWeeks) {
 
 function buildHabitRoadmap(goal, durationWeeks, daysPerWeek, sessionMinutes) {
   const weeks = durationWeeks || 6;
-  const phasesCount = Math.min(3, Math.max(2, Math.round(weeks / 2)));
+  const phasesCount = Math.min(6, Math.max(3, Math.round(weeks / 2)));
   const baseWeeks = Math.floor(weeks / phasesCount) || 1;
   let remainder = weeks - baseWeeks * phasesCount;
 
@@ -318,18 +326,23 @@ function buildHabitRoadmap(goal, durationWeeks, daysPerWeek, sessionMinutes) {
     const phaseWeeks = baseWeeks + (remainder > 0 ? 1 : 0);
     remainder -= 1;
     const intensity = Math.round((sessionMinutes || 20) + index * 5);
+    const weekStart = index * phaseWeeks + 1;
+    const weekEnd = index * phaseWeeks + phaseWeeks;
     return {
       phase_index: index,
-      title: `Week ${index * phaseWeeks + 1}-${index * phaseWeeks + phaseWeeks}: Build consistency`,
-      description: `Keep a steady ${daysPerWeek || 3} days/week routine.`,
+      title: `Weeks ${weekStart}-${weekEnd}: Consistency + progression`,
+      description: `Maintain a ${daysPerWeek || 3} days/week routine while increasing duration to ~${intensity} minutes.`,
       phase_objective: `Complete ${daysPerWeek || 3} sessions per week at ~${intensity} minutes.`,
-      objectives: [`Complete ${daysPerWeek || 3} sessions`, `Track effort and recovery`],
-      what_to_learn: ['Warm-up', 'Cooldown', 'Form cues'],
-      what_to_build: ['Habit streak', 'Weekly reflection'],
+      objectives: [
+        `Complete ${daysPerWeek || 3} sessions each week`,
+        'Track effort, sleep, and recovery'
+      ],
+      what_to_learn: ['Warm-up flow', 'Cooldown routine', 'Form cues', 'Recovery basics'],
+      what_to_build: ['Habit streak', 'Weekly reflection note'],
       topics: [
         {
           title: `Session plan (~${intensity} min)`,
-          subtopics: ['Warm-up 5 min', 'Main work', 'Cooldown 5 min'],
+          subtopics: ['Warm-up 5-10 min', 'Main work', 'Cooldown 5-10 min'],
           type: 'core'
         }
       ],
@@ -342,7 +355,7 @@ function buildHabitRoadmap(goal, durationWeeks, daysPerWeek, sessionMinutes) {
         }
       ],
       duration_weeks: phaseWeeks,
-      completion_criteria: { type: 'manual_confirm' }
+      completion_criteria: { type: 'manual_confirm', criteria: ['Hit all weekly sessions', 'Log a reflection'] }
     };
   });
 
@@ -375,18 +388,48 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
   const phases = phasesRaw
     .map((phase, index) => {
       const resources = Array.isArray(phase?.resources)
-        ? phase.resources.filter((resource) => resource?.title && resource?.url)
+        ? phase.resources
+            .map((resource) => ({
+              title: resource?.title || '',
+              url: resource?.url || resource?.link || '',
+              type: resource?.type || resource?.kind || 'resource'
+            }))
+            .filter((resource) => resource.title && resource.url)
+        : [];
+      const objectives = Array.isArray(phase?.objectives)
+        ? phase.objectives
+        : Array.isArray(phase?.learning_objectives)
+        ? phase.learning_objectives
+        : [];
+      const topics = Array.isArray(phase?.topics)
+        ? phase.topics
+        : Array.isArray(phase?.topics_to_learn)
+        ? phase.topics_to_learn.map((topic) =>
+            typeof topic === 'string' ? { title: topic, type: 'core' } : topic
+          )
         : [];
 
       return {
         phase_index: Number.isFinite(Number(phase?.phase_index)) ? Number(phase.phase_index) : index,
-        title: typeof phase?.title === 'string' ? phase.title.trim() : '',
-        description: typeof phase?.description === 'string' ? phase.description.trim() : '',
+        title: typeof phase?.title === 'string'
+          ? phase.title.trim()
+          : typeof phase?.phase_title === 'string'
+          ? phase.phase_title.trim()
+          : '',
+        description: typeof phase?.description === 'string'
+          ? phase.description.trim()
+          : typeof phase?.phase_description === 'string'
+          ? phase.phase_description.trim()
+          : '',
         phase_objective: typeof phase?.phase_objective === 'string' ? phase.phase_objective.trim() : '',
-        what_to_learn: Array.isArray(phase?.what_to_learn) ? phase.what_to_learn.filter(Boolean) : [],
+        what_to_learn: Array.isArray(phase?.what_to_learn)
+          ? phase.what_to_learn.filter(Boolean)
+          : Array.isArray(phase?.topics_to_learn)
+          ? phase.topics_to_learn.filter(Boolean)
+          : [],
         what_to_build: Array.isArray(phase?.what_to_build) ? phase.what_to_build.filter(Boolean) : [],
-        objectives: Array.isArray(phase?.objectives) ? phase.objectives.filter(Boolean) : [],
-        topics: Array.isArray(phase?.topics) ? phase.topics : [],
+        objectives: objectives.filter(Boolean),
+        topics,
         resources,
         duration_weeks: Number.isFinite(Number(phase?.duration_weeks)) ? Number(phase.duration_weeks) : null,
         completion_criteria: phase?.completion_criteria || { type: 'threshold', threshold: 0.8 }
@@ -397,6 +440,12 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
   if (!phases.length) {
     return buildRoadmap(fallbackGoal, fallbackOutcome, durationWeeks || 6);
   }
+
+  phases.forEach((phase) => {
+    if (!phase.phase_objective && phase.objectives.length) {
+      phase.phase_objective = phase.objectives[0];
+    }
+  });
 
   const totalWeeks = durationWeeks || raw.duration_weeks || phases.length;
   const missingDuration = phases.some((phase) => !phase.duration_weeks);
@@ -469,32 +518,60 @@ async function buildRoadmapWithResearch(
   daysPerWeek,
   sessionMinutes
 ) {
-  if (resolutionType === 'habit' || resolutionType === 'health') {
+  const normalizedType = normalizeResolutionType(resolutionType);
+  if (normalizedType === 'habit_based') {
     return buildHabitRoadmap(goal, durationWeeks, daysPerWeek, sessionMinutes);
   }
-    const prompt = `You are Tenax Resolution Builder. Produce a high-quality, ChatGPT-style roadmap with strong structure and realistic sequencing.
+
+  const isRoadmapValid = (roadmap) => {
+    if (!roadmap?.phases?.length) return false;
+    const banned = [
+      'core concepts and quick wins',
+      'structured practice and repetition',
+      'focus on foundations and apply it with practice',
+      'foundations',
+      'applied practice',
+      'core concepts'
+    ];
+    return roadmap.phases.every((phase) => {
+      const title = (phase.title || '').toLowerCase();
+      const description = (phase.description || '').toLowerCase();
+      if (!phase.title || !phase.description) return false;
+      if (banned.some((phrase) => title.includes(phrase) || description.includes(phrase))) return false;
+      if (!Array.isArray(phase.topics) || phase.topics.length < 3) return false;
+      if (!Array.isArray(phase.resources) || phase.resources.length < 3) return false;
+      if (!Array.isArray(phase.objectives) || phase.objectives.length < 2) return false;
+      return true;
+    });
+  };
+    const researchPack = await resourceRetriever.retrieveResearchPack(goal, normalizedType);
+    const researchLines = researchPack.length
+      ? researchPack.map((item, index) => `${index + 1}. ${item.title} - ${item.url}`).join('\n')
+      : 'No external sources found.';
+
+    const prompt = `You are Tenax Resolution Builder. Produce a high-quality, research-backed curriculum roadmap with strong structure and realistic sequencing.
   Goal: ${goal}
   Outcome definition: ${outcome || 'Not specified'}
-  Resolution type: ${resolutionType || 'skill'}
+  Resolution type: ${normalizedType}
   Skill level: ${skillLevel || 'unknown'}
   Duration: ${durationWeeks} weeks
+
+  Research sources (use these to ground topics and resources):
+  ${researchLines}
   
   Return JSON only with this shape:
 {
   "roadmap_title": "...",
-  "resolution_type": "${resolutionType || 'skill'}",
+  "resolution_type": "${normalizedType}",
   "phases": [
     {
       "phase_index": 0,
-      "title": "...",
-      "description": "...",
-      "phase_objective": "...",
-      "what_to_learn": ["..."],
-      "what_to_build": ["..."],
-      "objectives": ["..."],
-      "topics": [{"title":"...","subtopics":["..."],"type":"core"}],
-      "resources": [{"title":"...","url":"https://...","type":"docs|video|course"}],
-      "completion_criteria": {"type":"threshold","threshold":0.8}
+      "phase_title": "...",
+      "phase_description": "...",
+      "learning_objectives": ["..."],
+      "topics_to_learn": ["..."],
+      "resources": [{"title":"...","type":"docs|video|course|article","link":"https://..."}],
+      "completion_criteria": {"type":"manual_confirm","criteria":["..."]}
     }
   ]
   }
@@ -502,9 +579,9 @@ async function buildRoadmapWithResearch(
   Rules:
   - 5 to 8 phases (avoid generic 2-phase plans).
   - Each phase must be narrower and specific (no giant buckets like "Foundations + Practice").
-  - Every phase must list 2-4 concrete topics and 2-4 deliverables.
-  - Provide real, valid URLs.
-  - Ensure objectives and topics are practical.
+  - Every phase must list 3-6 concrete topics and clear learning objectives.
+  - Resources must be real URLs and should come from or align with the research sources above.
+  - Avoid vague filler phrases. If you cannot specify what to learn, shrink scope instead.
   `;
 
   const timeoutMs = 25000;
@@ -528,6 +605,21 @@ async function buildRoadmapWithResearch(
     ]);
     const parsed = extractJsonBlock(response.text);
     let sanitized = sanitizeRoadmap(parsed, goal, outcome, durationWeeks);
+    if (!isRoadmapValid(sanitized)) {
+      const retryPrompt = `${prompt}\n\nThe previous output was too generic. Regenerate with specific topics and objectives.`;
+      const retryResponse = await llmService.generate(retryPrompt, {
+        maxTokens: 900,
+        temperature: 0.2,
+        preferredModel: 'openai',
+        opikMeta: {
+          action: 'resolution_roadmap_retry',
+          user_id: user?.id,
+          resolution_goal: goal
+        }
+      });
+      const retryParsed = extractJsonBlock(retryResponse.text);
+      sanitized = sanitizeRoadmap(retryParsed, goal, outcome, durationWeeks);
+    }
     const expanded = expandPhases(sanitized.phases, 5, 8);
     sanitized = { ...sanitized, phases: expanded };
 
@@ -702,7 +794,8 @@ function generateResolutionTasks({
       const topicLine = subtopics.length
         ? `Focus on ${topic.title}. Cover: ${subtopics.join(', ')}.`
         : `Focus on ${topic.title || phase.title} and apply it with practice.`;
-      const description = [topicLine, learnLine, buildLine].filter(Boolean).join(' ');
+      const expectedLine = phase.phase_objective ? `Expected outcome: ${phase.phase_objective}.` : '';
+      const description = [topicLine, learnLine, buildLine, expectedLine].filter(Boolean).join(' ');
       const resources = Array.isArray(phase.resources) ? phase.resources : [];
       const estimatedMinutes = sessionMinutes || Math.max(30, Math.round((hoursPerWeek || 2) * 30));
 
@@ -836,7 +929,7 @@ class ResolutionBuilderFlow {
     const baseState = {
       step: 1,
       resolution_goal: '',
-      resolution_type: 'skill',
+      resolution_type: 'skill_based',
       clarify_step: null,
       skill_level: null,
       days_per_week: null,
@@ -896,11 +989,11 @@ class ResolutionBuilderFlow {
     }
     this.state.resolution_goal = input;
     this.state.resolution_type = classifyResolution(input);
-    this.state.clarify_step = 'outcome';
+    this.state.clarify_step = null;
     this.state.step = 2;
     await this.saveState();
     return {
-      reply: buildOutcomePrompt(this.state.resolution_type),
+      reply: 'How long do you want to complete this goal? (e.g., 4 weeks, 8 weeks, or 2026-03-01)',
       state: this.publicState()
     };
   }
@@ -909,9 +1002,9 @@ class ResolutionBuilderFlow {
     if (!input) {
       return { reply: 'Give me a short success definition so the roadmap stays aligned.', state: this.publicState() };
     }
-    const type = this.state.resolution_type;
+    const type = normalizeResolutionType(this.state.resolution_type);
 
-    if (type === 'skill') {
+    if (type === 'skill_based') {
       if (this.state.clarify_step === 'outcome') {
         this.state.target_outcome = input;
         this.state.clarify_step = 'skill_level';
@@ -919,16 +1012,17 @@ class ResolutionBuilderFlow {
         return { reply: 'What is your current level? (beginner, intermediate, advanced)', state: this.publicState() };
       }
       this.state.skill_level = normalize(input);
-      this.state.step = 3;
+      this.state.step = 4;
+      this.state.time_step = 'hours';
       this.state.clarify_step = null;
       await this.saveState();
       return {
-        reply: 'How long do you want to complete this resolution? (e.g., 4 weeks, 8 weeks, or 2026-03-01)',
+        reply: 'Time reality check: how many hours per week can you realistically commit?',
         state: this.publicState()
       };
     }
 
-    if (type === 'habit' || type === 'health') {
+    if (type === 'habit_based') {
       const days = parseDaysPerWeek(input);
       const minutes = parseSessionMinutes(input);
       if (!days || !minutes) {
@@ -939,43 +1033,44 @@ class ResolutionBuilderFlow {
       }
       this.state.days_per_week = days;
       this.state.session_minutes = minutes;
-      if (type === 'health' && !this.state.constraints) {
-        this.state.constraints = '';
-      }
-      this.state.step = 3;
+      this.state.step = 4;
+      this.state.time_step = 'days';
       await this.saveState();
       return {
-        reply: 'How long do you want to take to complete this goal? (e.g., 6 weeks or 2026-04-01)',
+        reply: 'Which days are best for this routine? (e.g., Mon Wed Sat)',
         state: this.publicState()
       };
     }
 
-    if (type === 'project') {
+    if (type === 'outcome_based') {
       this.state.project_deliverable = input;
       this.state.target_outcome = input;
-      this.state.step = 3;
+      this.state.step = 4;
+      this.state.time_step = 'hours';
       await this.saveState();
       return {
-        reply: 'What is the deadline or duration for this deliverable?',
+        reply: 'Time reality check: how many hours per week can you commit?',
         state: this.publicState()
       };
     }
 
-    if (type === 'mixed') {
+    if (type === 'hybrid') {
       this.state.target_outcome = input;
-      this.state.step = 3;
+      this.state.step = 4;
+      this.state.time_step = 'hours';
       await this.saveState();
       return {
-        reply: 'How long do you want to complete this goal? (e.g., 8 weeks)',
+        reply: 'How many hours per week and which days? Example: 5 hours, Mon Wed Sat.',
         state: this.publicState()
       };
     }
 
     this.state.target_outcome = input;
-    this.state.step = 3;
+    this.state.step = 4;
+    this.state.time_step = 'hours';
     await this.saveState();
     return {
-      reply: 'How long do you want to complete this resolution? (e.g., 4 weeks, 8 weeks, or 2026-03-01)',
+      reply: 'Time reality check: how many hours per week can you commit?',
       state: this.publicState()
     };
   }
@@ -987,11 +1082,12 @@ class ResolutionBuilderFlow {
     }
     this.state.duration_weeks = parsed.weeks;
     this.state.end_date = parsed.endDate || null;
-    this.state.step = 4;
+    this.state.step = 3;
     this.state.time_step = 'hours';
+    this.state.clarify_step = 'outcome';
     await this.saveState();
     return {
-      reply: 'Time reality check: how many hours per week can you realistically commit?',
+      reply: buildOutcomePrompt(normalizeResolutionType(this.state.resolution_type)),
       state: this.publicState()
     };
   }
@@ -1260,10 +1356,10 @@ class ResolutionBuilderFlow {
       return this.captureResolution(trimmed);
     }
     if (this.state.step === 2) {
-      return this.captureOutcome(trimmed);
+      return this.captureDuration(trimmed);
     }
     if (this.state.step === 3) {
-      return this.captureDuration(trimmed);
+      return this.captureOutcome(trimmed);
     }
     if (this.state.step === 4) {
       return this.captureTimeReality(trimmed);

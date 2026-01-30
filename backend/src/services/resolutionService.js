@@ -247,14 +247,15 @@ module.exports = {
       error.status = 404;
       throw error;
     }
-    const phases = await ResolutionPhase.listByPlan(roadmapId);
+    const phases = await ResolutionPhase.listByRoadmap(roadmapId);
     const phasesWithResources = await Promise.all(
       phases.map(async (phase) => ({
         ...phase,
         resources: await ResolutionResource.listByPhase(phase.id)
       }))
     );
-    return { roadmap, phases: phasesWithResources };
+    const planId = phasesWithResources[0]?.plan_id || null;
+    return { roadmap, phases: phasesWithResources, plan_id: planId };
   },
   async markPhaseComplete(phaseId, userId) {
     const phase = await ResolutionPhase.getById(phaseId);

@@ -35,12 +35,19 @@ const router = express.Router();
 
 router.post('/webhook', async (req, res) => {
   try {
-    const { From, Body, NumMedia, MediaUrl0, MediaContentType0 } = req.body;
+    const { From, Body, NumMedia, MediaUrl0, MediaContentType0, MessageSid } = req.body;
     if (!From) {
       return res.status(400).send('Missing required fields');
     }
 
     const phoneNumber = From.replace('whatsapp:', '');
+    console.log('[WhatsApp] Inbound', {
+      from: phoneNumber,
+      messageSid: MessageSid || null,
+      hasMedia: Number(NumMedia) > 0,
+      preview: Body ? String(Body).slice(0, 120) : null
+    });
+
     const user = await User.findByPhone(phoneNumber);
     if (!user) {
       return res.status(200).send('User not found');
@@ -110,7 +117,15 @@ router.post('/webhook', async (req, res) => {
       text,
       externalId: phoneNumber,
       transport: {
-        send: (message) => whatsappService.sendMessage(phoneNumber, message)
+        send: async (message) => {
+          const result = await whatsappService.sendMessage(phoneNumber, message);
+          console.log('[WhatsApp] Outbound', {
+            to: phoneNumber,
+            messageSid: result?.sid || null,
+            preview: message ? String(message).slice(0, 120) : null
+          });
+          return result;
+        }
       },
       raw: req.body
     });

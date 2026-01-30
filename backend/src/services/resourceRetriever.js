@@ -95,5 +95,50 @@ async function retrieveResources(goal, phaseTitle, options = {}) {
 }
 
 module.exports = {
-  retrieveResources
+  retrieveResources,
+  async retrieveResearchPack(goal, resolutionType = 'skill_based') {
+    const seed = `${goal}`.trim();
+    if (!seed) return [];
+    const key = `research::${seed}`.toLowerCase();
+    const cached = cache[key];
+    if (cached && Date.now() - cached.updated_at < CACHE_TTL_MS) {
+      return cached.items;
+    }
+
+    const typeHint =
+      resolutionType === 'habit_based'
+        ? 'routine plan'
+        : resolutionType === 'outcome_based'
+        ? 'milestone plan'
+        : 'learning roadmap';
+    const queries = [
+      `${seed} ${typeHint} syllabus`,
+      `${seed} curriculum topics`,
+      `${seed} official documentation`,
+      `${seed} roadmap`
+    ];
+
+    const allResults = [];
+    for (const query of queries) {
+      // eslint-disable-next-line no-await-in-loop
+      const results = await tavilySearch(query, 5, { searchDepth: 'advanced' });
+      if (Array.isArray(results)) {
+        allResults.push(...results);
+      }
+    }
+
+    const unique = [];
+    const seen = new Set();
+    allResults.forEach((result) => {
+      if (!result?.url || !result?.title) return;
+      if (seen.has(result.url)) return;
+      seen.add(result.url);
+      unique.push({ title: result.title, url: result.url });
+    });
+
+    const items = unique.slice(0, 10);
+    cache[key] = { updated_at: Date.now(), items };
+    saveCache(cache);
+    return items;
+  }
 };

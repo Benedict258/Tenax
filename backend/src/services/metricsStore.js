@@ -5,6 +5,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 class MetricsStore {
   constructor() {
     this.reminders = [];
+    this.reminderSchedules = new Map();
+    this.reminderSends = new Map();
     this.userMessages = new Map();
     this.userStreaks = new Map();
   }
@@ -26,6 +28,53 @@ class MetricsStore {
       reminder_type: reminderType,
       sent_at: sentAt?.toISOString?.() || new Date().toISOString()
     });
+  }
+
+  buildReminderKey({ userId, taskId, reminderType, scheduledFor }) {
+    const safeTime = scheduledFor instanceof Date ? scheduledFor : scheduledFor ? new Date(scheduledFor) : null;
+    const timeBucket = safeTime && !Number.isNaN(safeTime.getTime())
+      ? new Date(safeTime.getTime() - (safeTime.getTime() % 60000)).toISOString()
+      : 'unknown';
+    return `${userId || 'u'}:${taskId || 't'}:${reminderType || 'type'}:${timeBucket}`;
+  }
+
+  pruneReminderMaps(horizonMs = DAY_MS * 3) {
+    const cutoff = Date.now() - horizonMs;
+    for (const [key, value] of this.reminderSchedules.entries()) {
+      if (value < cutoff) this.reminderSchedules.delete(key);
+    }
+    for (const [key, value] of this.reminderSends.entries()) {
+      if (value < cutoff) this.reminderSends.delete(key);
+    }
+  }
+
+  registerReminderSchedule({ userId, taskId, reminderType, scheduledFor }) {
+    this.pruneReminderMaps();
+    const key = this.buildReminderKey({ userId, taskId, reminderType, scheduledFor });
+    if (this.reminderSchedules.has(key)) {
+      return false;
+    }
+    this.reminderSchedules.set(key, Date.now());
+    return true;
+  }
+
+  shouldSendReminder({ userId, taskId, reminderType, scheduledFor }) {
+    this.pruneReminderMaps();
+    const key = this.buildReminderKey({ userId, taskId, reminderType, scheduledFor });
+    if (this.reminderSends.has(key)) {
+      return false;
+    }
+    this.reminderSends.set(key, Date.now());
+    return true;
+  }
+
+  getRecentReminderTask(userId, horizonMs = 4 * 60 * 60 * 1000) {
+    const cutoff = Date.now() - horizonMs;
+    const match = this.reminders
+      .slice()
+      .reverse()
+      .find((item) => item.userId === userId && item.sentAt?.getTime?.() >= cutoff);
+    return match?.taskId || null;
   }
 
   markReminderCompletion({ userId, taskId, latencyMinutes }) {

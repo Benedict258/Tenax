@@ -12,6 +12,7 @@ import LeaderboardPage from './pages/dashboard/LeaderboardPage';
 import ExecutionBoardPage from './pages/dashboard/ExecutionBoardPage';
 import PinnedP1Page from './pages/dashboard/PinnedP1Page';
 import RoadmapPage from './pages/dashboard/RoadmapPage';
+import PhaseDetailPage from './pages/dashboard/PhaseDetailPage';
 import BehaviorPage from './pages/admin/BehaviorPage';
 import OpikPulsePage from './pages/admin/OpikPulsePage';
 import SignalsPage from './pages/admin/SignalsPage';
@@ -50,8 +51,9 @@ function App() {
                 <Route path="leaderboard" element={<LeaderboardPage />} />
                 <Route path="execution-board" element={<ExecutionBoardPage />} />
                 <Route path="p1" element={<PinnedP1Page />} />
-                <Route path="roadmap" element={<RoadmapPage />} />
-                <Route path="roadmap/:roadmapId" element={<RoadmapPage />} />
+              <Route path="roadmap" element={<RoadmapPage />} />
+              <Route path="roadmap/:roadmapId" element={<RoadmapPage />} />
+              <Route path="roadmap/:roadmapId/phase/:phaseId" element={<PhaseDetailPage />} />
                 <Route path="resolution-builder" element={<ResolutionBuilderPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 {ADMIN_ENABLED ? (

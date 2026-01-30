@@ -23,6 +23,16 @@ class ResolutionPhase {
     return data || [];
   }
 
+  static async listByRoadmap(roadmapId) {
+    const { data, error } = await supabase
+      .from('resolution_phases')
+      .select('*')
+      .eq('roadmap_id', roadmapId)
+      .order('phase_index', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+
   static async getById(phaseId) {
     const { data, error } = await supabase
       .from('resolution_phases')
