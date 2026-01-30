@@ -21,7 +21,31 @@ app.set('etag', false);
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+const parseOrigins = () => {
+  const raw = process.env.CORS_ORIGINS || '';
+  const extra = [process.env.APP_URL, process.env.FRONTEND_URL]
+    .filter(Boolean);
+  const merged = raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .concat(extra);
+  return Array.from(new Set(merged));
+};
+
+const allowedOrigins = parseOrigins();
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.length === 0) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

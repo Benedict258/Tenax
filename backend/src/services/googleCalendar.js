@@ -3,7 +3,8 @@ const supabase = require('../config/supabase');
 
 const clientId = process.env.GOOGLE_CLIENT_ID;
 const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URL;
+const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URL
+  || (process.env.BACKEND_PUBLIC_URL ? `${process.env.BACKEND_PUBLIC_URL.replace(/\/$/, '')}/api/calendar/callback` : null);
 const scope = process.env.GOOGLE_CALENDAR_SCOPE || 'https://www.googleapis.com/auth/calendar.readonly';
 
 function getOAuthClient() {
