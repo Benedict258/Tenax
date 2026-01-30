@@ -237,6 +237,19 @@ class Task {
     if (error) throw error;
     return data || [];
   }
+
+  static async findByResolutionTaskIds(user_id, resolutionTaskIds = []) {
+    if (!resolutionTaskIds.length) return [];
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('id, metadata')
+      .eq('user_id', user_id)
+      .eq('created_via', 'resolution_builder')
+      .in('metadata->>resolution_task_id', resolutionTaskIds);
+
+    if (error) throw error;
+    return data || [];
+  }
 }
 
 module.exports = Task;

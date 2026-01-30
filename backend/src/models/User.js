@@ -12,6 +12,7 @@ class User {
 
   static async create(userData) {
     const payload = {
+      id: userData.id,
       name: userData.name,
       preferred_name: userData.preferred_name || userData.preferredName || userData.name,
       email: userData.email,

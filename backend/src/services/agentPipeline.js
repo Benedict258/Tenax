@@ -13,6 +13,16 @@ const reminderPreferences = require('./reminderPreferences');
 const resolutionBuilderService = require('./resolutionBuilderAgent');
 const { parseCoursesFromText, buildConfirmationSummary } = require('./timetableParser');
 const { DateTime } = require('luxon');
+const QueueService = require('./queue');
+const notificationService = require('./notificationService');
+
+const UNKNOWN_REPLY_POOL = [
+  'Got it. I can log completions, add or move tasks, show your plan, or start the Resolution Builder. If you are sharing schedule info, try "add class 11am weekly" or upload a timetable. Tell me what to tackle next.',
+  'All right. I can add tasks, mark completions, or pull your plan. If this is schedule info, try "add class 11am weekly" or upload a timetable. What should I do next?',
+  'Understood. Want me to log a completion, add a task, or show your plan? You can also start the Resolution Builder or upload a timetable.'
+];
+
+const pickRandomReply = (messages) => messages[Math.floor(Math.random() * messages.length)];
 
 const GUARD_ALLOWED_INTENTS = new Set([
   'mark_complete',
@@ -185,6 +195,12 @@ async function handleMarkComplete(session, slots) {
     !!reminderInfo,
     reminderInfo?.sentAt || null
   );
+  await notificationService.createNotification(session.user.id, {
+    type: 'execution',
+    title: 'Task completed',
+    message: matchedTask.title,
+    metadata: { task_id: matchedTask.id, channel: session.channel }
+  });
 
   const completionLine = matchedTask.severity === 'p1'
     ? `🔥 P1 locked in: "${matchedTask.title}"`
@@ -251,9 +267,21 @@ async function handleAddTask(session, slots) {
     created_via: session.channel,
     severity
   });
+  await notificationService.createNotification(session.user.id, {
+    type: 'task',
+    title: 'Task added',
+    message: task.title,
+    metadata: { task_id: task.id, channel: session.channel }
+  });
 
   if (severity === 'p1') {
     await ruleStateService.refreshUserState(session.user.id);
+  }
+
+  if (task.start_time) {
+    const reminderTime = new Date(task.start_time);
+    reminderTime.setMinutes(reminderTime.getMinutes() - 30);
+    await QueueService.scheduleTaskReminder(session.user, task, reminderTime.toISOString());
   }
 
   const timingText = slots.targetTime
@@ -317,9 +345,10 @@ async function handleRescheduleTask(session, slots) {
     nextStart.setDate(nextStart.getDate() + slots.deferDays);
   }
 
-  await Task.updateFields(resolution.match.id, {
+  const updatedTask = await Task.updateFields(resolution.match.id, {
     start_time: nextStart.toISOString()
   });
+  await QueueService.scheduleTaskReminder(session.user, updatedTask, nextStart.toISOString());
 
   await session.send(
     `Moved "${resolution.match.title}" to ${nextStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
@@ -585,7 +614,7 @@ async function routeIntent(session, parsed, extras) {
       break;
     default:
       await session.send(
-        'Got it. I can log completions, add or move tasks, show your plan, or start the Resolution Builder. If you are sharing schedule info, try "add class 11am weekly" or upload a timetable.',
+        pickRandomReply(UNKNOWN_REPLY_POOL),
         { intent: 'unknown' }
       );
   }

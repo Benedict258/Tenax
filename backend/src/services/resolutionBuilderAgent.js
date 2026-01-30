@@ -7,6 +7,13 @@ const ResolutionBuilderMessage = require('../models/ResolutionBuilderMessage');
 const ResolutionPlan = require('../models/ResolutionPlan');
 const ResolutionPhase = require('../models/ResolutionPhase');
 const ResolutionTask = require('../models/ResolutionTask');
+const ResolutionDailyItem = require('../models/ResolutionDailyItem');
+const ResolutionRoadmap = require('../models/ResolutionRoadmap');
+const ResolutionResource = require('../models/ResolutionResource');
+const ResolutionProgress = require('../models/ResolutionProgress');
+const scheduleService = require('./scheduleService');
+const QueueService = require('./queue');
+const resourceRetriever = require('./resourceRetriever');
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_PATTERNS = [
@@ -31,8 +38,76 @@ const YES_TRIGGERS = ['yes', 'yep', 'sure', 'ok', 'okay', 'approve', 'approved',
 const NO_TRIGGERS = ['no', 'nope', 'cancel', 'stop', 'not now'];
 const EDIT_TRIGGERS = ['edit', 'change', 'adjust', 'partial'];
 const PACE_OPTIONS = ['light', 'standard', 'intense'];
+const RESOLUTION_TYPES = ['skill', 'habit', 'health', 'project', 'mixed'];
 
 const normalize = (value = '') => value.toLowerCase().trim();
+
+const slugify = (value = '') =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 60);
+
+function classifyResolution(goal = '') {
+  const text = normalize(goal);
+  const skillHints = ['learn', 'master', 'study', 'course', 'javascript', 'python', 'programming', 'ai', 'engineering'];
+  const habitHints = ['daily', 'consistent', 'habit', 'routine', 'wake', 'sleep'];
+  const healthHints = ['jog', 'run', 'workout', 'gym', 'fitness', 'lose', 'weight', 'diet', 'healthy'];
+  const projectHints = ['build', 'ship', 'launch', 'mvp', 'portfolio', 'app', 'product'];
+
+  const matches = {
+    skill: skillHints.some((hint) => text.includes(hint)),
+    habit: habitHints.some((hint) => text.includes(hint)),
+    health: healthHints.some((hint) => text.includes(hint)),
+    project: projectHints.some((hint) => text.includes(hint))
+  };
+
+  const active = Object.entries(matches).filter(([, value]) => value).map(([key]) => key);
+  if (active.length > 1) return 'mixed';
+  if (matches.health) return 'health';
+  if (matches.habit) return 'habit';
+  if (matches.project) return 'project';
+  return 'skill';
+}
+
+function parseDaysPerWeek(text) {
+  const normalized = normalize(text);
+  const match = normalized.match(/(\d+)\s*(days|day|x)\b/);
+  if (match) {
+    const value = Number(match[1]);
+    if (!Number.isNaN(value) && value > 0 && value <= 7) return value;
+  }
+  if (normalized.includes('daily')) return 7;
+  if (normalized.includes('weekend')) return 2;
+  return null;
+}
+
+function parseSessionMinutes(text) {
+  const normalized = normalize(text);
+  const match = normalized.match(/(\d+)\s*(min|minute|minutes)/);
+  if (match) {
+    const value = Number(match[1]);
+    if (!Number.isNaN(value) && value > 0) return value;
+  }
+  return null;
+}
+
+function buildOutcomePrompt(type) {
+  if (type === 'habit') {
+    return 'How many days per week and how long per session? Example: 4 days/week, 20 minutes.';
+  }
+  if (type === 'health') {
+    return 'How many days per week and how long per session? Any constraints (injury/rest days)?';
+  }
+  if (type === 'project') {
+    return 'What is the concrete deliverable? Example: MVP, portfolio site, certification.';
+  }
+  if (type === 'mixed') {
+    return 'Split it for me: skill outcome + habit frequency. Example: build 2 projects + jog 3 days/week.';
+  }
+  return 'What outcome do you want at the end? Example: build projects, pass interviews, or be able to do X.';
+}
 
 const formatTimeLabel = (hour, minute = 0) => {
   const safeHour = Math.min(Math.max(hour, 0), 23);
@@ -170,8 +245,11 @@ function parseBlocks(text) {
   return unique;
 }
 
-function resolveSessionsPerWeek(hoursPerWeek, daysAvailable, pace = 'standard') {
+function resolveSessionsPerWeek(hoursPerWeek, daysAvailable, pace = 'standard', daysPerWeek = null) {
   if (!daysAvailable) return 1;
+  if (daysPerWeek && Number.isFinite(daysPerWeek)) {
+    return Math.max(1, Math.min(daysAvailable, daysPerWeek));
+  }
   const base = hoursPerWeek ? Math.max(1, Math.round(hoursPerWeek / 2)) : daysAvailable;
   const paceFactor = pace === 'light' ? 0.8 : pace === 'intense' ? 1.2 : 1;
   const sessions = Math.round(base * paceFactor);
@@ -183,24 +261,97 @@ function buildRoadmap(goal, outcome, durationWeeks) {
   const phases = [
     {
       phase_index: 0,
-      title: 'Foundations',
-      description: 'Core concepts and quick wins.',
-      objectives: ['Learn the core concepts', 'Build momentum with small exercises'],
-      topics: [{ title: 'Basics', subtopics: ['Key terms', 'Core workflows'], type: 'core' }],
+      title: 'Orientation + Fundamentals',
+      description: 'Clarify scope, set tooling, and cover the essentials.',
+      objectives: ['Understand key terminology', 'Set up the environment', 'Complete quick exercises'],
+      topics: [{ title: 'Core basics', subtopics: ['Key terms', 'Setup', 'First reps'], type: 'core' }],
       resources: [],
       completion_criteria: { type: 'threshold', threshold: 0.8 }
     },
     {
       phase_index: 1,
-      title: 'Applied Practice',
-      description: 'Structured practice and repetition.',
-      objectives: ['Practice consistently', 'Apply concepts to real tasks'],
-      topics: [{ title: 'Applied drills', subtopics: ['Repetition', 'Feedback'], type: 'core' }],
+      title: 'Core Concepts',
+      description: 'Build the backbone knowledge required for progress.',
+      objectives: ['Cover the main concepts', 'Practice with small tasks'],
+      topics: [{ title: 'Foundational concepts', subtopics: ['Concept A', 'Concept B'], type: 'core' }],
+      resources: [],
+      completion_criteria: { type: 'threshold', threshold: 0.8 }
+    },
+    {
+      phase_index: 2,
+      title: 'Guided Practice',
+      description: 'Apply the concepts with structured practice sessions.',
+      objectives: ['Practice consistently', 'Capture lessons learned'],
+      topics: [{ title: 'Guided drills', subtopics: ['Exercises', 'Feedback'], type: 'core' }],
+      resources: [],
+      completion_criteria: { type: 'threshold', threshold: 0.8 }
+    },
+    {
+      phase_index: 3,
+      title: 'Applied Build',
+      description: 'Turn learning into a concrete output or project.',
+      objectives: ['Build something tangible', 'Document learnings'],
+      topics: [{ title: 'Build milestone', subtopics: ['Prototype', 'Iteration'], type: 'core' }],
+      resources: [],
+      completion_criteria: { type: 'threshold', threshold: 0.8 }
+    },
+    {
+      phase_index: 4,
+      title: 'Review + Polish',
+      description: 'Review, refine, and prepare for the next level.',
+      objectives: ['Fix gaps', 'Ship final updates', 'Plan next steps'],
+      topics: [{ title: 'Review checklist', subtopics: ['Polish', 'Reflection'], type: 'core' }],
       resources: [],
       completion_criteria: { type: 'threshold', threshold: 0.8 }
     }
   ];
   return { goal, duration_weeks: durationWeeks, title, phases };
+}
+
+function buildHabitRoadmap(goal, durationWeeks, daysPerWeek, sessionMinutes) {
+  const weeks = durationWeeks || 6;
+  const phasesCount = Math.min(3, Math.max(2, Math.round(weeks / 2)));
+  const baseWeeks = Math.floor(weeks / phasesCount) || 1;
+  let remainder = weeks - baseWeeks * phasesCount;
+
+  const phases = Array.from({ length: phasesCount }).map((_, index) => {
+    const phaseWeeks = baseWeeks + (remainder > 0 ? 1 : 0);
+    remainder -= 1;
+    const intensity = Math.round((sessionMinutes || 20) + index * 5);
+    return {
+      phase_index: index,
+      title: `Week ${index * phaseWeeks + 1}-${index * phaseWeeks + phaseWeeks}: Build consistency`,
+      description: `Keep a steady ${daysPerWeek || 3} days/week routine.`,
+      phase_objective: `Complete ${daysPerWeek || 3} sessions per week at ~${intensity} minutes.`,
+      objectives: [`Complete ${daysPerWeek || 3} sessions`, `Track effort and recovery`],
+      what_to_learn: ['Warm-up', 'Cooldown', 'Form cues'],
+      what_to_build: ['Habit streak', 'Weekly reflection'],
+      topics: [
+        {
+          title: `Session plan (~${intensity} min)`,
+          subtopics: ['Warm-up 5 min', 'Main work', 'Cooldown 5 min'],
+          type: 'core'
+        }
+      ],
+      resources: [
+        {
+          title: 'CDC Physical Activity Basics',
+          url: 'https://www.cdc.gov/physicalactivity/basics/index.htm',
+          kind: 'guide',
+          difficulty: 'beginner'
+        }
+      ],
+      duration_weeks: phaseWeeks,
+      completion_criteria: { type: 'manual_confirm' }
+    };
+  });
+
+  return {
+    goal,
+    duration_weeks: weeks,
+    title: `${goal} Routine`,
+    phases
+  };
 }
 
 function extractJsonBlock(text = '') {
@@ -231,6 +382,9 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
         phase_index: Number.isFinite(Number(phase?.phase_index)) ? Number(phase.phase_index) : index,
         title: typeof phase?.title === 'string' ? phase.title.trim() : '',
         description: typeof phase?.description === 'string' ? phase.description.trim() : '',
+        phase_objective: typeof phase?.phase_objective === 'string' ? phase.phase_objective.trim() : '',
+        what_to_learn: Array.isArray(phase?.what_to_learn) ? phase.what_to_learn.filter(Boolean) : [],
+        what_to_build: Array.isArray(phase?.what_to_build) ? phase.what_to_build.filter(Boolean) : [],
         objectives: Array.isArray(phase?.objectives) ? phase.objectives.filter(Boolean) : [],
         topics: Array.isArray(phase?.topics) ? phase.topics : [],
         resources,
@@ -259,53 +413,152 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
   return {
     goal: raw.goal || fallbackGoal,
     duration_weeks: raw.duration_weeks || durationWeeks,
-    title: raw.title || `${fallbackGoal} Roadmap`,
+    title: raw.roadmap_title || raw.title || `${fallbackGoal} Roadmap`,
     phases
   };
 }
 
-async function buildRoadmapWithResearch(goal, outcome, durationWeeks, user) {
-  const prompt = `You are Tenax Resolution Builder. Create a structured learning roadmap with real resources.
-Goal: ${goal}
-Outcome definition: ${outcome || 'Not specified'}
-Duration: ${durationWeeks} weeks
+function expandPhases(phases, minCount = 5, maxCount = 8) {
+  if (!Array.isArray(phases)) return [];
+  if (phases.length >= minCount) {
+    return phases.slice(0, maxCount);
+  }
 
-Return JSON only with this shape:
+  const expanded = [];
+  for (const phase of phases) {
+    const topics = Array.isArray(phase.topics) ? phase.topics : [];
+    if (topics.length > 1) {
+      for (const topic of topics) {
+        expanded.push({
+          ...phase,
+          title: `${phase.title}: ${topic.title}`,
+          description: phase.description || `Focus on ${topic.title}.`,
+          objectives: phase.objectives || [],
+          topics: [topic]
+        });
+        if (expanded.length >= maxCount) break;
+      }
+    } else {
+      expanded.push(phase);
+    }
+    if (expanded.length >= maxCount) break;
+  }
+
+  while (expanded.length < minCount) {
+    const base = phases[0] || expanded[0];
+    if (!base) break;
+    expanded.push({
+      ...base,
+      title: `${base.title}: Deepen + apply`,
+      description: base.description || 'Deepen and apply the core concepts.',
+      objectives: base.objectives || [],
+      topics: base.topics || []
+    });
+  }
+
+  return expanded.slice(0, maxCount);
+}
+
+async function buildRoadmapWithResearch(
+  goal,
+  outcome,
+  durationWeeks,
+  user,
+  resolutionType,
+  skillLevel,
+  daysPerWeek,
+  sessionMinutes
+) {
+  if (resolutionType === 'habit' || resolutionType === 'health') {
+    return buildHabitRoadmap(goal, durationWeeks, daysPerWeek, sessionMinutes);
+  }
+    const prompt = `You are Tenax Resolution Builder. Produce a high-quality, ChatGPT-style roadmap with strong structure and realistic sequencing.
+  Goal: ${goal}
+  Outcome definition: ${outcome || 'Not specified'}
+  Resolution type: ${resolutionType || 'skill'}
+  Skill level: ${skillLevel || 'unknown'}
+  Duration: ${durationWeeks} weeks
+  
+  Return JSON only with this shape:
 {
-  "goal": "...",
-  "duration_weeks": ${durationWeeks},
-  "title": "...",
+  "roadmap_title": "...",
+  "resolution_type": "${resolutionType || 'skill'}",
   "phases": [
     {
       "phase_index": 0,
       "title": "...",
       "description": "...",
+      "phase_objective": "...",
+      "what_to_learn": ["..."],
+      "what_to_build": ["..."],
       "objectives": ["..."],
       "topics": [{"title":"...","subtopics":["..."],"type":"core"}],
-      "resources": [{"title":"...","url":"https://...","kind":"docs|video|course","difficulty":"beginner|intermediate|advanced"}],
+      "resources": [{"title":"...","url":"https://...","type":"docs|video|course"}],
       "completion_criteria": {"type":"threshold","threshold":0.8}
     }
   ]
-}
+  }
+  
+  Rules:
+  - 5 to 8 phases (avoid generic 2-phase plans).
+  - Each phase must be narrower and specific (no giant buckets like "Foundations + Practice").
+  - Every phase must list 2-4 concrete topics and 2-4 deliverables.
+  - Provide real, valid URLs.
+  - Ensure objectives and topics are practical.
+  `;
 
-Rules:
-- 4 to 7 phases.
-- Provide real, valid URLs.
-- Ensure objectives and topics are practical.
-`;
+  const timeoutMs = 25000;
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('LLM timeout')), timeoutMs);
+  });
 
   try {
-    const response = await llmService.generate(prompt, {
-      maxTokens: 900,
-      temperature: 0.25,
-      opikMeta: {
-        action: 'resolution_roadmap',
-        user_id: user?.id,
-        resolution_goal: goal
-      }
-    });
+    const response = await Promise.race([
+      llmService.generate(prompt, {
+        maxTokens: 1200,
+        temperature: 0.35,
+        preferredModel: 'openai',
+        opikMeta: {
+          action: 'resolution_roadmap',
+          user_id: user?.id,
+          resolution_goal: goal
+        }
+      }),
+      timeoutPromise
+    ]);
     const parsed = extractJsonBlock(response.text);
-    return sanitizeRoadmap(parsed, goal, outcome, durationWeeks);
+    let sanitized = sanitizeRoadmap(parsed, goal, outcome, durationWeeks);
+    const expanded = expandPhases(sanitized.phases, 5, 8);
+    sanitized = { ...sanitized, phases: expanded };
+
+    const totalWeeks = sanitized.duration_weeks || durationWeeks || expanded.length;
+    const baseWeeks = Math.max(1, Math.floor(totalWeeks / expanded.length));
+    let remainder = Math.max(0, totalWeeks - baseWeeks * expanded.length);
+    sanitized.phases = sanitized.phases.map((phase, index) => {
+      const extra = remainder > 0 ? 1 : 0;
+      remainder -= extra;
+      return {
+        ...phase,
+        phase_index: index,
+        duration_weeks: phase.duration_weeks || baseWeeks + extra
+      };
+    });
+
+    // Ensure each phase has resources with URLs (fetch if missing).
+    for (const phase of sanitized.phases) {
+      const resources = Array.isArray(phase.resources) ? phase.resources : [];
+      const withLinks = resources.filter((res) => res?.title && res?.url);
+      if (withLinks.length >= 3) {
+        phase.resources = withLinks;
+        continue;
+      }
+      const fetched = await resourceRetriever.retrieveResources(goal, phase.title, {
+        forceRefresh: true,
+        recencyHint: '2024 2025'
+      });
+      phase.resources = [...withLinks, ...fetched].slice(0, 6);
+    }
+    return sanitized;
   } catch (error) {
     console.warn('[ResolutionBuilder] LLM roadmap generation failed:', error.message);
     return buildRoadmap(goal, outcome, durationWeeks);
@@ -318,7 +571,12 @@ function buildSchedulePreview(state) {
   const blocks = state.preferred_blocks && state.preferred_blocks.length ? state.preferred_blocks : DEFAULT_BLOCKS;
   if (!roadmap.length || !days.length) return [];
 
-  const sessionsPerWeek = resolveSessionsPerWeek(state.time_commitment_hours, days.length, state.pace);
+  const sessionsPerWeek = resolveSessionsPerWeek(
+    state.time_commitment_hours,
+    days.length,
+    state.pace,
+    state.days_per_week
+  );
   const selectedDays = days.slice(0, sessionsPerWeek);
   const focusTemplates = ['Learn new concept', 'Guided practice', 'Applied build', 'Review + recap'];
   const preview = [];
@@ -386,13 +644,15 @@ function generateResolutionTasks({
   daysFree,
   preferredBlocks,
   hoursPerWeek,
-  pace
+  pace,
+  daysPerWeek,
+  sessionMinutes
 }) {
   const tasks = [];
   if (!phases.length || !daysFree.length || !durationWeeks) return tasks;
 
   const blocks = preferredBlocks.length ? preferredBlocks : DEFAULT_BLOCKS;
-  const sessionsPerWeek = resolveSessionsPerWeek(hoursPerWeek, daysFree.length, pace);
+  const sessionsPerWeek = resolveSessionsPerWeek(hoursPerWeek, daysFree.length, pace, daysPerWeek);
   const totalSessions = durationWeeks * sessionsPerWeek;
   const totalPhaseWeeks = phases.reduce((sum, phase) => sum + (phase.duration_weeks || 1), 0) || phases.length;
   let remainingSessions = totalSessions;
@@ -426,15 +686,25 @@ function generateResolutionTasks({
     const sessions = phaseSessions[phaseIndex] || 1;
     const topics = Array.isArray(phase.topics) ? phase.topics : [];
     const objectives = Array.isArray(phase.objectives) ? phase.objectives : [];
+    const learnItems = Array.isArray(phase.what_to_learn) ? phase.what_to_learn : [];
+    const buildItems = Array.isArray(phase.what_to_build) ? phase.what_to_build : [];
     for (let i = 0; i < sessions; i += 1) {
       const slot = slotList[slotIndex];
       if (!slot) break;
       const topic = topics[i % (topics.length || 1)] || { title: phase.title };
-      const objective = objectives[i % (objectives.length || 1)] || `Advance ${phase.title}`;
-      const description = topic.subtopics && topic.subtopics.length
-        ? `Focus on ${topic.title}. Cover: ${topic.subtopics.join(', ')}.`
+      const objective =
+        objectives[i % (objectives.length || 1)] ||
+        phase.phase_objective ||
+        `Advance ${phase.title}`;
+      const subtopics = topic.subtopics && topic.subtopics.length ? topic.subtopics : [];
+      const learnLine = learnItems.length ? `Learn: ${learnItems.slice(0, 3).join(', ')}.` : '';
+      const buildLine = buildItems.length ? `Build: ${buildItems.slice(0, 2).join(', ')}.` : '';
+      const topicLine = subtopics.length
+        ? `Focus on ${topic.title}. Cover: ${subtopics.join(', ')}.`
         : `Focus on ${topic.title || phase.title} and apply it with practice.`;
+      const description = [topicLine, learnLine, buildLine].filter(Boolean).join(' ');
       const resources = Array.isArray(phase.resources) ? phase.resources : [];
+      const estimatedMinutes = sessionMinutes || Math.max(30, Math.round((hoursPerWeek || 2) * 30));
 
       tasks.push({
         user_id: user.id,
@@ -446,6 +716,9 @@ function generateResolutionTasks({
         objective,
         description,
         resources_json: resources,
+        estimated_duration_minutes: estimatedMinutes,
+        topic_key: slugify(topic.title || phase.title || 'session'),
+        topic_id: slugify(topic.title || phase.title || 'session'),
         status: 'todo',
         order_index: i,
         locked: phaseIndex > 0
@@ -457,36 +730,119 @@ function generateResolutionTasks({
   return tasks;
 }
 
-async function mirrorTasksToExecution(tasks, userId) {
+async function mirrorTasksToExecution(tasks, user) {
   const unlocked = tasks.filter((task) => !task.locked);
   if (!unlocked.length) return;
-  const payload = unlocked.map((task) => ({
-    user_id: userId,
-    title: task.title,
-    description: task.description,
-    category: 'Resolution',
-    start_time: task.start_time ? DateTime.fromISO(`${task.date}T${task.start_time}`).toUTC().toISO() : null,
-    severity: 'p1',
-    priority: 'P1',
-    created_via: 'resolution_builder',
-    metadata: {
-      resolution_plan_id: task.plan_id,
-      resolution_task_id: task.id,
-      resources: task.resources_json,
-      objective: task.objective
-    }
-  }));
-  await Task.createMany(payload);
-  await ruleStateService.refreshUserState(userId);
+  const existing = await Task.findByResolutionTaskIds(
+    user.id,
+    unlocked.map((task) => task.id)
+  );
+  const existingIds = new Set(
+    existing
+      .map((row) => row?.metadata?.resolution_task_id)
+      .filter(Boolean)
+  );
+
+  const payload = unlocked
+    .filter((task) => !existingIds.has(task.id))
+    .map((task) => ({
+      user_id: user.id,
+      title: task.title,
+      description: task.description,
+      category: 'Resolution',
+      start_time: task.start_time ? DateTime.fromISO(`${task.date}T${task.start_time}`).toUTC().toISO() : null,
+      severity: 'p1',
+      priority: 'P1',
+      created_via: 'resolution_builder',
+      metadata: {
+        resolution_plan_id: task.plan_id,
+        resolution_task_id: task.id,
+        resources: task.resources_json,
+        objective: task.objective
+      }
+    }));
+  const created = await Task.createMany(payload);
+  await ruleStateService.refreshUserState(user.id);
+  for (const task of created) {
+    if (!task.start_time) continue;
+    const reminderTime = new Date(task.start_time);
+    reminderTime.setMinutes(reminderTime.getMinutes() - 30);
+    await QueueService.scheduleTaskReminder(user, task, reminderTime.toISOString());
+  }
+}
+
+async function insertResolutionIntoScheduleIntel(user, items, planId, goalText) {
+  if (!items?.length) return;
+  const existingRows = await scheduleService.listExtractionRows(user.id);
+  const existingResolutionTaskIds = new Set(
+    existingRows
+      .map((row) => row?.metadata?.resolution_task_id)
+      .filter(Boolean)
+      .map((value) => String(value))
+  );
+  const seen = new Set();
+
+  const payloads = items
+    .filter((item) => item.start_time && item.estimated_duration_minutes)
+    .filter((item) => !existingResolutionTaskIds.has(String(item.id)))
+    .map((item) => {
+      const date = new Date(`${item.date}T00:00:00`);
+      const dayOfWeek = date.getDay();
+      const start = item.start_time;
+      const [hh, mm, ss] = start.split(':').map((value) => Number(value));
+      const startDate = new Date(date);
+      startDate.setHours(hh || 0, mm || 0, ss || 0, 0);
+      const endDate = new Date(startDate.getTime() + item.estimated_duration_minutes * 60000);
+      const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}:00`;
+
+      const payload = {
+        title: item.title,
+        day_of_week: dayOfWeek,
+        start_time: start,
+        end_time: endTime,
+        category: 'Resolution',
+        metadata: {
+          source: 'resolution_builder',
+          resolution_plan_id: planId,
+          resolution_goal: goalText,
+          resolution_task_id: item.id
+        }
+      };
+
+      const key = [
+        payload.day_of_week,
+        payload.start_time,
+        payload.end_time,
+        payload.title.toLowerCase(),
+        payload.category.toLowerCase(),
+        payload.metadata.resolution_task_id
+      ].join('|');
+      if (seen.has(key)) {
+        return null;
+      }
+      seen.add(key);
+      return payload;
+    });
+
+  for (const entry of payloads.filter(Boolean)) {
+    await scheduleService.createManualExtractionRow(user.id, entry);
+  }
 }
 
 class ResolutionBuilderFlow {
   constructor(user, sessionRecord) {
     this.user = user;
     this.sessionRecord = sessionRecord;
-    this.state = sessionRecord?.state_json || {
+    const baseState = {
       step: 1,
       resolution_goal: '',
+      resolution_type: 'skill',
+      clarify_step: null,
+      skill_level: null,
+      days_per_week: null,
+      session_minutes: null,
+      constraints: '',
+      project_deliverable: '',
       target_outcome: '',
       duration_weeks: null,
       end_date: null,
@@ -503,6 +859,10 @@ class ResolutionBuilderFlow {
       time_step: 'hours',
       edit_mode: false
     };
+    const stored = sessionRecord?.state_json && Object.keys(sessionRecord.state_json).length
+      ? sessionRecord.state_json
+      : {};
+    this.state = { ...baseState, ...stored };
   }
 
   publicState() {
@@ -535,10 +895,12 @@ class ResolutionBuilderFlow {
       return { reply: 'Share a resolution goal so we can build your roadmap.', state: this.publicState() };
     }
     this.state.resolution_goal = input;
+    this.state.resolution_type = classifyResolution(input);
+    this.state.clarify_step = 'outcome';
     this.state.step = 2;
     await this.saveState();
     return {
-      reply: 'What does success look like for this goal? Examples: fundamentals, projects, job-ready, interview prep.',
+      reply: buildOutcomePrompt(this.state.resolution_type),
       state: this.publicState()
     };
   }
@@ -547,6 +909,68 @@ class ResolutionBuilderFlow {
     if (!input) {
       return { reply: 'Give me a short success definition so the roadmap stays aligned.', state: this.publicState() };
     }
+    const type = this.state.resolution_type;
+
+    if (type === 'skill') {
+      if (this.state.clarify_step === 'outcome') {
+        this.state.target_outcome = input;
+        this.state.clarify_step = 'skill_level';
+        await this.saveState();
+        return { reply: 'What is your current level? (beginner, intermediate, advanced)', state: this.publicState() };
+      }
+      this.state.skill_level = normalize(input);
+      this.state.step = 3;
+      this.state.clarify_step = null;
+      await this.saveState();
+      return {
+        reply: 'How long do you want to complete this resolution? (e.g., 4 weeks, 8 weeks, or 2026-03-01)',
+        state: this.publicState()
+      };
+    }
+
+    if (type === 'habit' || type === 'health') {
+      const days = parseDaysPerWeek(input);
+      const minutes = parseSessionMinutes(input);
+      if (!days || !minutes) {
+        return {
+          reply: 'Share days per week and minutes per session. Example: 4 days/week, 20 minutes.',
+          state: this.publicState()
+        };
+      }
+      this.state.days_per_week = days;
+      this.state.session_minutes = minutes;
+      if (type === 'health' && !this.state.constraints) {
+        this.state.constraints = '';
+      }
+      this.state.step = 3;
+      await this.saveState();
+      return {
+        reply: 'How long do you want to take to complete this goal? (e.g., 6 weeks or 2026-04-01)',
+        state: this.publicState()
+      };
+    }
+
+    if (type === 'project') {
+      this.state.project_deliverable = input;
+      this.state.target_outcome = input;
+      this.state.step = 3;
+      await this.saveState();
+      return {
+        reply: 'What is the deadline or duration for this deliverable?',
+        state: this.publicState()
+      };
+    }
+
+    if (type === 'mixed') {
+      this.state.target_outcome = input;
+      this.state.step = 3;
+      await this.saveState();
+      return {
+        reply: 'How long do you want to complete this goal? (e.g., 8 weeks)',
+        state: this.publicState()
+      };
+    }
+
     this.state.target_outcome = input;
     this.state.step = 3;
     await this.saveState();
@@ -590,6 +1014,9 @@ class ResolutionBuilderFlow {
         return { reply: 'List the days that are usually free (e.g. Tue Thu Sat or weekdays).', state: this.publicState() };
       }
       this.state.days_free = days;
+      if (!this.state.days_per_week) {
+        this.state.days_per_week = days.length;
+      }
       this.state.time_step = 'blocks';
       await this.saveState();
       return { reply: 'Preferred learning time blocks? Example: evenings, 7-9pm, or 6:30am.', state: this.publicState() };
@@ -618,7 +1045,11 @@ class ResolutionBuilderFlow {
       this.state.resolution_goal,
       this.state.target_outcome,
       this.state.duration_weeks,
-      this.user
+      this.user,
+      this.state.resolution_type,
+      this.state.skill_level,
+      this.state.days_per_week,
+      this.state.session_minutes
     );
     this.state.roadmap = roadmap;
     await this.saveState();
@@ -715,10 +1146,18 @@ class ResolutionBuilderFlow {
       return { reply: 'Roadmap missing. Restart the builder to try again.', state: this.publicState() };
     }
 
+    const roadmapRecord = await ResolutionRoadmap.create({
+      user_id: this.user.id,
+      goal_text: this.state.resolution_goal,
+      resolution_type: this.state.resolution_type,
+      duration_weeks: this.state.duration_weeks
+    });
+
     const plan = await ResolutionPlan.create({
       user_id: this.user.id,
       title: roadmap.title,
       goal_text: this.state.resolution_goal,
+      resolution_type: this.state.resolution_type,
       target_outcome: this.state.target_outcome,
       duration_weeks: this.state.duration_weeks,
       end_date: this.state.end_date,
@@ -726,17 +1165,28 @@ class ResolutionBuilderFlow {
         hours_per_week: this.state.time_commitment_hours,
         days_free: this.state.days_free,
         preferred_blocks: this.state.preferred_blocks,
-        pace: this.state.pace
+        pace: this.state.pace,
+        days_per_week: this.state.days_per_week,
+        session_minutes: this.state.session_minutes
+      },
+      preferences_json: {
+        skill_level: this.state.skill_level,
+        project_deliverable: this.state.project_deliverable,
+        constraints: this.state.constraints
       },
       status: 'active',
       roadmap_json: roadmap
     });
 
     const phasesPayload = roadmap.phases.map((phase) => ({
+      roadmap_id: roadmapRecord.id,
       plan_id: plan.id,
       phase_index: phase.phase_index,
       title: phase.title,
       description: phase.description,
+      phase_objective: phase.phase_objective || null,
+      what_to_learn_json: phase.what_to_learn || [],
+      what_to_build_json: phase.what_to_build || [],
       objectives_json: phase.objectives || [],
       topics_json: phase.topics || [],
       resources_json: phase.resources || [],
@@ -745,6 +1195,23 @@ class ResolutionBuilderFlow {
     }));
 
     const phases = await ResolutionPhase.createMany(phasesPayload);
+    await ResolutionProgress.createMany(
+      phases.map((phase) => ({
+        phase_id: phase.id,
+        status: 'pending'
+      }))
+    );
+
+    const resourcePayload = phases.flatMap((phase, index) => {
+      const resources = roadmap.phases[index]?.resources || [];
+      return resources.map((resource) => ({
+        phase_id: phase.id,
+        title: resource.title,
+        url: resource.url,
+        type: resource.type || resource.kind || null
+      }));
+    });
+    await ResolutionResource.createMany(resourcePayload);
     const tasks = generateResolutionTasks({
       user: this.user,
       planId: plan.id,
@@ -753,11 +1220,15 @@ class ResolutionBuilderFlow {
       daysFree: this.state.days_free,
       preferredBlocks: this.state.preferred_blocks,
       hoursPerWeek: this.state.time_commitment_hours,
-      pace: this.state.pace
+      pace: this.state.pace,
+      daysPerWeek: this.state.days_per_week,
+      sessionMinutes: this.state.session_minutes
     });
 
     const createdTasks = await ResolutionTask.createMany(tasks);
-    await mirrorTasksToExecution(createdTasks, this.user.id);
+    await ResolutionDailyItem.createMany(createdTasks);
+    await mirrorTasksToExecution(createdTasks, this.user);
+    await insertResolutionIntoScheduleIntel(this.user, createdTasks, plan.id, this.state.resolution_goal);
 
     this.state.completed = true;
     this.state.active = false;
@@ -815,13 +1286,14 @@ class ResolutionBuilderFlow {
 async function getOrCreateSession(user) {
   const existing = await ResolutionBuilderSession.getActiveByUser(user.id);
   if (existing) return existing;
-  return ResolutionBuilderSession.create(user.id, null);
+  return ResolutionBuilderSession.create(user.id, {});
 }
 
 async function startSession(user) {
   const sessionRecord = await getOrCreateSession(user);
   const flow = new ResolutionBuilderFlow(user, sessionRecord);
   const response = await flow.start();
+  await flow.saveState();
   await flow.logMessage('assistant', response.reply, 'start', response.state);
   return response;
 }

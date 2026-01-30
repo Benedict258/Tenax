@@ -3,6 +3,8 @@ import { Button } from '../../components/ui/button';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../lib/api';
 import Loader from '../../components/ui/loader';
+import { FeaturesSectionWithHoverEffects } from '../../components/ui/feature-section-with-hover-effects';
+import { LineChart, TrendingUp } from 'lucide-react';
 
 interface TimetableRow {
   id: string;
@@ -67,7 +69,7 @@ const toTimeInput = (value?: string) => {
   return value.slice(0, 5);
 };
 
-const ScheduleEditorPage = () => {
+const ScheduleEditorPage = ({ mode = 'full' }: { mode?: 'full' | 'approved-only' }) => {
   const { user } = useAuth();
   const [rows, setRows] = useState<TimetableRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,11 @@ const ScheduleEditorPage = () => {
   const [editForm, setEditForm] = useState<TimetableFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [latestUpload, setLatestUpload] = useState<UploadSnapshot | null>(null);
+  const [activeTab, setActiveTab] = useState<'uploads' | 'extracted' | 'approved'>(
+    mode === 'approved-only' ? 'approved' : 'extracted',
+  );
+  const [uploading, setUploading] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const previousUploadStatusRef = useRef<string | null>(null);
   const optimisticRowsRef = useRef<Record<string, TimetableRow>>({});
 
@@ -251,6 +258,32 @@ const ScheduleEditorPage = () => {
     }
   };
 
+  const handleUpload = async () => {
+    if (!user?.id || !uploadFile) {
+      setStatus('Choose a timetable file to upload.');
+      return;
+    }
+    setUploading(true);
+    setStatus(null);
+    const formData = new FormData();
+    formData.append('timetable', uploadFile);
+    formData.append('user_id', user.id);
+    formData.append('source', 'dashboard');
+    try {
+      await apiClient.post('/schedule/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setStatus('Upload received. Extracting schedule now.');
+      setUploadFile(null);
+      fetchLatestUpload();
+    } catch (err) {
+      console.error('Failed to upload timetable', err);
+      setStatus('Upload failed. Try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleEditSelect = (row: TimetableRow) => {
     setEditingRow(row);
     setEditForm({
@@ -333,6 +366,52 @@ const ScheduleEditorPage = () => {
     }
   };
 
+  const handleClearResolutionBlocks = async () => {
+    if (!user?.id) return;
+    setSaving(true);
+    setStatus(null);
+    try {
+      const response = await apiClient.post(`/schedule/extractions/${user.id}/clear-resolution`);
+      setStatus(`Resolution blocks removed (${response.data?.removed || 0}).`);
+      await fetchRows();
+    } catch (err) {
+      console.error('Failed to clear resolution blocks', err);
+      setStatus('Unable to clear resolution blocks right now.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const uniqueRows = useMemo(() => {
+    const seen = new Set();
+    return rows.filter((row) => {
+      const key = [
+        row.day_of_week,
+        row.start_time,
+        row.end_time,
+        row.title.toLowerCase(),
+        (row.category || '').toLowerCase()
+      ].join('|');
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [rows]);
+
+  const weeklySummary = useMemo(() => {
+    const totalPlanned = uniqueRows.length;
+    const byDay = dayOptions.reduce<Record<number, number>>((acc, option) => {
+      acc[option.value] = 0;
+      return acc;
+    }, {});
+    uniqueRows.forEach((row) => {
+      byDay[row.day_of_week] = (byDay[row.day_of_week] || 0) + 1;
+    });
+    return { totalPlanned, byDay };
+  }, [uniqueRows]);
+
   if (!user) {
     return (
       <div className="rounded-3xl border border-gray-200 bg-white p-6 text-center space-y-3">
@@ -351,6 +430,41 @@ const ScheduleEditorPage = () => {
     );
   }
 
+  if (mode === 'approved-only') {
+    return (
+      <section className="space-y-6">
+        {status && <p className="text-sm text-emerald-600">{status}</p>}
+        {validationError && <p className="text-sm text-amber-500">{validationError}</p>}
+
+        <section className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-3xl border border-gray-200 bg-white p-6">
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Add block</p>
+            <h3 className="text-xl font-semibold text-black">Seed recurring slots</h3>
+            <form className="mt-4 space-y-4" onSubmit={handleCreate}>
+              <TimetableForm form={form} setForm={setForm} disabled={saving} />
+              <Button type="submit" className="w-full" disabled={!canSubmitCreate || saving}>
+                {saving ? 'Saving...' : 'Add to timetable'}
+              </Button>
+            </form>
+          </div>
+          <div className="rounded-3xl border border-gray-200 bg-white p-6">
+            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Edit selection</p>
+            <h3 className="text-xl font-semibold text-black">Fine-tune existing blocks</h3>
+            {!editingRow && <p className="mt-3 text-gray-500 text-sm">Select a block above to populate this editor.</p>}
+            {editingRow && (
+              <form className="mt-4 space-y-4" onSubmit={handleUpdate}>
+                <TimetableForm form={editForm} setForm={setEditForm} disabled={saving} />
+                <Button type="submit" className="w-full" disabled={!canSubmitUpdate || saving}>
+                  {saving ? 'Updating...' : 'Update block'}
+                </Button>
+              </form>
+            )}
+          </div>
+        </section>
+      </section>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-gray-200 bg-white p-6">
@@ -360,88 +474,87 @@ const ScheduleEditorPage = () => {
             <h2 className="text-2xl font-semibold text-black">Manual schedule editor</h2>
             <p className="text-gray-500 text-sm">Curate class blocks so reminders stay conflict-aware.</p>
           </div>
-          <Button variant="ghost" className="border border-gray-200 text-gray-600" onClick={fetchRows}>
-            Refresh
+          <Button
+            variant="ghost"
+            className="border border-red-200 text-red-600"
+            onClick={handleClearResolutionBlocks}
+            disabled={saving}
+          >
+            Clear resolution blocks
           </Button>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <TabButton active={activeTab === 'uploads'} onClick={() => setActiveTab('uploads')}>
+            Uploaded schedules
+          </TabButton>
+          <TabButton active={activeTab === 'extracted'} onClick={() => setActiveTab('extracted')}>
+            Extracted data
+          </TabButton>
         </div>
         {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
         {status && <p className="mt-4 text-sm text-emerald-600">{status}</p>}
         {validationError && <p className="mt-2 text-sm text-amber-500">{validationError}</p>}
-        {latestUpload && latestUpload.status !== 'done' && (
+        {activeTab === 'uploads' && latestUpload && latestUpload.status !== 'done' && (
           <p className="mt-4 text-sm text-gray-600">
             Latest upload is <span className="font-semibold">{latestUpload.status}</span>. Rows will auto-populate once
             processing completes.
           </p>
         )}
-        <div className="mt-6 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500">
-                <th className="px-3 py-2 font-medium">Day</th>
-                <th className="px-3 py-2 font-medium">Window</th>
-                <th className="px-3 py-2 font-medium">Title</th>
-                <th className="px-3 py-2 font-medium">Location</th>
-                <th className="px-3 py-2 font-medium">Category</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-gray-500">
-                    No timetable blocks yet. Use the form below to seed the day.
-                  </td>
-                </tr>
+        {activeTab === 'uploads' && (
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-sm font-semibold text-gray-900">Upload timetable</p>
+              <p className="text-xs text-gray-500 mt-1">PDF or image. Tenax will extract blocks and ask for approval.</p>
+              <input
+                type="file"
+                className="mt-4 w-full text-sm"
+                onChange={(event) => setUploadFile(event.target.files?.[0] || null)}
+              />
+              <Button className="mt-4 w-full" onClick={handleUpload} disabled={!uploadFile || uploading}>
+                {uploading ? 'Uploading...' : 'Upload timetable'}
+              </Button>
+            </div>
+            <div className="rounded-2xl border border-gray-200 bg-white p-4">
+              <p className="text-sm font-semibold text-gray-900">Latest upload</p>
+              <p className="text-xs text-gray-500 mt-1">Status updates appear here.</p>
+              {latestUpload ? (
+                <div className="mt-4 text-sm text-gray-600">
+                  <p>Status: <span className="font-semibold">{latestUpload.status}</span></p>
+                  {latestUpload.failure_reason && <p className="text-red-500">Error: {latestUpload.failure_reason}</p>}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-gray-500">No uploads yet.</p>
               )}
-              {rows.map((row) => (
-                <tr key={row.id} className="border-t border-gray-200">
-                  <td className="px-3 py-3 font-semibold">{dayLookup[row.day_of_week] || '-'}</td>
-                  <td className="px-3 py-3 text-gray-600">
-                    {row.start_time?.slice(0, 5)} - {row.end_time?.slice(0, 5)}
-                  </td>
-                  <td className="px-3 py-3">{row.title}</td>
-                  <td className="px-3 py-3 text-gray-500">{row.location || '-'}</td>
-                  <td className="px-3 py-3 text-gray-500">{row.category || 'class'}</td>
-                  <td className="px-3 py-3 space-x-2">
-                    <Button size="sm" variant="ghost" className="border border-gray-200 text-gray-700" onClick={() => handleEditSelect(row)}>
-                      Edit
-                    </Button>
-                    <Button size="sm" variant="ghost" className="border border-red-200 text-red-500" onClick={() => handleDelete(row.id)}>
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'extracted' && (
+          <div className="mt-6 space-y-8">
+            <section className="rounded-3xl border border-gray-200 bg-white p-6">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <h3 className="text-xl font-semibold text-black">Weekly Schedule</h3>
+                <LineChart className="h-5 w-5 text-gray-500" />
+              </div>
+              <FeaturesSectionWithHoverEffects
+                features={dayOptions.map((day) => ({
+                  title: day.label,
+                  description: `0/${weeklySummary.byDay[day.value] || 0} done - 0%`,
+                  icon: <LineChart className="h-5 w-5" />,
+                  href: `/dashboard/schedule/day/${day.value}`
+                }))}
+              />
+            </section>
+
+            <section className="rounded-2xl border border-gray-200 bg-white p-6">
+              <p className="text-sm text-gray-500">
+                Day cards above are the primary entry point. Click a day to view, edit, or delete blocks.
+              </p>
+            </section>
+          </div>
+        )}
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-3xl border border-gray-200 bg-white p-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Add block</p>
-          <h3 className="text-xl font-semibold text-black">Seed recurring slots</h3>
-          <form className="mt-4 space-y-4" onSubmit={handleCreate}>
-            <TimetableForm form={form} setForm={setForm} disabled={saving} />
-            <Button type="submit" className="w-full" disabled={!canSubmitCreate || saving}>
-              {saving ? 'Saving...' : 'Add to timetable'}
-            </Button>
-          </form>
-        </div>
-        <div className="rounded-3xl border border-gray-200 bg-white p-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Edit selection</p>
-          <h3 className="text-xl font-semibold text-black">Fine-tune existing blocks</h3>
-          {!editingRow && <p className="mt-3 text-gray-500 text-sm">Select a block above to populate this editor.</p>}
-          {editingRow && (
-            <form className="mt-4 space-y-4" onSubmit={handleUpdate}>
-              <TimetableForm form={editForm} setForm={setEditForm} disabled={saving} />
-              <Button type="submit" className="w-full" disabled={!canSubmitUpdate || saving}>
-                {saving ? 'Updating...' : 'Update block'}
-              </Button>
-            </form>
-          )}
-        </div>
-      </section>
     </div>
   );
 };
@@ -533,6 +646,24 @@ const TimetableForm = ({ form, setForm, disabled }: TimetableFormProps) => (
       </div>
     </div>
   </>
+);
+
+const InsightCard = ({ label, value, hint }: { label: string; value: string; hint: string }) => (
+  <div className="rounded-2xl border border-gray-200 bg-white px-6 py-5">
+    <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{label}</p>
+    <p className="mt-2 text-3xl font-semibold text-black">{value}</p>
+    <p className="text-gray-500 text-sm">{hint}</p>
+  </div>
+);
+
+const TabButton = ({ active, onClick, children }: { active?: boolean; onClick: () => void; children: React.ReactNode }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`rounded-full border px-4 py-2 text-sm transition ${active ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-500'}`}
+  >
+    {children}
+  </button>
 );
 
 export default ScheduleEditorPage;

@@ -1,6 +1,8 @@
 const express = require('express');
 const Task = require('../models/Task');
 const auth = require('../middleware/auth');
+const QueueService = require('../services/queue');
+const notificationService = require('../services/notificationService');
 const router = express.Router();
 
 // Get all user tasks
@@ -56,6 +58,17 @@ router.post('/', auth, async (req, res) => {
     delete taskData.priority_label;
     
     const task = await Task.create(taskData);
+    if (task?.start_time) {
+      const reminderTime = new Date(task.start_time);
+      reminderTime.setMinutes(reminderTime.getMinutes() - 30);
+      await QueueService.scheduleTaskReminder(req.user, task, reminderTime.toISOString());
+    }
+    await notificationService.createNotification(req.user.id, {
+      type: 'task',
+      title: 'Task added',
+      message: task.title,
+      metadata: { task_id: task.id }
+    });
     res.status(201).json({
       message: 'Task created successfully',
       task
@@ -81,6 +94,13 @@ router.patch('/:id/status', auth, async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
     
+    await notificationService.createNotification(req.user.id, {
+      type: 'task',
+      title: status === 'done' ? 'Task completed' : 'Task updated',
+      message: task.title,
+      metadata: { task_id: task.id, status }
+    });
+
     res.json({
       message: 'Task status updated successfully',
       task
@@ -99,6 +119,13 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: 'Task not found' });
     }
     
+    await notificationService.createNotification(req.user.id, {
+      type: 'task',
+      title: 'Task removed',
+      message: task.title,
+      metadata: { task_id: task.id }
+    });
+
     res.json({
       message: 'Task deleted successfully',
       task

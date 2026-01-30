@@ -25,6 +25,7 @@ const SignupPage = () => {
     name: '',
     preferredName: '',
     email: '',
+    password: '',
     phone: '',
     primaryGoal: '',
     dailyStart: '07:00',
@@ -46,7 +47,7 @@ const SignupPage = () => {
       form.name.trim() &&
       form.preferredName.trim() &&
       form.email.trim() &&
-      form.phone.trim() &&
+      form.password.trim() &&
       form.primaryGoal.trim() &&
       selectedRoles.length > 0 &&
       selectedReasons.length > 0
@@ -72,7 +73,8 @@ const SignupPage = () => {
         name: form.name,
         preferred_name: form.preferredName,
         email: form.email,
-        phone_number: form.phone,
+        password: form.password,
+        phone_number: form.phone || undefined,
         role: selectedRoles.length === 1 ? selectedRoles[0] : selectedRoles,
         reason_for_using: selectedReasons,
         primary_goal: form.primaryGoal,
@@ -87,9 +89,12 @@ const SignupPage = () => {
         timetable_upload_enabled: form.timetableEnabled,
         google_calendar_connected: form.calendarConnected,
       };
-      console.log('Register payload:', payload);
-      await register(payload);
-      navigate('/dashboard/today');
+      const result = await register(payload);
+      if (result?.needs_email_confirmation) {
+        setError('Check your email to verify your account, then sign in.');
+      } else {
+        navigate('/dashboard/today');
+      }
     } catch (err: any) {
       console.error('Signup failed', err);
       if (err?.response?.data?.error) {
@@ -130,7 +135,8 @@ const SignupPage = () => {
             <Input label="Full name" value={form.name} onChange={(value) => setForm((prev) => ({ ...prev, name: value }))} required />
             <Input label="Preferred name" value={form.preferredName} onChange={(value) => setForm((prev) => ({ ...prev, preferredName: value }))} required />
             <Input label="Email" type="email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} required />
-            <Input label="Phone number" placeholder="+234..." value={form.phone} onChange={(value) => setForm((prev) => ({ ...prev, phone: value }))} required />
+            <Input label="Password" type="password" value={form.password} onChange={(value) => setForm((prev) => ({ ...prev, password: value }))} required />
+            <Input label="Phone number (optional for WhatsApp)" placeholder="+234..." value={form.phone} onChange={(value) => setForm((prev) => ({ ...prev, phone: value }))} />
             <Select label="Timezone" value={form.timezone} options={timezoneOptions} onChange={(value) => setForm((prev) => ({ ...prev, timezone: value }))} />
             <div>
               <label className="text-sm text-zinc-500">Daily start time</label>

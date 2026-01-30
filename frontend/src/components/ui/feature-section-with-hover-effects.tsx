@@ -14,6 +14,7 @@ type FeatureItem = {
   title: string;
   description: string;
   icon: React.ReactNode;
+  href?: string;
 };
 
 export function FeaturesSectionWithHoverEffects({
@@ -72,7 +73,7 @@ export function FeaturesSectionWithHoverEffects({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  relative z-10 py-10 max-w-7xl mx-auto">
       {items.map((feature, index) => (
-        <Feature key={feature.title} {...feature} index={index} />
+        <Feature key={`${feature.title}-${index}`} {...feature} index={index} />
       ))}
     </div>
   );
@@ -83,19 +84,24 @@ const Feature = ({
   description,
   icon,
   index,
+  href,
 }: {
   title: string;
   description: string;
   icon: React.ReactNode;
   index: number;
+  href?: string;
 }) => {
+  const Wrapper: React.ElementType = href ? 'a' : 'div';
   return (
-    <div
+    <Wrapper
       className={cn(
-        "flex flex-col lg:border-r  py-10 relative group/feature dark:border-neutral-800",
+        "flex flex-col lg:border-r py-10 relative group/feature dark:border-neutral-800",
         (index === 0 || index === 4) && "lg:border-l dark:border-neutral-800",
-        index < 4 && "lg:border-b dark:border-neutral-800"
+        index < 4 && "lg:border-b dark:border-neutral-800",
+        href && "cursor-pointer hover:bg-neutral-50/40"
       )}
+      href={href}
     >
       {index < 4 && (
         <div className="opacity-0 group-hover/feature:opacity-100 transition duration-200 absolute inset-0 h-full w-full bg-gradient-to-t from-neutral-100 dark:from-neutral-800 to-transparent pointer-events-none" />
@@ -115,6 +121,6 @@ const Feature = ({
       <p className="text-sm text-neutral-600 dark:text-neutral-300 max-w-xs relative z-10 px-10">
         {description}
       </p>
-    </div>
+    </Wrapper>
   );
 };

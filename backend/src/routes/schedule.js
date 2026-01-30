@@ -67,6 +67,17 @@ router.get('/extractions/:userId', async (req, res) => {
   }
 });
 
+router.post('/extractions/:userId/deduplicate', async (req, res) => {
+  try {
+    const result = await scheduleService.deduplicateExtractionRows(req.params.userId);
+    return res.json({ removed: result.removed });
+  } catch (error) {
+    console.error('[Schedule] dedupe error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ message: 'Failed to deduplicate timetable rows', error: error.message });
+  }
+});
+
 router.post('/extractions/:userId', async (req, res) => {
   try {
     const row = await scheduleService.createManualExtractionRow(req.params.userId, req.body || {});
@@ -97,6 +108,17 @@ router.delete('/extractions/row/:rowId', async (req, res) => {
     console.error('[Schedule] delete extraction error:', error.message);
     const status = error.statusCode || 500;
     return res.status(status).json({ message: 'Failed to delete timetable row', error: error.message });
+  }
+});
+
+router.post('/extractions/:userId/clear-resolution', async (req, res) => {
+  try {
+    const result = await scheduleService.clearResolutionBlocks(req.params.userId);
+    return res.json(result);
+  } catch (error) {
+    console.error('[Schedule] clear resolution blocks error:', error.message);
+    const status = error.statusCode || 500;
+    return res.status(status).json({ message: 'Failed to clear resolution blocks', error: error.message });
   }
 });
 

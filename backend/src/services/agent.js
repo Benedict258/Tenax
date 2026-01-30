@@ -8,6 +8,7 @@ const variantConfig = require('../config/experiment');
 const ruleStateService = require('./ruleState');
 const taskPrioritizer = require('./taskPrioritizer');
 const reminderPreferences = require('./reminderPreferences');
+const notificationService = require('./notificationService');
 
 const forceRegressionFailure = process.env.FORCE_REGRESSION_FAILURE === 'true';
 const forcedReminderMessage = 'Remember to work on your tasks today.';
@@ -57,19 +58,21 @@ const reminderClosings = [
   "Tell me when you close it out."
 ];
 
-const buildEODSummaryMessage = (tone, stats, user) => {
+const buildEODSummaryMessage = (tone, stats, user, streak = 0) => {
   const ratio = `${stats.completed}/${stats.total}`;
   const percent = `${stats.completion_rate}%`;
+  const role = user?.role ? ` ${user.role}` : '';
+  const streakNote = streak > 0 ? ` Your streak was at ${streak} day${streak === 1 ? '' : 's'} yesterday.` : '';
 
   if (tone === 'congratulatory') {
-    return `Clinic today, ${user.name}! ${ratio} tasks wrapped (${percent}). Take the win, log anything lingering, and tell me how you want to open tomorrow.`;
+    return `Clinic today, ${user.name}! ${ratio} tasks wrapped (${percent}). Keep that${role} momentum. Log anything lingering and tell me how you want to open tomorrow.`;
   }
 
   if (tone === 'encouraging') {
-    return `Solid push — ${ratio} done (${percent}). You're moving the ball forward, so jot down what blocked the rest and we'll adjust tomorrow. Ping me if you want help sequencing.`;
+    return `Solid push — ${ratio} done (${percent}).${streakNote} Jot down what blocked the rest and we’ll adjust tomorrow. Ping me if you want help sequencing.`;
   }
 
-  return `You closed ${ratio} (${percent}). Not perfect, but you still showed up. Shake it off, note what tripped you up, and let me know how I can help you hit harder tomorrow.`;
+  return `You closed ${ratio} (${percent}).${streakNote} Not perfect, but you showed up. Let’s reset and hit harder tomorrow — tell me what tripped you up and I’ll adjust the plan.`;
 };
 
 const toTimeLabel = (value) => {
@@ -112,6 +115,25 @@ const describeWindowText = (task, reminderType, durationMinutes) => {
   return startLabel ? `today at ${startLabel}` : 'today';
 };
 
+const buildResolutionDetails = (task) => {
+  const resources = task?.metadata?.resources || [];
+  const objective = task?.metadata?.objective || task?.objective || '';
+  const description = task?.description || '';
+  const links = Array.isArray(resources)
+    ? resources
+        .filter((res) => res?.url)
+        .slice(0, 2)
+        .map((res) => `- ${res.title || 'Resource'}: ${res.url}`)
+        .join('\n')
+    : '';
+
+  const detailLines = [];
+  if (objective) detailLines.push(`Objective: ${objective}`);
+  if (description) detailLines.push(`Focus: ${description}`);
+  if (links) detailLines.push(`Resources:\n${links}`);
+  return detailLines.length ? `\n\n${detailLines.join('\n')}` : '';
+};
+
 const buildSpecificReminderMessage = (task, reminderType) => {
   const taskTitle = task?.title || 'your next task';
   const durationMinutes = resolveDurationMinutes(task, reminderType);
@@ -130,7 +152,12 @@ const buildSpecificReminderMessage = (task, reminderType) => {
     actionPhrase = `Carve out time for "${taskTitle}" ${windowText}`;
   }
 
-  return `${opener}! ${actionPhrase}. Give it about ${durationMinutes} minutes and keep me posted ${emoji} ${closing}`;
+  const resolutionDetails =
+    task?.category?.toLowerCase() === 'resolution' || task?.metadata?.resolution_task_id
+      ? buildResolutionDetails(task)
+      : '';
+
+  return `${opener}! ${actionPhrase}. Give it about ${durationMinutes} minutes and keep me posted ${emoji} ${closing}${resolutionDetails}`;
 };
 
 class AgentService {
@@ -149,9 +176,13 @@ class AgentService {
           return `${idx + 1}. ${t.title}${categoryLabel}${recommendation}`;
         })
         .join('\n');
+      const streak = metricsStore.getStreak(user.id);
+      const role = user?.role ? `User role: ${user.role}.` : '';
       const prompt = [
         'You are Tenax, an execution companion—not a robotic assistant.',
         `Help ${user.name} start the day with clarity, energy, and motivation while the north star goal is "${getUserGoal(user)}".`,
+        role,
+        streak ? `Current streak: ${streak} day${streak === 1 ? '' : 's'}.` : '',
         'Agent identity & tone rules:',
         '- Speak conversationally with light emoji warmth (optional).',
         '- Vary sentence structure every day; never recycle the same opening.',
@@ -229,6 +260,12 @@ class AgentService {
       const fullMessage = `${guardrailBanner}${summary}\n\nLet me know when you finish anything today 😊`;
       
       await whatsappService.sendMessage(user.phone_number, fullMessage);
+      await notificationService.createNotification(user.id, {
+        type: 'motivation',
+        title: 'Morning check-in',
+        message: summary,
+        metadata: { surface: 'morning_summary' }
+      });
       await opikLogger.log('log_morning_summary_dispatch', {
         user_id: user.id,
         task_count: prioritizedTasks.length,
@@ -342,6 +379,12 @@ class AgentService {
         sentAt: new Date()
       });
       await whatsappService.sendMessage(user.phone_number, message);
+      await notificationService.createNotification(user.id, {
+        type: 'reminder',
+        title: `Reminder: ${enrichedTask.title}`,
+        message,
+        metadata: { task_id: enrichedTask.id, reminder_type: reminderType }
+      });
 
       await opikLogger.log('log_reminder_sent', {
         user_id: user.id,
@@ -408,7 +451,8 @@ class AgentService {
 
   async generateEODSummary(user, stats) {
     const tone = this.determineTone(stats.completion_rate);
-    const message = buildEODSummaryMessage(tone, stats, user);
+    const streak = metricsStore.getStreak(user.id);
+    const message = buildEODSummaryMessage(tone, stats, user, streak);
 
     await opikLogger.log('log_eod_summary_draft', {
       user_id: user.id,
@@ -459,6 +503,12 @@ class AgentService {
       const finalMessage = `${guardrailBanner}${message}`;
       
       await whatsappService.sendMessage(user.phone_number, finalMessage);
+      await notificationService.createNotification(user.id, {
+        type: 'summary',
+        title: 'End of day recap',
+        message: finalMessage,
+        metadata: { completion_rate: stats.completion_rate }
+      });
 
       await opikLogger.log('log_eod_summary', {
         user_id: user.id,

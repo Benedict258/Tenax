@@ -134,6 +134,10 @@ cd frontend && npm install
 ### Environment Configuration
 
 - Copy `.env.example` to `.env` and fill in all required keys (DB, Redis, Twilio, Supabase, Google, Replicate, etc.)
+- Optional (recommended for Resolution Builder):
+  - `TAVILY_API_KEY` - enables live resource retrieval with URLs
+  - `OPIK_PYTHON_BIN` - absolute path to Python for Opik bridge on Windows
+  - `SUPABASE_FETCH_TIMEOUT_MS`, `SUPABASE_FETCH_RETRIES`, `SUPABASE_FETCH_BACKOFF_MS` - resiliency tuning
 
 ### Start Services
 
@@ -150,6 +154,7 @@ cd frontend && npm install
 - `/api/tasks` – Task CRUD
 - `/api/whatsapp/webhook` – WhatsApp message webhook
 - `/api/schedule/upload` – Timetable upload
+- `/api/resolution/*` – Resolution Builder plans, tasks, and roadmap views
 
 ---
 
@@ -170,6 +175,16 @@ cd frontend && npm install
 - Agent action tests: `node scripts/run_agent_actions.js`
 - Regression harness: `npm run test:regression`
 - Opik dashboard for trace/metric review
+
+### Resolution Builder (end-to-end)
+
+1) Start the builder and answer prompts (goal, outcome, duration, availability, pace).
+2) Approve the schedule to create daily items and insert Schedule Intel blocks.
+3) View the roadmap page: `/dashboard/roadmap`.
+4) Export PDF from Resolution Builder.
+
+If Opik Python is not available, fallback logs are stored at:
+`backend/logs/opik_fallback.jsonl`
 
 ---
 
@@ -630,6 +645,19 @@ For issues or questions:
 - Database: Ensure all required tables (`users`, `conversations`, `messages`, `tasks`, etc.) use UUID for foreign keys.
 - Frontend: BentoGrid dashboard UI, shadcn/ui, and Tailwind CSS integration. Fixed routing and build errors.
 - Troubleshooting: See error messages for missing tables, type mismatches, or connection issues. Update `.env` for correct Supabase, Twilio, and Redis credentials.
+
+### New integrations (2026-01)
+- Run the new SQL scripts in Supabase:
+  - `backend/scripts/notifications_schema.sql`
+  - `backend/scripts/google_calendar_schema.sql`
+- Backend env additions:
+  - `REDIS_URL` (supports `redis://host:port` or `host:port`)
+  - `ASSEMBLYAI_API_KEY` (WhatsApp voice note transcription)
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALENDAR_REDIRECT_URL` (Calendar OAuth)
+- Frontend env additions:
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_ANON_KEY`
+- After login, Supabase Realtime is used for in-app notifications. Ensure RLS allows `notifications` access for authenticated users.
 - WhatsApp: Set Twilio webhook to `/api/whatsapp/webhook` for correct message routing.
 - For login button or UI fixes, see `frontend/src/pages/auth/SignupPage.tsx` and related components.
 

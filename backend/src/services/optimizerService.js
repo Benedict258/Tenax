@@ -35,6 +35,10 @@ function isPositiveNumber(value) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0;
 }
 
+function isOptimizerEnabled() {
+  return optimizerConfig.enabled && opikBridge.isAvailable();
+}
+
 function buildDatasetPayload({
   datasetPath,
   explicitDatasetName,
@@ -182,7 +186,7 @@ async function runIntentFewShotSelection({
 }
 
 module.exports = {
-  isEnabled: () => optimizerConfig.enabled,
+  isEnabled: () => isOptimizerEnabled(),
   listAvailableDatasets,
   runReminderPromptOptimization,
   runToneEvolutionarySearch,

@@ -146,13 +146,30 @@ async function getLatestUploadForUser(userId) {
 
 async function recordExtractionRows(rows = []) {
   if (!rows.length) return [];
+  const seen = new Set();
+  const deduped = rows.filter((row) => {
+    const key = [
+      row.user_id,
+      row.day_of_week,
+      row.start_time,
+      row.end_time,
+      (row.title || '').toLowerCase(),
+      (row.category || '').toLowerCase()
+    ].join('|');
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+
   const { data, error } = await supabase
     .from('timetable_extractions')
-    .insert(rows)
+    .insert(deduped)
     .select();
 
   if (error) throw error;
-  await logTrace('schedule_rows_inserted', { row_count: rows.length });
+  await logTrace('schedule_rows_inserted', { row_count: deduped.length });
   return data;
 }
 
@@ -292,6 +309,65 @@ async function listExtractionRows(userId) {
   return data || [];
 }
 
+async function deduplicateExtractionRows(userId) {
+  if (!userId) {
+    const error = new Error('userId is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const rows = await listExtractionRows(userId);
+  if (!rows.length) return { removed: 0 };
+
+  const seen = new Map();
+  const duplicates = [];
+
+  rows.forEach((row) => {
+    const key = [
+      row.user_id,
+      row.day_of_week,
+      row.start_time,
+      row.end_time,
+      (row.title || '').toLowerCase(),
+      (row.category || '').toLowerCase(),
+      row.metadata?.resolution_task_id || ''
+    ].join('|');
+    if (seen.has(key)) {
+      duplicates.push(row.id);
+    } else {
+      seen.set(key, row.id);
+    }
+  });
+
+  if (!duplicates.length) {
+    return { removed: 0 };
+  }
+
+  const { error } = await supabase
+    .from('timetable_extractions')
+    .delete()
+    .in('id', duplicates);
+
+  if (error) throw error;
+  await logTrace('schedule_rows_deduped', { user_id: userId, removed: duplicates.length });
+  return { removed: duplicates.length };
+}
+
+async function listExtractionRowsByUpload(uploadId) {
+  if (!uploadId) {
+    return [];
+  }
+  const { data, error } = await supabase
+    .from('timetable_extractions')
+    .select('*')
+    .eq('upload_id', uploadId)
+    .order('day_of_week', { ascending: true })
+    .order('start_time', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
 async function getScheduleCoverage(userId, dateInput) {
   if (!userId) {
     const error = new Error('userId is required');
@@ -350,6 +426,34 @@ async function getScheduleCoverage(userId, dateInput) {
 
 async function createManualExtractionRow(userId, payload) {
   const sanitized = sanitizeExtractionPayload(payload);
+  const resolutionTaskId = payload?.metadata?.resolution_task_id;
+
+  if (resolutionTaskId) {
+    const { data: existing } = await supabase
+      .from('timetable_extractions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('metadata->>resolution_task_id', String(resolutionTaskId))
+      .maybeSingle();
+    if (existing) {
+      return existing;
+    }
+  }
+
+  const { data: duplicate } = await supabase
+    .from('timetable_extractions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('day_of_week', sanitized.day_of_week)
+    .eq('start_time', sanitized.start_time)
+    .eq('end_time', sanitized.end_time)
+    .eq('title', sanitized.title)
+    .eq('category', sanitized.category)
+    .maybeSingle();
+  if (duplicate) {
+    return duplicate;
+  }
+
   const insertPayload = {
     ...sanitized,
     user_id: userId,
@@ -430,6 +534,25 @@ async function deleteExtractionRow(rowId) {
   }
   await logTrace('schedule_row_manual_deleted', { row_id: rowId });
   return data;
+}
+
+async function clearResolutionBlocks(userId) {
+  if (!userId) {
+    const error = new Error('userId is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { data, error } = await supabase
+    .from('timetable_extractions')
+    .delete()
+    .eq('user_id', userId)
+    .eq('category', 'Resolution')
+    .select();
+
+  if (error) throw error;
+  await logTrace('schedule_resolution_blocks_cleared', { user_id: userId, removed: data?.length || 0 });
+  return { removed: data?.length || 0 };
 }
 
 async function getBusyBlocks(userId, date) {
@@ -644,10 +767,13 @@ module.exports = {
   getLatestUploadForUser,
   logTrace,
   listExtractionRows,
+  listExtractionRowsByUpload,
+  deduplicateExtractionRows,
   getScheduleCoverage,
   createManualExtractionRow,
   updateExtractionRow,
   deleteExtractionRow,
+  clearResolutionBlocks,
   scheduleFeatureFlag: () => scheduleIntelEnabled(),
   guardScheduleFeature(req, res, next) {
     if (!scheduleIntelEnabled()) {

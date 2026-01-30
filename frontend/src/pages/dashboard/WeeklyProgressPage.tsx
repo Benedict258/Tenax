@@ -1,22 +1,68 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import { RefreshCw, Bell } from 'lucide-react';
 import { useAnalytics } from '../../context/AnalyticsContext';
 import type { TrendPoint } from '../../types/analytics';
-import { LineChart, TrendingUp } from 'lucide-react';
-import { FeaturesSectionWithHoverEffects } from '../../components/ui/feature-section-with-hover-effects';
+import { useNotifications } from '../../context/NotificationsContext';
+import { Button } from '../../components/ui/button';
+import ScheduleEditorPage from './ScheduleEditorPage';
 
 const WeeklyProgressPage = () => {
-  const { weeklyTrend } = useAnalytics();
-  const summary = buildWeeklySummary(weeklyTrend);
+  const { refresh, weeklyTrend } = useAnalytics();
+  const { notifications, unreadCount, markRead } = useNotifications();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const summary = useMemo(() => buildWeeklySummary(weeklyTrend), [weeklyTrend]);
+
+  const toggleNotifications = () => {
+    const nextOpen = !notificationsOpen;
+    setNotificationsOpen(nextOpen);
+    if (nextOpen && unreadCount) {
+      markRead(notifications.filter((item) => !item.read).map((item) => item.id));
+    }
+  };
 
   return (
     <div className="space-y-8">
       <section className="rounded-3xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-gray-500">Weekly narrative</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Weekly narrative</p>
             <h2 className="text-2xl font-semibold text-black">Progress signal</h2>
           </div>
-          <TrendingUp className="h-6 w-6 text-gray-500" />
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Button variant="outline" className="border-gray-200 text-gray-700" onClick={toggleNotifications}>
+                <Bell className="mr-2 h-4 w-4" />
+                Notifications
+                {unreadCount > 0 && (
+                  <span className="ml-2 rounded-full bg-brand-500 px-2 py-0.5 text-xs text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-3 w-96 rounded-2xl border border-gray-200 bg-white p-4 shadow-xl z-10">
+                  <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Updates</p>
+                  <div className="mt-3 flex max-h-72 flex-col gap-3 overflow-y-auto">
+                    {notifications.length === 0 && <p className="text-sm text-gray-500">No notifications yet.</p>}
+                    {notifications.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`rounded-xl border px-3 py-2 ${
+                          item.read ? 'border-gray-100' : 'border-brand-100 bg-brand-50/40'
+                        }`}
+                      >
+                        <p className="text-sm font-semibold text-gray-900">{item.title}</p>
+                        {item.message && <p className="text-xs text-gray-500">{item.message}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <Button variant="outline" className="border-gray-200 text-gray-700" onClick={() => refresh()}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Refresh telemetry
+            </Button>
+          </div>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <InsightCard label="Average completion" value={`${summary.average}%`} hint="Last 7 days" />
@@ -25,26 +71,12 @@ const WeeklyProgressPage = () => {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-gray-200 bg-white p-6">
-        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-black">Weekly pulse detail</h3>
-          <LineChart className="h-5 w-5 text-gray-500" />
-        </div>
-        {weeklyTrend.length === 0 ? (
-          <p className="mt-6 text-gray-500">No telemetry yet. Run reminders to generate a weekly trace.</p>
-        ) : (
-          <FeaturesSectionWithHoverEffects
-            features={weeklyTrend.slice(0, 7).map((day) => ({
-              title: new Date(day.date).toLocaleDateString(undefined, { weekday: 'long' }),
-              description: `${day.completed}/${day.total} done • ${day.completionRate}%`,
-              icon: <LineChart className="h-5 w-5" />,
-            }))}
-          />
-        )}
-      </section>
+      <ScheduleEditorPage />
     </div>
   );
 };
+
+export default WeeklyProgressPage;
 
 const InsightCard = ({ label, value, hint }: { label: string; value: string; hint: string }) => (
   <div className="rounded-2xl border border-gray-200 bg-white px-6 py-5">
@@ -54,13 +86,12 @@ const InsightCard = ({ label, value, hint }: { label: string; value: string; hin
   </div>
 );
 
-
 const buildWeeklySummary = (trend: TrendPoint[]) => {
   if (!trend.length) {
     return {
       average: 0,
-      momentumLabel: 'Awaiting data',
-      momentumHint: 'Complete a few days to unlock insights',
+      momentumLabel: '+0 pts',
+      momentumHint: 'Acceleration this week',
       totalCompleted: 0,
       totalPlanned: 0,
     };
@@ -76,5 +107,3 @@ const buildWeeklySummary = (trend: TrendPoint[]) => {
 
   return { average, momentumLabel, momentumHint, totalCompleted, totalPlanned };
 };
-
-export default WeeklyProgressPage;

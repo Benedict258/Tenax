@@ -12,6 +12,34 @@ const huggingfaceModelId =
   process.env.HUGGINGFACE_MODEL_ID || process.env.HF_MODEL_ID || 'facebook/dinov3-vitl16-pretrain-lvd1689m';
 const huggingfaceBaseUrl = process.env.HUGGINGFACE_API_BASE_URL || 'https://api-inference.huggingface.co/models';
 const huggingfaceMaxRetries = Number(process.env.HUGGINGFACE_MAX_RETRIES || 3);
+const fetchTimeoutMs = Number(process.env.OCR_FETCH_TIMEOUT_MS || 20000);
+
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), fetchTimeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeout);
+    return response;
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
+  }
+}
+
+async function fetchWithRetry(url, options = {}, retries = 2) {
+  let lastError = null;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await fetchWithTimeout(url, options);
+    } catch (error) {
+      lastError = error;
+      const delay = (attempt + 1) * 800;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+}
 
 class OcrService {
   async processUpload(uploadId) {
@@ -138,7 +166,7 @@ class OcrService {
   }
 
   async runHuggingFacePrediction({ signedUrl }) {
-    const imageResponse = await fetch(signedUrl);
+    const imageResponse = await fetchWithRetry(signedUrl, {}, 2);
     if (!imageResponse.ok) {
       const errorText = await imageResponse.text();
       throw new Error(`Failed to download upload for Hugging Face OCR: ${errorText}`);
@@ -146,14 +174,14 @@ class OcrService {
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
 
     for (let attempt = 0; attempt < huggingfaceMaxRetries; attempt += 1) {
-      const hfResponse = await fetch(`${huggingfaceBaseUrl}/${huggingfaceModelId}`, {
+      const hfResponse = await fetchWithRetry(`${huggingfaceBaseUrl}/${huggingfaceModelId}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${huggingfaceToken}`,
           'Content-Type': 'application/octet-stream'
         },
         body: imageBuffer
-      });
+      }, 2);
 
       if (hfResponse.status === 503) {
         const delay = (attempt + 1) * 1000;

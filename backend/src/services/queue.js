@@ -1,10 +1,23 @@
 const { v4: uuid } = require('uuid');
 const agentService = require('./agent');
 const scheduleService = require('./scheduleService');
+let Queue;
+let Worker;
+let Redis;
+const normalizeRedisUrl = (value) => {
+  if (!value) return null;
+  return value.startsWith('redis://') || value.startsWith('rediss://')
+    ? value
+    : `redis://${value}`;
+};
+const redisUrl = normalizeRedisUrl(process.env.REDIS_URL);
+const useRedis = Boolean(redisUrl);
 
 const reminderTimers = new Map();
 let completedJobs = 0;
 let failedJobs = 0;
+let reminderQueue = null;
+let reminderWorker = null;
 
 async function runReminderJob(job) {
   const { user, task, type } = job;
@@ -27,6 +40,31 @@ async function runReminderJob(job) {
   }
 
   console.log(`✅ Processed ${type} for user ${user.id}`);
+}
+
+function ensureRedisQueue() {
+  if (!useRedis || reminderQueue) return;
+  ({ Queue, Worker } = require('bullmq'));
+  Redis = require('ioredis');
+  const connection = new Redis(redisUrl, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false
+  });
+
+  reminderQueue = new Queue('tenax-reminders', { connection });
+  reminderWorker = new Worker(
+    'tenax-reminders',
+    async (job) => {
+      await runReminderJob(job.data);
+      completedJobs += 1;
+    },
+    { connection }
+  );
+
+  reminderWorker.on('failed', (job, err) => {
+    failedJobs += 1;
+    console.error('[Queue] Redis reminder job failed:', err.message || err);
+  });
 }
 
 function scheduleInMemoryJob(job, delayMs) {
@@ -62,6 +100,15 @@ class QueueService {
 
   static async scheduleReminder(user, task, type, delay, extra = {}) {
     const payload = { user, task: task ? { ...task, ...extra } : null, type };
+    if (useRedis) {
+      ensureRedisQueue();
+      const job = await reminderQueue.add(
+        type,
+        payload,
+        { delay: Math.max(delay || 0, 0), removeOnComplete: true, removeOnFail: false }
+      );
+      return { id: job.id, runAt: new Date(Date.now() + Math.max(delay || 0, 0)).toISOString(), type };
+    }
     return scheduleInMemoryJob(payload, Math.max(delay || 0, 0));
   }
 
@@ -142,6 +189,15 @@ class QueueService {
   }
 
   static async getQueueStats() {
+    if (useRedis && reminderQueue) {
+      const counts = await reminderQueue.getJobCounts('waiting', 'active', 'completed', 'failed', 'delayed');
+      return {
+        waiting: counts.waiting + counts.delayed,
+        active: counts.active,
+        completed: counts.completed,
+        failed: counts.failed
+      };
+    }
     return {
       waiting: reminderTimers.size,
       active: 0,

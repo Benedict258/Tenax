@@ -8,19 +8,30 @@ import { useAuth } from '../../context/AuthContext';
 import Loader from '../../components/ui/loader';
 import { Button } from '../../components/ui/button';
 import { cn } from '../../lib/utils';
-import { RefreshCw, ChevronLeft } from 'lucide-react';
+import { RefreshCw, ChevronLeft, Bell } from 'lucide-react';
 import { Tiles } from '../../components/ui/tiles';
+import { useNotifications } from '../../context/NotificationsContext';
 
 const DashboardLayout = () => {
   const { summary, loading, error, refresh } = useAnalytics();
   const { user, loading: authLoading } = useAuth();
+  const { notifications, unreadCount, markRead } = useNotifications();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const location = useLocation();
 
   const navItems = useMemo(
     () => dashboardNavItems.filter((item) => (item.adminOnly ? ADMIN_ENABLED : true)),
     [],
   );
+
+  React.useEffect(() => {
+    const seen = localStorage.getItem('tenax.onboarding_seen');
+    if (!seen) {
+      setShowOnboarding(true);
+    }
+  }, []);
 
   if (authLoading) {
     return (
@@ -61,6 +72,20 @@ const DashboardLayout = () => {
   }
 
   const currentNavLabel = navItems.find((item) => location.pathname.startsWith(item.path))?.label || 'Command Deck';
+  const isWeeklySchedule = location.pathname.startsWith('/dashboard/weekly') || location.pathname.startsWith('/dashboard/schedule');
+
+  const toggleNotifications = () => {
+    const nextOpen = !notificationsOpen;
+    setNotificationsOpen(nextOpen);
+    if (nextOpen && unreadCount) {
+      markRead(notifications.filter((item) => !item.read).map((item) => item.id));
+    }
+  };
+
+  const closeOnboarding = () => {
+    localStorage.setItem('tenax.onboarding_seen', 'true');
+    setShowOnboarding(false);
+  };
 
   return (
     <div className="relative flex flex-col md:flex-row bg-white w-full flex-1 mx-auto overflow-hidden min-h-screen text-black">
@@ -143,11 +168,47 @@ const DashboardLayout = () => {
                 <h1 className="text-2xl font-semibold text-[#03040b]">{currentNavLabel}</h1>
               </div>
             </div>
+            {!isWeeklySchedule && (
             <div className="flex items-center gap-3">
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  className="border-gray-200 text-gray-700"
+                  onClick={toggleNotifications}
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  Notifications
+                  {unreadCount > 0 && (
+                    <span className="ml-2 rounded-full bg-brand-500 px-2 py-0.5 text-xs text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+                {notificationsOpen && (
+                  <div className="absolute right-0 mt-3 w-96 rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
+                    <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Updates</p>
+                    <div className="mt-3 flex max-h-72 flex-col gap-3 overflow-y-auto">
+                      {notifications.length === 0 && (
+                        <p className="text-sm text-gray-500">No notifications yet.</p>
+                      )}
+                      {notifications.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`rounded-xl border px-3 py-2 ${item.read ? 'border-gray-100' : 'border-brand-100 bg-brand-50/40'}`}
+                        >
+                          <p className="text-sm font-semibold text-gray-900">{item.title}</p>
+                          {item.message && <p className="text-xs text-gray-500">{item.message}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <Button variant="outline" className="border-gray-200 text-gray-700" onClick={() => refresh()}>
                 <RefreshCw className="mr-2 h-4 w-4" /> Refresh telemetry
               </Button>
             </div>
+            )}
           </header>
           <main className="flex-1 p-4 md:p-8 bg-white overflow-y-auto">
             <div className="w-full max-w-6xl mx-auto">
@@ -156,6 +217,22 @@ const DashboardLayout = () => {
           </main>
         </div>
       </div>
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+            <p className="text-xs uppercase tracking-[0.4em] text-gray-400">Welcome to Tenax</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[#03040b]">WhatsApp + Dashboard, one system</h2>
+            <ul className="mt-4 space-y-3 text-sm text-gray-600">
+              <li>Send tasks or updates on WhatsApp, and they appear instantly on your dashboard.</li>
+              <li>Use simple phrases like "done deep work" or "add workout 6am".</li>
+              <li>To mark tasks complete in the app, tap the status toggle in the Execution Core.</li>
+            </ul>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={closeOnboarding}>Got it</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

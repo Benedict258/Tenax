@@ -46,6 +46,19 @@ class ResolutionPhase {
     return data;
   }
 
+  static async getNextPhaseByRoadmap(roadmapId, phaseIndex) {
+    const { data, error } = await supabase
+      .from('resolution_phases')
+      .select('*')
+      .eq('roadmap_id', roadmapId)
+      .gt('phase_index', phaseIndex)
+      .order('phase_index', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
   static async updateStatus(phaseId, status) {
     const { data, error } = await supabase
       .from('resolution_phases')

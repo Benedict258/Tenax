@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { apiClient, setApiAuthToken } from '../lib/api';
+import { setSupabaseSession } from '../lib/supabaseClient';
 
 interface AuthUser {
   id: string;
@@ -16,7 +17,8 @@ interface RegisterPayload {
   name: string;
   preferred_name: string;
   email: string;
-  phone_number: string;
+  phone_number?: string;
+  password: string;
   role: string | string[];
   reason_for_using: string[];
   primary_goal: string;
@@ -33,20 +35,25 @@ interface RegisterPayload {
 }
 
 interface LoginPayload {
-  email?: string;
-  phone_number?: string;
+  email: string;
+  password: string;
+}
+
+interface RegisterResult {
+  needs_email_confirmation?: boolean;
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
-  register: (payload: RegisterPayload) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<RegisterResult>;
   login: (payload: LoginPayload) => Promise<void>;
   logout: () => void;
 }
 
 const STORAGE_KEY = 'tenax.auth';
+const STORAGE_SUPABASE = 'tenax.supabase.session';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -66,6 +73,16 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error) {
         console.warn('Failed to parse auth cache', error);
         localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+    const storedSupabase = localStorage.getItem(STORAGE_SUPABASE);
+    if (storedSupabase) {
+      try {
+        const parsed = JSON.parse(storedSupabase);
+        setSupabaseSession(parsed);
+      } catch (error) {
+        console.warn('Failed to parse supabase cache', error);
+        localStorage.removeItem(STORAGE_SUPABASE);
       }
     }
     setLoading(false);
@@ -88,21 +105,33 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setApiAuthToken(nextToken);
   };
 
-  const register = async (payload: RegisterPayload) => {
+  const register = async (payload: RegisterPayload): Promise<RegisterResult> => {
     const response = await apiClient.post('/auth/register', payload);
-    const { user: registeredUser, token: issuedToken } = response.data;
-    hydrateSession(registeredUser, issuedToken);
+    const { user: registeredUser, token: issuedToken, needs_email_confirmation, supabase_session } = response.data;
+    if (issuedToken && registeredUser) {
+      hydrateSession(registeredUser, issuedToken);
+    }
+    if (supabase_session) {
+      localStorage.setItem(STORAGE_SUPABASE, JSON.stringify(supabase_session));
+      await setSupabaseSession(supabase_session);
+    }
+    return { needs_email_confirmation };
   };
 
   const login = async (payload: LoginPayload) => {
     const response = await apiClient.post('/auth/login', payload);
     hydrateSession(response.data.user, response.data.token);
+    if (response.data.supabase_session) {
+      localStorage.setItem(STORAGE_SUPABASE, JSON.stringify(response.data.supabase_session));
+      await setSupabaseSession(response.data.supabase_session);
+    }
   };
 
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_SUPABASE);
     setApiAuthToken(undefined);
   }, []);
 

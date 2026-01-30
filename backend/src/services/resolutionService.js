@@ -2,9 +2,13 @@ const { DateTime } = require('luxon');
 const ResolutionPlan = require('../models/ResolutionPlan');
 const ResolutionPhase = require('../models/ResolutionPhase');
 const ResolutionTask = require('../models/ResolutionTask');
+const ResolutionDailyItem = require('../models/ResolutionDailyItem');
 const Task = require('../models/Task');
 const ruleStateService = require('./ruleState');
 const supabase = require('../config/supabase');
+const ResolutionRoadmap = require('../models/ResolutionRoadmap');
+const ResolutionResource = require('../models/ResolutionResource');
+const ResolutionProgress = require('../models/ResolutionProgress');
 
 const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
 
@@ -232,5 +236,48 @@ module.exports = {
   listTasksForUser,
   completeResolutionTask,
   confirmPhaseCompletion,
-  uploadPlanAsset
+  uploadPlanAsset,
+  async listRoadmaps(userId) {
+    return ResolutionRoadmap.listByUser(userId);
+  },
+  async getRoadmapDetails(roadmapId, userId) {
+    const roadmap = await ResolutionRoadmap.getById(roadmapId);
+    if (!roadmap || roadmap.user_id !== userId) {
+      const error = new Error('Roadmap not found');
+      error.status = 404;
+      throw error;
+    }
+    const phases = await ResolutionPhase.listByPlan(roadmapId);
+    const phasesWithResources = await Promise.all(
+      phases.map(async (phase) => ({
+        ...phase,
+        resources: await ResolutionResource.listByPhase(phase.id)
+      }))
+    );
+    return { roadmap, phases: phasesWithResources };
+  },
+  async markPhaseComplete(phaseId, userId) {
+    const phase = await ResolutionPhase.getById(phaseId);
+    if (!phase) {
+      const error = new Error('Phase not found');
+      error.status = 404;
+      throw error;
+    }
+    const roadmap = await ResolutionRoadmap.getById(phase.roadmap_id);
+    if (!roadmap || roadmap.user_id !== userId) {
+      const error = new Error('Roadmap not found');
+      error.status = 404;
+      throw error;
+    }
+    await ResolutionPhase.updateStatus(phase.id, 'completed');
+    await ResolutionProgress.updateStatus(phase.id, 'completed');
+    const nextPhase = await ResolutionPhase.getNextPhaseByRoadmap(phase.roadmap_id, phase.phase_index);
+    let unlockedDaily = [];
+    let unlockedTasks = [];
+    if (nextPhase) {
+      unlockedDaily = await ResolutionDailyItem.unlockPhaseItems(nextPhase.id);
+      unlockedTasks = await ResolutionTask.unlockPhaseTasks(nextPhase.id);
+    }
+    return { status: 'ok', nextPhase, unlockedDailyCount: unlockedDaily.length, unlockedTaskCount: unlockedTasks.length };
+  }
 };

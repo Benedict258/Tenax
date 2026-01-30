@@ -9,25 +9,25 @@ const LoginPage = () => {
   const { login } = useAuth();
   const [form, setForm] = useState({
     email: '',
-    phone: '',
+    password: ''
   });
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = form.email.trim() || form.phone.trim();
+  const canSubmit = form.email.trim() && form.password.trim();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
     if (!canSubmit) {
-      setError('Please enter your email or phone number.');
+      setError('Please enter your email and password.');
       return;
     }
     setSubmitting(true);
     try {
       await login({
-        email: form.email.trim() || undefined,
-        phone_number: form.phone.trim() || undefined,
+        email: form.email.trim(),
+        password: form.password.trim(),
       });
       navigate('/dashboard/today');
     } catch (err: any) {
@@ -63,19 +63,18 @@ const LoginPage = () => {
             autoComplete="email"
           />
         </div>
-        <div className="mb-3 text-center text-xs text-zinc-500">or</div>
         <div className="mb-6">
-          <label htmlFor="phone-input" className="mb-1.5 block text-zinc-500">
-            Phone Number
+          <label htmlFor="password-input" className="mb-1.5 block text-zinc-500">
+            Password
           </label>
           <input
-            id="phone-input"
-            type="tel"
-            value={form.phone}
-            onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
-            placeholder="+1 555 000 0000"
+            id="password-input"
+            type="password"
+            value={form.password}
+            onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+            placeholder="••••••••"
             className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-zinc-800 placeholder-zinc-400 ring-1 ring-transparent transition-shadow focus:outline-0 focus:ring-blue-700"
-            autoComplete="tel"
+            autoComplete="current-password"
           />
         </div>
         {error && <div className="text-red-500 text-sm text-center">{error}</div>}
