@@ -42,7 +42,8 @@ const NotificationsProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!user || !supabaseClient) return;
-    const channel = supabaseClient
+    const client = supabaseClient;
+    const channel = client
       .channel(`notifications:${user.id}`)
       .on(
         'postgres_changes',
@@ -55,7 +56,7 @@ const NotificationsProvider = ({ children }: { children: React.ReactNode }) => {
       .subscribe();
 
     return () => {
-      supabaseClient.removeChannel(channel);
+      client.removeChannel(channel);
     };
   }, [user?.id]);
 

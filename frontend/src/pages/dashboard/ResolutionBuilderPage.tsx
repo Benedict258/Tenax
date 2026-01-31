@@ -103,6 +103,9 @@ type ResolutionPhase = {
   phase_index: number;
   title: string;
   description: string;
+  phase_objective?: string | null;
+  what_to_learn_json?: string[];
+  what_to_build_json?: string[];
   objectives_json?: string[];
   topics_json?: RoadmapTopic[];
   resources_json?: RoadmapResource[];
