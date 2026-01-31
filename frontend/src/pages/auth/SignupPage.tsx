@@ -97,11 +97,8 @@ const SignupPage = () => {
       }
     } catch (err: any) {
       console.error('Signup failed', err);
-      if (err?.response?.data?.error) {
-        setError(err.response.data.error);
-      } else {
-        setError('Unable to complete signup right now. Try again shortly.');
-      }
+      const message = err?.response?.data?.error || err?.response?.data?.message || err?.message;
+      setError(typeof message === 'string' ? message : 'Unable to complete signup right now. Try again shortly.');
     } finally {
       setSubmitting(false);
     }

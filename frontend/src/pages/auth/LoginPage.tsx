@@ -31,7 +31,8 @@ const LoginPage = () => {
       });
       navigate('/dashboard/today');
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Login failed. Please try again.');
+      const message = err?.response?.data?.error || err?.response?.data?.message || err?.message;
+      setError(typeof message === 'string' ? message : 'Login failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
