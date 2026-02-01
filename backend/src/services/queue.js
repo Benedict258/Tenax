@@ -91,7 +91,9 @@ function scheduleInMemoryJob(job, delayMs) {
 class QueueService {
   static resolveReminderType(task) {
     const requested = task?.reminderType || task?.reminder_type || '30_min';
-    return requested === 'on_time' ? 'on_time' : '30_min';
+    if (requested === 'on_time') return 'on_time';
+    if (requested === 'post_start') return 'post_start';
+    return '30_min';
   }
 
   static resolveTaskDuration(task) {
@@ -133,7 +135,7 @@ class QueueService {
     return this.scheduleReminder(user, null, 'morning-summary', delay);
   }
 
-  static async scheduleTaskReminder(user, task, reminderTime) {
+  static async scheduleTaskReminder(user, task, reminderTime, reminderTypeOverride = null) {
     const now = new Date();
     const targetTime = new Date(reminderTime);
     if (Number.isNaN(targetTime.getTime())) {
@@ -188,7 +190,7 @@ class QueueService {
     if (finalDelay <= 0) {
       finalDelay = 1000;
     }
-    const reminderType = this.resolveReminderType(task);
+    const reminderType = reminderTypeOverride || this.resolveReminderType(task);
     const scheduledFor = adjustedTime.toISOString();
 
     if (!metricsStore.registerReminderSchedule({
@@ -204,6 +206,32 @@ class QueueService {
       reminderType,
       scheduled_for: scheduledFor
     });
+  }
+
+  static async scheduleTaskReminders(user, task) {
+    if (!task?.start_time) return [];
+    const start = new Date(task.start_time);
+    if (Number.isNaN(start.getTime())) return [];
+
+    const reminders = [];
+    const thirtyBefore = new Date(start);
+    thirtyBefore.setMinutes(thirtyBefore.getMinutes() - 30);
+    if (thirtyBefore.getTime() > Date.now()) {
+      const scheduled = await this.scheduleTaskReminder(user, task, thirtyBefore.toISOString(), '30_min');
+      if (scheduled) reminders.push(scheduled);
+    }
+
+    const onTime = await this.scheduleTaskReminder(user, task, start.toISOString(), 'on_time');
+    if (onTime) reminders.push(onTime);
+
+    const postStart = new Date(start);
+    postStart.setMinutes(postStart.getMinutes() + 10);
+    if (postStart.getTime() > Date.now()) {
+      const scheduled = await this.scheduleTaskReminder(user, task, postStart.toISOString(), 'post_start');
+      if (scheduled) reminders.push(scheduled);
+    }
+
+    return reminders;
   }
 
   static async getQueueStats() {

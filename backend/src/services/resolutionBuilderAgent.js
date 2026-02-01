@@ -860,7 +860,7 @@ async function mirrorTasksToExecution(tasks, user) {
     if (!task.start_time) continue;
     const reminderTime = new Date(task.start_time);
     reminderTime.setMinutes(reminderTime.getMinutes() - 30);
-    await QueueService.scheduleTaskReminder(user, task, reminderTime.toISOString());
+    await QueueService.scheduleTaskReminders(user, task);
   }
 }
 

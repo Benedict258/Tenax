@@ -54,18 +54,38 @@ function detectRecurrence(text) {
 }
 
 function extractTimeData(text) {
+  if (!text) return null;
+  const byMatch = text.match(/\bby\s+(\d{1,2}(:\d{2})?\s*(am|pm)?)\b/i);
+  if (byMatch) {
+    const quick = chrono.parse(byMatch[1], new Date(), { forwardDate: true });
+    if (quick.length && quick[0]?.start?.date?.()) {
+      const date = quick[0].start.date();
+      return {
+        iso: date.toISOString(),
+        matchedText: byMatch[0],
+        date
+      };
+    }
+  }
   const results = chrono.parse(text, new Date(), { forwardDate: true });
   if (!results.length) {
     return null;
   }
-  const primary = results[0];
-  const date = primary.start?.date?.();
+  const hasExplicitTime = (result) => {
+    const lowered = String(result.text || '').toLowerCase();
+    if (/(am|pm)\b/.test(lowered)) return true;
+    if (/\d{1,2}:\d{2}/.test(lowered)) return true;
+    return result.start?.isCertain?.('hour') || false;
+  };
+
+  const preferred = results.find(hasExplicitTime) || results[0];
+  const date = preferred.start?.date?.();
   if (!date) {
     return null;
   }
   return {
     iso: date.toISOString(),
-    matchedText: primary.text,
+    matchedText: preferred.text,
     date
   };
 }
@@ -85,6 +105,8 @@ function cleanTaskTitle(raw) {
   if (!raw) return '';
   let text = raw;
   const prefixes = [
+    /^just\s+/i,
+    /^please\s+/i,
     /^add\s+/i,
     /^create\s+/i,
     /^schedule\s+/i,
@@ -100,10 +122,14 @@ function cleanTaskTitle(raw) {
     text = text.replace(pattern, '');
   });
 
+  text = text.replace(/\bfor\s+me\s+to\b/gi, '');
+  text = text.replace(/\bfor\s+me\b/gi, '');
+  text = text.replace(/^\s*to\s+/i, '');
+  text = text.replace(/^\s*build\s+my\s+/i, 'build ');
   text = text.replace(/^(the\s+)?task\s+/i, '');
   text = text.replace(/\b(please|pls)\b/gi, '');
   text = text.replace(/\b(today|tomorrow|tonight)\b/gi, '');
-  text = text.replace(/\b(for|at)\b\s*$/i, '');
+  text = text.replace(/\b(by|for|at)\b\s*$/i, '');
   return text.replace(/\s+/g, ' ').trim();
 }
 

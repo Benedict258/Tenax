@@ -34,12 +34,17 @@ const parseOrigins = () => {
 };
 
 const allowedOrigins = parseOrigins();
+const devOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const allowAllLocal = process.env.NODE_ENV !== 'production';
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.length === 0) {
       return callback(null, true);
     }
     if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    if (allowAllLocal && devOrigins.includes(origin)) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));

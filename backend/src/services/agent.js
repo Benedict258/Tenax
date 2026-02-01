@@ -43,6 +43,12 @@ const reminderOpeners = {
     'All right',
     'Let’s launch'
   ],
+  post_start: [
+    'Quick check-in',
+    'Still on it',
+    'Gentle nudge',
+    'Progress ping'
+  ],
   default: [
     'Friendly ping',
     'Gentle nudge'
@@ -97,6 +103,7 @@ const resolveDurationMinutes = (task, reminderType) => {
   }
   if (reminderType === '30_min') return 30;
   if (reminderType === 'on_time') return 45;
+  if (reminderType === 'post_start') return 20;
   return 25;
 };
 
@@ -108,6 +115,9 @@ const describeWindowText = (task, reminderType, durationMinutes) => {
       return `now until ${endLabel}`;
     }
     return 'right now';
+  }
+  if (reminderType === 'post_start') {
+    return startLabel ? `just after ${startLabel}` : 'right now';
   }
   if (reminderType === '30_min') {
     return startLabel ? `starting at ${startLabel}` : 'in about 30 minutes';
@@ -146,6 +156,8 @@ const buildSpecificReminderMessage = (task, reminderType) => {
   let actionPhrase;
   if (reminderType === 'on_time') {
     actionPhrase = `Jump into "${taskTitle}" ${windowText}`;
+  } else if (reminderType === 'post_start') {
+    actionPhrase = `Quick check-in on "${taskTitle}" ${windowText}`;
   } else if (reminderType === '30_min') {
     actionPhrase = `Get set for "${taskTitle}" ${windowText}`;
   } else {
@@ -241,10 +253,12 @@ class AgentService {
     try {
       const todaysTasks = await Task.getTodaysTasks(user.id);
       const prioritizedTasks = await taskPrioritizer.rankTasksWithAvailability(user.id, todaysTasks);
-      if (prioritizedTasks.length === 0) return null;
+      const hasTasks = prioritizedTasks.length > 0;
       const p1Tasks = await ruleStateService.getActiveP1Tasks(user.id);
 
-      const summary = await this.generateMorningSummary(user, prioritizedTasks);
+      const summary = hasTasks
+        ? await this.generateMorningSummary(user, prioritizedTasks)
+        : `Morning ${user.name}! No tasks scheduled yet. Want to add something so we can lock in a win today?`;
       let guardrailBanner = '';
       if (p1Tasks.length) {
         guardrailBanner = `${ruleStateService.buildBanner(p1Tasks)}\n\n`;
@@ -326,7 +340,11 @@ class AgentService {
 
   async sendReminder(user, task, reminderType = '30_min') {
     try {
-      const resolvedReminderType = reminderType === 'on_time' ? 'on_time' : '30_min';
+      const resolvedReminderType = reminderType === 'on_time'
+        ? 'on_time'
+        : reminderType === 'post_start'
+          ? 'post_start'
+          : '30_min';
       let enrichedTask = task;
       if (enrichedTask?.id && typeof enrichedTask.severity === 'undefined') {
         enrichedTask = await Task.findById(enrichedTask.id);
@@ -370,6 +388,10 @@ class AgentService {
       if (!enrichedTask) {
         console.warn('[Agent] Reminder requested without task context.');
         return null;
+      }
+      if (['done', 'archived'].includes(enrichedTask.status)) {
+        console.log('[Agent] Reminder skipped: task already completed.');
+        return { message: 'Task already completed.', blocked: true };
       }
 
       const scheduledFor = enrichedTask?.scheduled_for || enrichedTask?.metadata?.scheduled_for || enrichedTask?.start_time || null;

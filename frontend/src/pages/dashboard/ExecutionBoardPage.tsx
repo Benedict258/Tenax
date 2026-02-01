@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTasks } from '../../context/TasksContext';
 import { useAnalytics } from '../../context/AnalyticsContext';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, Trash2 } from 'lucide-react';
+import { Button } from '../../components/ui/button';
 import { FeaturesSectionWithHoverEffects } from '../../components/ui/feature-section-with-hover-effects';
 
 const ExecutionBoardPage = () => {
-  const { tasks } = useTasks();
+  const { tasks, deleteTask } = useTasks();
   const { summary } = useAnalytics();
   const tasksToday = tasks.length ? tasks : summary?.tasks?.today ?? [];
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDelete = async (taskId?: string) => {
+    if (!taskId) return;
+    setDeleting(taskId);
+    await deleteTask(taskId);
+    setDeleting(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -37,6 +46,21 @@ const ExecutionBoardPage = () => {
                 : 'Flexible'
             }${task.severity ? ` • ${task.severity}` : ''}`,
             icon: <ClipboardList />,
+            action: (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleDelete(task.id);
+                }}
+                disabled={!task.id || deleting === task.id}
+                className="h-7 w-7"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-gray-400" />
+              </Button>
+            )
           }))}
         />
       )}

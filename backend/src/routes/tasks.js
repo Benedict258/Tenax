@@ -59,9 +59,7 @@ router.post('/', auth, async (req, res) => {
     
     const task = await Task.create(taskData);
     if (task?.start_time) {
-      const reminderTime = new Date(task.start_time);
-      reminderTime.setMinutes(reminderTime.getMinutes() - 30);
-      await QueueService.scheduleTaskReminder(req.user, task, reminderTime.toISOString());
+      await QueueService.scheduleTaskReminders(req.user, task);
     }
     await notificationService.createNotification(req.user.id, {
       type: 'task',

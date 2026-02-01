@@ -20,6 +20,9 @@ class LLMService {
     });
     
     this.modelPriority = ['groq', 'gemini', 'openai'];
+    this.geminiModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    this.modelCooldowns = new Map();
+    this.cooldownMs = Number(process.env.LLM_COOLDOWN_MS || 10 * 60 * 1000);
   }
 
   /**
@@ -36,8 +39,8 @@ class LLMService {
       opikMeta = {}
     } = options;
 
-    // Try preferred model first if specified
-    if (preferredModel) {
+    // Try preferred model first if specified and not on cooldown
+    if (preferredModel && !this._isOnCooldown(preferredModel)) {
       try {
         return await this._attemptModel(preferredModel, prompt, maxTokens, temperature, opikMeta, 1);
       } catch (error) {
@@ -48,12 +51,16 @@ class LLMService {
     // Try models in priority order
     let attempt = preferredModel ? 2 : 1;
     for (const model of this.modelPriority) {
+      if (this._isOnCooldown(model)) {
+        continue;
+      }
       try {
         const result = await this._attemptModel(model, prompt, maxTokens, temperature, opikMeta, attempt);
         console.log(`[LLM] Success with ${model}`);
         return result;
       } catch (error) {
         console.log(`[LLM] ${model} failed:`, error.message);
+        this._markCooldownIfNeeded(model, error);
         attempt += 1;
         continue;
       }
@@ -92,6 +99,7 @@ class LLMService {
       });
       return result;
     } catch (error) {
+      this._markCooldownIfNeeded(model, error);
       await this._logLlmCall({
         action: opikMeta.action || 'agent_generation',
         userId: opikMeta.user_id,
@@ -105,6 +113,26 @@ class LLMService {
         metadata: opikMeta
       });
       throw error;
+    }
+  }
+
+  _isOnCooldown(model) {
+    const until = this.modelCooldowns.get(model);
+    if (!until) return false;
+    if (Date.now() >= until) {
+      this.modelCooldowns.delete(model);
+      return false;
+    }
+    return true;
+  }
+
+  _markCooldownIfNeeded(model, error) {
+    if (!error) return;
+    const message = String(error.message || '').toLowerCase();
+    const isQuota = message.includes('quota') || message.includes('rate') || message.includes('429');
+    const isAuth = message.includes('invalid api key') || message.includes('unauthorized') || message.includes('forbidden');
+    if (isQuota || isAuth) {
+      this.modelCooldowns.set(model, Date.now() + this.cooldownMs);
     }
   }
 
@@ -141,15 +169,35 @@ class LLMService {
   async _generateGemini(prompt, maxTokens, temperature) {
     if (!this.gemini) throw new Error('Gemini not configured');
 
-    const model = this.gemini.getGenerativeModel({ model: 'gemini-pro' });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
+    const candidates = [
+      this.geminiModel,
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro-latest',
+      'gemini-1.0-pro'
+    ].filter(Boolean);
 
-    return {
-      text: response.text().trim(),
-      model: 'gemini-pro',
-      tokens: 0 // Gemini doesn't return token count easily
-    };
+    let lastError = null;
+    for (const candidate of candidates) {
+      try {
+        const model = this.gemini.getGenerativeModel({ model: candidate });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return {
+          text: response.text().trim(),
+          model: candidate,
+          tokens: 0 // Gemini doesn't return token count easily
+        };
+      } catch (error) {
+        lastError = error;
+        const message = String(error?.message || '').toLowerCase();
+        if (message.includes('not found') || message.includes('not supported')) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw lastError || new Error('Gemini model selection failed');
   }
 
   async _generateOpenAI(prompt, maxTokens, temperature) {

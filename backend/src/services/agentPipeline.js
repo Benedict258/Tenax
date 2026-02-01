@@ -17,14 +17,9 @@ const QueueService = require('./queue');
 const notificationService = require('./notificationService');
 const toneController = require('./toneController');
 const { composeMessage } = require('./messageComposer');
+const conversationAgent = require('./conversationAgent');
 
-const UNKNOWN_REPLY_POOL = [
-  'Got it. Want me to add a task, mark something complete, or show your plan? You can also start the Resolution Builder or upload a timetable.',
-  'I am here. Tell me what you want next — add a task, check off a task, or pull today’s plan.',
-  'Okay. If this was about your schedule, try “add class 11am weekly” or upload a timetable. Otherwise say “status” or tell me what to add.'
-];
 
-const pickRandomReply = (messages) => messages[Math.floor(Math.random() * messages.length)];
 
 const GUARD_ALLOWED_INTENTS = new Set([
   'mark_complete',
@@ -138,7 +133,7 @@ function buildSession({ user, channel, transport, conversation }) {
   };
 }
 
-async function requestTaskClarification(session, intent, tasks, prompt, slots = {}) {
+function requestTaskClarification(session, intent, tasks, prompt, slots = {}) {
   const options = tasks.slice(0, 5).map((task, index) => ({
     id: task.id,
     title: task.title,
@@ -160,24 +155,26 @@ async function requestTaskClarification(session, intent, tasks, prompt, slots = 
       : null;
     return `${option.index}. ${option.title}${timeLabel ? ` (${timeLabel})` : ''}`;
   }).join('\n');
-  await session.send(
-    `${prompt}\n\n${taskList}\n\nReply with the number or the task name.`,
-    { intent: 'clarify_task', options: options.map((option) => option.id) }
-  );
+  return {
+    action: intent,
+    requires_selection: true,
+    prompt,
+    options,
+    optionsList: taskList
+  };
 }
 
-async function complainAboutMissingTask(session) {
-  await session.send(
-    "I couldn't find that one. Can you give me a bit more detail? You can also say \"status\" to see the active list.",
-    { intent: 'task_not_found' }
-  );
+function complainAboutMissingTask() {
+  return {
+    action: 'task_not_found',
+    message: "I couldn't find that one. Can you give me a bit more detail? You can also say \"status\" to see the active list."
+  };
 }
 
 async function handleMarkComplete(session, slots) {
   const tasks = await Task.findByUserId(session.user.id, 'todo');
   if (!tasks.length) {
-    await session.send('You have no active tasks right now. Want me to add something?', { intent: 'mark_complete' });
-    return;
+    return { action: 'mark_complete', status: 'no_tasks' };
   }
   const recentTaskId = !slots?.taskName ? metricsStore.getRecentReminderTask(session.user.id) : null;
   const recentTask = recentTaskId ? tasks.find((task) => task.id === recentTaskId) : null;
@@ -186,13 +183,11 @@ async function handleMarkComplete(session, slots) {
   if (resolution.options.length) {
     const tone = toneController.buildToneContext(session.user).tone;
     const prompt = composeMessage('clarify', tone, { name: session.user?.name || 'there' }) || 'Which task should I check off?';
-    await requestTaskClarification(session, 'mark_complete', resolution.options, prompt, slots);
-    return;
+    return requestTaskClarification(session, 'mark_complete', resolution.options, prompt, slots);
   }
 
   if (!resolution.match) {
-    await complainAboutMissingTask(session);
-    return;
+    return complainAboutMissingTask();
   }
 
   const matchedTask = resolution.match;
@@ -212,14 +207,11 @@ async function handleMarkComplete(session, slots) {
     metadata: { task_id: matchedTask.id, channel: session.channel }
   });
 
-  const toneContext = toneController.buildToneContext(session.user);
-  const completionTone = toneContext.tone;
-  const completionLine = composeMessage('complete', completionTone, {
-    title: matchedTask.title,
-    name: session.user?.name || 'there'
-  }) || `✅ Marked "${matchedTask.title}" complete.`;
-
-  await session.send(completionLine, { intent: 'mark_complete' });
+  return {
+    action: 'mark_complete',
+    status: 'completed',
+    task: matchedTask
+  };
 }
 
 async function handleStatus(session, p1Tasks = []) {
@@ -230,46 +222,25 @@ async function handleStatus(session, p1Tasks = []) {
   ]);
 
   const streak = metricsStore.getStreak(session.user.id);
-  const banner = p1Tasks.length ? `${ruleStateService.buildBanner(p1Tasks)}\n\n` : '';
-  const toneContext = toneController.buildToneContext(session.user, stats);
-  const statusIntro = composeMessage('status', toneContext.tone, { name: session.user?.name || 'there' }) || 'Here is the lineup:';
   const goal = session.user?.goal || session.user?.primary_goal;
   const role = session.user?.role;
   const focusLine = goal ? `Focus: ${goal}${role ? ` (${role})` : ''}` : role ? `Role: ${role}` : '';
 
-  if (!todoTasks.length) {
-    await session.send(
-      `${banner}Everything's wrapped for today. ${doneTasks.length} tasks ✅\nCompletion rate: ${stats.completion_rate}%\nCurrent streak: ${streak} day${streak === 1 ? '' : 's'}.${focusLine ? `\n${focusLine}` : ''}`,
-      { intent: 'status_clear' }
-    );
-    return;
-  }
-
-  const pinned = todoTasks.filter((task) => task.severity === 'p1');
-  const pinnedText = pinned.length ? `P1 focus: ${pinned.map((task) => `"${task.title}"`).join(', ')}\n\n` : '';
-
-  const taskList = todoTasks
-    .slice(0, 6)
-    .map((task) => {
-      const timeLabel = task.start_time
-        ? new Date(task.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : 'anytime';
-      return `• ${task.title} (${timeLabel})`;
-    })
-    .join('\n');
-
-  const remainder = todoTasks.length > 6 ? `\n...and ${todoTasks.length - 6} more` : '';
-  await session.send(
-    `${banner}${statusIntro}\n\n${pinnedText}${taskList}${remainder}\n\n${stats.completed}/${stats.total} done • ${stats.completion_rate}% complete • Streak ${streak}d${focusLine ? `\n${focusLine}` : ''}`,
-    { intent: 'status' }
-  );
+  return {
+    action: 'status',
+    todoTasks,
+    doneTasks,
+    stats,
+    streak,
+    p1Tasks,
+    focusLine
+  };
 }
 
 async function handleAddTask(session, slots) {
   const title = slots.taskName?.trim();
   if (!title) {
-    await session.send('What should I add? Example: "add workout 6am" or "remind me to read 9pm".', { intent: 'add_task_missing_title' });
-    return;
+    return { action: 'add_task', requires_title: true };
   }
 
   if (!slots.targetTime && !slots.noFixedTime) {
@@ -281,8 +252,7 @@ async function handleAddTask(session, slots) {
         recurrence: slots.recurrence || null
       }
     });
-    await session.send('When should I set it? You can reply with a time or say "no fixed time".', { intent: 'add_task_missing_time' });
-    return;
+    return { action: 'add_task', requires_time: true };
   }
 
   const severity = inferSeverity(title);
@@ -307,22 +277,21 @@ async function handleAddTask(session, slots) {
   }
 
   if (task.start_time) {
-    const reminderTime = new Date(task.start_time);
-    reminderTime.setMinutes(reminderTime.getMinutes() - 30);
-    await QueueService.scheduleTaskReminder(session.user, task, reminderTime.toISOString());
+    await QueueService.scheduleTaskReminders(session.user, task);
   }
 
   const timingText = slots.targetTime
     ? ` for ${new Date(slots.targetTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
     : '';
   const recurrenceText = slots.recurrence ? ` (${slots.recurrence})` : '';
-  const toneContext = toneController.buildToneContext(session.user);
-  const responseText = composeMessage('add_task', toneContext.tone, {
-    title: task.title,
-    timeText: timingText,
-    recurrenceText
-  }) || `Added "${task.title}"${timingText}${recurrenceText}. Let me know when you knock it out.`;
-  await session.send(responseText, { intent: 'add_task', severity });
+  return {
+    action: 'add_task',
+    status: 'created',
+    task,
+    timingText,
+    recurrenceText,
+    severity
+  };
 }
 
 async function handleRemoveTask(session, slots) {
@@ -330,20 +299,15 @@ async function handleRemoveTask(session, slots) {
   const resolution = resolveTaskCandidate(tasks, slots);
 
   if (resolution.options.length) {
-    await requestTaskClarification(session, 'remove_task', resolution.options, 'Which task should I cancel?', slots);
-    return;
+    return requestTaskClarification(session, 'remove_task', resolution.options, 'Which task should I cancel?', slots);
   }
 
   if (!resolution.match) {
-    await complainAboutMissingTask(session);
-    return;
+    return complainAboutMissingTask();
   }
 
   await Task.updateStatus(resolution.match.id, 'archived');
-  await session.send(
-    `Removed "${resolution.match.title}" from today.`,
-    { intent: 'remove_task' }
-  );
+  return { action: 'remove_task', status: 'removed', task: resolution.match };
 }
 
 async function handleRescheduleTask(session, slots) {
@@ -351,13 +315,11 @@ async function handleRescheduleTask(session, slots) {
   const resolution = resolveTaskCandidate(tasks, slots);
 
   if (resolution.options.length) {
-    await requestTaskClarification(session, 'reschedule_task', resolution.options, 'Which task should I move?', slots);
-    return;
+    return requestTaskClarification(session, 'reschedule_task', resolution.options, 'Which task should I move?', slots);
   }
 
   if (!resolution.match) {
-    await complainAboutMissingTask(session);
-    return;
+    return complainAboutMissingTask();
   }
 
   if (!slots.targetTime && !slots.deferDays) {
@@ -366,8 +328,7 @@ async function handleRescheduleTask(session, slots) {
       intent: 'reschedule_task',
       slots: { taskId: resolution.match.id, taskName: resolution.match.title }
     });
-    await session.send(`What time should I move "${resolution.match.title}" to?`, { intent: 'await_time' });
-    return;
+    return { action: 'reschedule_task', requires_time: true, task: resolution.match };
   }
 
   const nextStart = slots.targetTime ? new Date(slots.targetTime) : new Date(resolution.match.start_time || Date.now());
@@ -378,12 +339,14 @@ async function handleRescheduleTask(session, slots) {
   const updatedTask = await Task.updateFields(resolution.match.id, {
     start_time: nextStart.toISOString()
   });
-  await QueueService.scheduleTaskReminder(session.user, updatedTask, nextStart.toISOString());
+  await QueueService.scheduleTaskReminders(session.user, updatedTask);
 
-  await session.send(
-    `Moved "${resolution.match.title}" to ${nextStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`,
-    { intent: 'reschedule_task' }
-  );
+  return {
+    action: 'reschedule_task',
+    status: 'rescheduled',
+    task: updatedTask,
+    newTime: nextStart.toISOString()
+  };
 }
 
 async function handleTaskDelay(session, slots) {
@@ -391,126 +354,96 @@ async function handleTaskDelay(session, slots) {
   const resolution = resolveTaskCandidate(tasks, slots);
 
   if (resolution.options.length) {
-    await requestTaskClarification(session, 'task_delay', resolution.options, 'Which task needs a rain check?', slots);
-    return;
+    return requestTaskClarification(session, 'task_delay', resolution.options, 'Which task needs a rain check?', slots);
   }
 
   if (!resolution.match) {
-    await complainAboutMissingTask(session);
-    return;
+    return complainAboutMissingTask();
   }
 
   const newDate = new Date(resolution.match.start_time || Date.now());
   newDate.setDate(newDate.getDate() + 1);
   await Task.updateFields(resolution.match.id, { start_time: newDate.toISOString(), status: 'todo' });
-  await session.send(
-    `Noted. "${resolution.match.title}" slides to tomorrow. Shake it off and get ready to hit it then.`,
-    { intent: 'task_delay' }
-  );
+  return {
+    action: 'task_delay',
+    status: 'deferred',
+    task: resolution.match,
+    newTime: newDate.toISOString()
+  };
 }
 
 async function handleProgressReview(session) {
   const stats = await agentService.calculateCompletionStats(session.user);
   const reminderStats = metricsStore.getReminderStats(session.user.id);
   const streak = metricsStore.getStreak(session.user.id);
-  const latency = reminderStats.avgLatency ? `${reminderStats.avgLatency}m` : 'n/a';
-  const toneContext = toneController.buildToneContext(session.user, stats, reminderStats);
-  const toneLine = toneContext.tone === 'playful_duolingo'
-    ? 'Keep the streak alive — short reps still count.'
-    : toneContext.tone === 'strict_but_supportive'
-      ? 'We can tighten this up. Want me to reshuffle the plan?'
-      : 'Keep the momentum going.';
-  const message = [
-    `Today: ${stats.completed}/${stats.total} complete (${stats.completion_rate}%).`,
-    `Reminder follow-through: ${reminderStats.completed}/${reminderStats.sent} • Latency ${latency}.`,
-    `Streak: ${streak} day${streak === 1 ? '' : 's'}. ${toneLine}`
-  ].join('\n');
-  await session.send(message, { intent: 'progress_review' });
+  return {
+    action: 'progress_review',
+    stats,
+    reminderStats,
+    streak
+  };
 }
 
 async function handlePlanOverview(session, p1Tasks) {
   const todoTasks = await Task.findByUserId(session.user.id, 'todo');
-  const pinned = p1Tasks.map((task) => task.title).slice(0, 3).join(', ');
-  const pinnedText = pinned ? `P1 up front: ${pinned}.` : 'P1 is clear right now.';
-  const windows = todoTasks.slice(0, 5).map((task) => {
-    const timeText = task.start_time
-      ? new Date(task.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : 'anytime';
-    return `• ${task.title} → ${timeText}`;
-  }).join('\n');
-  await session.send(
-    `${pinnedText}\n${windows}\n\nTell me when something is done or if we need to reshuffle.`,
-    { intent: 'plan_overview' }
-  );
+  return {
+    action: 'plan_overview',
+    todoTasks,
+    p1Tasks
+  };
 }
 
 async function handleDailyStart(session) {
   const tasks = await Task.getTodaysTasks(session.user.id);
   const p1Tasks = tasks.filter((task) => task.severity === 'p1');
-  const opener = p1Tasks.length
-    ? `Morning! Priority is ${p1Tasks.map((task) => `"${task.title}"`).join(', ')}.`
-    : 'Morning! No P1 blockers, so let’s stack a clean run.';
-  const nextTask = tasks[0]?.title ? `First up: ${tasks[0].title}.` : 'You are clear to plan your first move.';
-  await session.send(
-    `${opener}\n${nextTask}\nPing me when you wrap the first block.`,
-    { intent: 'daily_start' }
-  );
+  return {
+    action: 'daily_start',
+    tasks,
+    p1Tasks
+  };
 }
 
 async function handleDailyEnd(session) {
   const stats = await agentService.calculateCompletionStats(session.user);
   const summary = await agentService.generateEODSummary(session.user, stats);
-  await session.send(summary.message, { intent: 'daily_end', tone: summary.tone });
+  return { action: 'daily_end', summary };
 }
 
 async function handleReminderSnooze(session, slots) {
   const minutes = slots.minutes || 30;
   const until = reminderPreferences.snooze(session.user.id, minutes);
   const resumeTime = new Date(until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  await session.send(
-    `Okay, nudges sleep for ${minutes} min. I’ll ping you again around ${resumeTime}.`,
-    { intent: 'reminder_snooze' }
-  );
+  return { action: 'reminder_snooze', minutes, resumeTime };
 }
 
 async function handleReminderPause(session) {
   reminderPreferences.pauseForToday(session.user.id);
-  await session.send(
-    'Reminders paused for today. Tap me when you want the accountability back.',
-    { intent: 'reminder_pause' }
-  );
+  return { action: 'reminder_pause' };
 }
 
 async function handleHelp(session) {
-  const helpText = [
-    'Here are a few things I can do for you:',
-    '• Add tasks ("remind me to read 9pm")',
-    '• Mark completions ("done with deep work")',
-    '• Show your plan ("status" or "what\'s next")',
-    '• Move tasks ("move study to 8pm")',
-    '• Snooze reminders ("snooze 30")',
-    '• Start the Resolution Builder'
-  ].join('\n');
-  await session.send(helpText, { intent: 'help' });
+  return {
+    action: 'help',
+    tips: [
+      'Add tasks (e.g., "remind me to read 9pm")',
+      'Mark completions (e.g., "done with deep work")',
+      'Show your plan ("status" or "what\'s next")',
+      'Move tasks ("move study to 8pm")',
+      'Snooze reminders ("snooze 30")',
+      'Start the Resolution Builder'
+    ]
+  };
 }
 
 async function handleGreeting(session) {
-  const name = session.user?.preferred_name || session.user?.name || 'there';
-  const toneContext = toneController.buildToneContext(session.user);
-  const reply = composeMessage('greeting', toneContext.tone, { name }) ||
-    `Hey ${name}! Want a status update, to add a task, or to start the Resolution Builder?`;
-  await session.send(reply, { intent: 'greeting' });
+  return { action: 'greeting' };
 }
 
 async function handleScheduleNote(session, slots) {
   const timeLabel = slots?.targetTime
     ? new Date(slots.targetTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
-  const timeText = timeLabel ? ` at ${timeLabel}` : '';
-  await session.send(
-    `Got it${timeText}. Want me to block that on your schedule? You can say "add class${timeText} weekly" or upload a timetable.`,
-    { intent: 'schedule_note' }
-  );
+  return { action: 'schedule_note', timeLabel };
 }
 
 
@@ -531,10 +464,7 @@ function getNextOccurrenceISO(dayOfWeek, time, timezone = 'UTC') {
 async function handleTimetableUpload(session, rawText) {
   const entries = parseCoursesFromText(rawText);
   if (!entries.length) {
-    await session.send('I did not detect any class patterns yet. Share lines like "MCE 312 Tue 9am-11am".', {
-      intent: 'timetable_none'
-    });
-    return;
+    return { action: 'timetable_none' };
   }
 
   conversationContext.setPendingAction(session.user.id, {
@@ -544,17 +474,13 @@ async function handleTimetableUpload(session, rawText) {
   });
 
   const summary = buildConfirmationSummary(entries);
-  await session.send(
-    `I found ${entries.length} recurring classes:\n${summary}\n\nAdd them to your schedule? Reply "yes" to add all or "add only <course>".`,
-    { intent: 'timetable_confirm' }
-  );
+  return { action: 'timetable_confirm', entries, summary };
 }
 
 async function handleTimetableConfirmation(session, slots) {
   const entries = slots.entries || [];
   if (!entries.length) {
-    await session.send('No classes selected. We can retry when you send the timetable again.', { intent: 'timetable_cancelled' });
-    return;
+    return { action: 'timetable_cancelled' };
   }
 
   const priority = slots.priority || 'P1';
@@ -582,10 +508,7 @@ async function handleTimetableConfirmation(session, slots) {
   if (tasksToCreate.some((task) => task.severity === 'p1')) {
     await ruleStateService.refreshUserState(session.user.id);
   }
-  await session.send(
-    `${entries.length} academic blocks added. Timed reminders kick in ahead of each class.`,
-    { intent: 'timetable_imported', entries: entries.length }
-  );
+  return { action: 'timetable_imported', entries: entries.length };
 }
 
 async function routeIntent(session, parsed, extras) {
@@ -593,66 +516,43 @@ async function routeIntent(session, parsed, extras) {
 
   switch (parsed.intent) {
     case 'mark_complete':
-      await handleMarkComplete(session, parsed.slots);
-      break;
+      return handleMarkComplete(session, parsed.slots);
     case 'status':
-      await handleStatus(session, p1Tasks);
-      break;
+      return handleStatus(session, p1Tasks);
     case 'add_task':
-      await handleAddTask(session, parsed.slots);
-      break;
+      return handleAddTask(session, parsed.slots);
     case 'remove_task':
-      await handleRemoveTask(session, parsed.slots);
-      break;
+      return handleRemoveTask(session, parsed.slots);
     case 'reschedule_task':
-      await handleRescheduleTask(session, parsed.slots);
-      break;
+      return handleRescheduleTask(session, parsed.slots);
     case 'task_delay':
-      await handleTaskDelay(session, parsed.slots);
-      break;
+      return handleTaskDelay(session, parsed.slots);
     case 'plan_overview':
-      await handlePlanOverview(session, p1Tasks);
-      break;
+      return handlePlanOverview(session, p1Tasks);
     case 'progress_review':
-      await handleProgressReview(session);
-      break;
+      return handleProgressReview(session);
     case 'daily_start':
-      await handleDailyStart(session);
-      break;
+      return handleDailyStart(session);
     case 'daily_end':
-      await handleDailyEnd(session);
-      break;
+      return handleDailyEnd(session);
     case 'reminder_snooze':
-      await handleReminderSnooze(session, parsed.slots);
-      break;
+      return handleReminderSnooze(session, parsed.slots);
     case 'reminder_pause':
-      await handleReminderPause(session);
-      break;
+      return handleReminderPause(session);
     case 'help':
-      await handleHelp(session);
-      break;
+      return handleHelp(session);
     case 'greeting':
-      await handleGreeting(session);
-      break;
+      return handleGreeting(session);
     case 'schedule_note':
-      await handleScheduleNote(session, parsed.slots);
-      break;
+      return handleScheduleNote(session, parsed.slots);
     case 'upload_timetable':
-      await handleTimetableUpload(session, extras.rawText || '');
-      break;
+      return handleTimetableUpload(session, extras.rawText || '');
     case 'import_timetable_confirm':
-      await handleTimetableConfirmation(session, parsed.slots);
-      break;
+      return handleTimetableConfirmation(session, parsed.slots);
     case 'timetable_cancel':
-      await session.send('No changes made. Share the timetable again when you want me to import it.', {
-        intent: 'timetable_cancelled'
-      });
-      break;
+      return { action: 'timetable_cancelled' };
     default:
-      await session.send(
-        pickRandomReply(UNKNOWN_REPLY_POOL),
-        { intent: 'unknown' }
-      );
+      return { action: 'chat' };
   }
 }
 
@@ -766,7 +666,16 @@ async function handleMessage({
 
   if (guardActive && !GUARD_ALLOWED_INTENTS.has(parsed.intent)) {
     const guardMessage = ruleStateService.buildGuardrailMessage(p1Tasks);
-    await session.send(guardMessage, { intent: 'p1_guard' });
+    const memoryTurns = conversationContext.getTurns(resolvedUser.id);
+    const reply = await conversationAgent.generateAssistantReply({
+      user: resolvedUser,
+      message: text,
+      intent: 'p1_guard',
+      toolResult: { action: 'p1_guard', message: guardMessage, tasks: p1Tasks },
+      memoryTurns,
+      context: { tasks: await Task.getTodaysTasks(resolvedUser.id) }
+    });
+    await session.send(reply, { intent: 'p1_guard' });
     await ruleStateService.recordSurface({
       userId: resolvedUser.id,
       tasks: p1Tasks,
@@ -792,13 +701,38 @@ async function handleMessage({
     channel
   });
 
-  await routeIntent(session, parsed, { rawText: text });
+  const actionableIntent = parsed?.intent !== 'unknown' && (parsed?.confidence || 0) >= 0.55;
+  const intentToUse = actionableIntent ? parsed.intent : 'chat';
+  const toolResult = intentToUse === 'chat'
+    ? { action: 'chat' }
+    : await routeIntent(session, parsed, { rawText: text });
+
+  const memoryTurns = conversationContext.getTurns(resolvedUser.id);
+  const [todaysTasks, stats] = await Promise.all([
+    Task.getTodaysTasks(resolvedUser.id),
+    agentService.calculateCompletionStats(resolvedUser)
+  ]);
+
+  const reply = await conversationAgent.generateAssistantReply({
+    user: resolvedUser,
+    message: text,
+    intent: intentToUse,
+    toolResult,
+    memoryTurns,
+    context: {
+      tasks: todaysTasks,
+      stats,
+      reminderStats: metricsStore.getReminderStats(resolvedUser.id)
+    }
+  });
+
+  await session.send(reply, { intent: intentToUse });
   await Conversation.touch(conversation.id);
 
   return {
     replies: session.replies,
     conversationId: conversation.id,
-    intent: parsed.intent
+    intent: intentToUse
   };
 }
 
