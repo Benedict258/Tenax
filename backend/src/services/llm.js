@@ -169,35 +169,15 @@ class LLMService {
   async _generateGemini(prompt, maxTokens, temperature) {
     if (!this.gemini) throw new Error('Gemini not configured');
 
-    const candidates = [
-      this.geminiModel,
-      'gemini-1.5-flash-latest',
-      'gemini-1.5-pro-latest',
-      'gemini-1.0-pro'
-    ].filter(Boolean);
+    const model = this.gemini.getGenerativeModel({ model: this.geminiModel });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
 
-    let lastError = null;
-    for (const candidate of candidates) {
-      try {
-        const model = this.gemini.getGenerativeModel({ model: candidate });
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return {
-          text: response.text().trim(),
-          model: candidate,
-          tokens: 0 // Gemini doesn't return token count easily
-        };
-      } catch (error) {
-        lastError = error;
-        const message = String(error?.message || '').toLowerCase();
-        if (message.includes('not found') || message.includes('not supported')) {
-          continue;
-        }
-        throw error;
-      }
-    }
-
-    throw lastError || new Error('Gemini model selection failed');
+    return {
+      text: response.text().trim(),
+      model: this.geminiModel,
+      tokens: 0 // Gemini doesn't return token count easily
+    };
   }
 
   async _generateOpenAI(prompt, maxTokens, temperature) {

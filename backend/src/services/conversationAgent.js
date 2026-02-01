@@ -111,7 +111,11 @@ async function generateAssistantReply({ user, message, intent, toolResult, memor
     const response = await llmService.generate(prompt, {
       maxTokens: 160,
       temperature: 0.7,
-      preferredModel: 'groq',
+<<<<<<< ours
+      preferredModel: null,
+=======
+      preferredModel: 'gemini',
+>>>>>>> theirs
       opikMeta: {
         action: 'conversation_agent_reply',
         user_id: user?.id,
