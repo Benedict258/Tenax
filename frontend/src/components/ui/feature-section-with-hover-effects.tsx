@@ -86,6 +86,7 @@ const Feature = ({
   icon,
   index,
   href,
+  action,
 }: {
   title: string;
   description: string;
