@@ -1,6 +1,7 @@
 const supabase = require('../config/supabase');
 const opikLogger = require('../utils/opikBridge');
 const metricsStore = require('./metricsStore');
+const { DateTime } = require('luxon');
 
 const DAY_START = { hour: 5, minute: 0 };
 const DAY_END = { hour: 23, minute: 0 };
@@ -297,6 +298,32 @@ function sanitizeExtractionPayload(input = {}) {
   };
 }
 
+function resolveDayOfWeek(dateInput, timezone = 'UTC') {
+  const base = dateInput ? new Date(dateInput) : new Date();
+  const dt = DateTime.fromJSDate(base).setZone(timezone || 'UTC');
+  if (!dt.isValid) return new Date().getDay();
+  return dt.weekday % 7;
+}
+
+function buildDateTimeForDay(timeValue, day, timezone = 'UTC') {
+  if (!timeValue) return null;
+  const [hourRaw, minuteRaw = '0', secondRaw = '0'] = String(timeValue).split(':');
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  const second = Number(secondRaw);
+  if ([hour, minute, second].some((value) => Number.isNaN(value))) {
+    return null;
+  }
+  const dt = DateTime.fromJSDate(day).setZone(timezone || 'UTC');
+  if (!dt.isValid) return null;
+  return dt.set({
+    hour,
+    minute,
+    second,
+    millisecond: 0
+  });
+}
+
 async function listExtractionRows(userId) {
   const { data, error } = await supabase
     .from('timetable_extractions')
@@ -307,6 +334,41 @@ async function listExtractionRows(userId) {
 
   if (error) throw error;
   return data || [];
+}
+
+async function listScheduleBlocksForDate(userId, dateInput, timezone = 'UTC') {
+  if (!userId) {
+    const error = new Error('userId is required');
+    error.statusCode = 400;
+    throw error;
+  }
+  const dayOfWeek = resolveDayOfWeek(dateInput, timezone);
+  const { data, error } = await supabase
+    .from('timetable_extractions')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('day_of_week', dayOfWeek)
+    .order('start_time', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+async function buildScheduleBlockInstances(userId, dateInput, timezone = 'UTC') {
+  const rows = await listScheduleBlocksForDate(userId, dateInput, timezone);
+  if (!rows.length) return [];
+  const baseDay = dateInput ? new Date(dateInput) : new Date();
+  return rows.map((row) => {
+    const start = buildDateTimeForDay(row.start_time, baseDay, timezone);
+    const end = buildDateTimeForDay(row.end_time, baseDay, timezone);
+    return {
+      ...row,
+      start_time_utc: start?.toUTC().toISO() || null,
+      end_time_utc: end?.toUTC().toISO() || null,
+      start_time_local: start?.toISO() || null,
+      end_time_local: end?.toISO() || null
+    };
+  });
 }
 
 async function deduplicateExtractionRows(userId) {
@@ -775,6 +837,8 @@ module.exports = {
   deleteExtractionRow,
   clearResolutionBlocks,
   scheduleFeatureFlag: () => scheduleIntelEnabled(),
+  listScheduleBlocksForDate,
+  buildScheduleBlockInstances,
   guardScheduleFeature(req, res, next) {
     if (!scheduleIntelEnabled()) {
       return res.status(503).json({ message: 'Schedule intelligence feature disabled' });

@@ -18,6 +18,7 @@ const notificationService = require('./notificationService');
 const toneController = require('./toneController');
 const { composeMessage } = require('./messageComposer');
 const conversationAgent = require('./conversationAgent');
+const scheduleService = require('./scheduleService');
 
 
 
@@ -32,6 +33,7 @@ const GUARD_ALLOWED_INTENTS = new Set([
   'reminder_snooze',
   'reminder_pause',
   'greeting'
+  ,'time_now'
 ]);
 
 const P1_KEYWORDS = ['p1', 'deep work', 'priority 1', 'critical focus'];
@@ -221,16 +223,35 @@ async function handleMarkComplete(session, slots) {
 }
 
 async function handleStatus(session, p1Tasks = []) {
-  const [todoTasks, doneTasks, stats] = await Promise.all([
+  const timezone = session.user?.timezone || 'UTC';
+  const [todoTasks, doneTasks, stats, scheduleBlocks] = await Promise.all([
     Task.findByUserId(session.user.id, 'todo'),
     Task.findByUserId(session.user.id, 'done'),
-    agentService.calculateCompletionStats(session.user)
+    agentService.calculateCompletionStats(session.user),
+    scheduleService.buildScheduleBlockInstances(session.user.id, new Date(), timezone)
   ]);
 
   const streak = metricsStore.getStreak(session.user.id);
   const goal = session.user?.goal || session.user?.primary_goal;
   const role = session.user?.role;
   const focusLine = goal ? `Focus: ${goal}${role ? ` (${role})` : ''}` : role ? `Role: ${role}` : '';
+
+  const todayBlocks = (scheduleBlocks || [])
+    .filter((block) => block.start_time_utc)
+    .map((block) => ({
+      id: block.id,
+      title: block.title,
+      location: block.location,
+      category: block.category,
+      start_time: block.start_time_utc,
+      end_time: block.end_time_utc,
+      timeLabel: formatTimeForUser(block.start_time_utc, timezone),
+      endLabel: formatTimeForUser(block.end_time_utc, timezone)
+    }));
+
+  if (todayBlocks.length) {
+    await QueueService.scheduleScheduleBlockReminders(session.user);
+  }
 
   return {
     action: 'status',
@@ -239,7 +260,8 @@ async function handleStatus(session, p1Tasks = []) {
     stats,
     streak,
     p1Tasks,
-    focusLine
+    focusLine,
+    scheduleBlocks: todayBlocks
   };
 }
 
@@ -402,10 +424,28 @@ async function handlePlanOverview(session, p1Tasks) {
 async function handleDailyStart(session) {
   const tasks = await Task.getTodaysTasks(session.user.id);
   const p1Tasks = tasks.filter((task) => task.severity === 'p1');
+  const timezone = session.user?.timezone || 'UTC';
+  const scheduleBlocks = await scheduleService.buildScheduleBlockInstances(session.user.id, new Date(), timezone);
+  const todayBlocks = (scheduleBlocks || [])
+    .filter((block) => block.start_time_utc)
+    .map((block) => ({
+      id: block.id,
+      title: block.title,
+      location: block.location,
+      category: block.category,
+      start_time: block.start_time_utc,
+      end_time: block.end_time_utc,
+      timeLabel: formatTimeForUser(block.start_time_utc, timezone),
+      endLabel: formatTimeForUser(block.end_time_utc, timezone)
+    }));
+  if (todayBlocks.length) {
+    await QueueService.scheduleScheduleBlockReminders(session.user);
+  }
   return {
     action: 'daily_start',
     tasks,
-    p1Tasks
+    p1Tasks,
+    scheduleBlocks: todayBlocks
   };
 }
 
@@ -445,6 +485,15 @@ async function handleGreeting(session) {
   return { action: 'greeting' };
 }
 
+async function handleTimeNow(session) {
+  const timezone = session.user?.timezone || 'UTC';
+  const now = DateTime.now().setZone(timezone);
+  return {
+    action: 'time_now',
+    currentTime: now.toFormat('hh:mm a'),
+    timezone
+  };
+}
 async function handleScheduleNote(session, slots) {
   const timeLabel = slots?.targetTime
     ? formatTimeForUser(slots.targetTime, session.user?.timezone || 'UTC')
@@ -549,6 +598,8 @@ async function routeIntent(session, parsed, extras) {
       return handleHelp(session);
     case 'greeting':
       return handleGreeting(session);
+    case 'time_now':
+      return handleTimeNow(session);
     case 'schedule_note':
       return handleScheduleNote(session, parsed.slots);
     case 'upload_timetable':
@@ -707,7 +758,9 @@ async function handleMessage({
     channel
   });
 
-  const actionableIntent = parsed?.intent !== 'unknown' && (parsed?.confidence || 0) >= 0.55;
+  const lowFrictionIntents = new Set(['status', 'mark_complete', 'add_task', 'reschedule_task', 'remove_task', 'time_now', 'schedule_note']);
+  const actionableIntent = parsed?.intent !== 'unknown'
+    && ((parsed?.confidence || 0) >= 0.45 || lowFrictionIntents.has(parsed.intent));
   const intentToUse = actionableIntent ? parsed.intent : 'chat';
   const toolResult = intentToUse === 'chat'
     ? { action: 'chat' }
@@ -719,7 +772,9 @@ async function handleMessage({
     agentService.calculateCompletionStats(resolvedUser)
   ]);
   const userTimezone = resolvedUser.timezone || 'UTC';
-  const currentTime = DateTime.now().setZone(userTimezone).toFormat('hh:mm a');
+  const currentTime = intentToUse === 'time_now'
+    ? DateTime.now().setZone(userTimezone).toFormat('hh:mm a')
+    : '';
 
   const reply = await conversationAgent.generateAssistantReply({
     user: resolvedUser,

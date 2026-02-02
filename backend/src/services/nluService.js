@@ -7,6 +7,9 @@ const STATUS_TRIGGERS = [
   'status',
   "what do i have left",
   'what is left',
+  'anything left',
+  'left for today',
+  'left today',
   'show my tasks',
   "what's my plan",
   'show my plan',
@@ -26,6 +29,13 @@ const REMINDER_PAUSE_TRIGGERS = ['stop reminders', 'pause reminders', "don't rem
 const REMOVE_TRIGGERS = ['remove', 'delete', 'cancel'];
 const RESCHEDULE_TRIGGERS = ['move', 'shift', 'reschedule'];
 const GREETING_TRIGGERS = ['hello', 'hi', 'hey', 'yo', 'good evening', 'good afternoon'];
+const TIME_TRIGGERS = [
+  'what time is it',
+  'time now',
+  'current time',
+  "what's the time",
+  'time please'
+];
 const GENERIC_TASK_NAMES = new Set(['task', 'a task', 'the task', 'my task', 'it', 'this', 'that']);
 const ADD_TRIGGERS = ['add', 'create', 'schedule', 'remind me', 'set a reminder', 'set reminder', 'set', 'book'];
 const DAILY_KEYWORDS = ['daily', 'every day', 'each day'];
@@ -271,6 +281,10 @@ function parseGreeting(text) {
   return buildIntentResponse('greeting', 0.86, { text });
 }
 
+function parseTimeNow() {
+  return buildIntentResponse('time_now', 0.9, {});
+}
+
 function parseScheduleNote(text, timezone) {
   const timeData = extractTimeData(text, timezone);
   return buildIntentResponse('schedule_note', 0.7, {
@@ -355,6 +369,10 @@ function parseMessage(rawText, options = {}) {
 
   if (GREETING_TRIGGERS.some((phrase) => normalized.startsWith(phrase))) {
     return parseGreeting(text);
+  }
+
+  if (TIME_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+    return parseTimeNow();
   }
 
   if (SCHEDULE_NOTE_TRIGGERS.some((phrase) => normalized.includes(phrase))) {

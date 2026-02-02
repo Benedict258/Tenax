@@ -23,6 +23,15 @@ class OpikBridge {
         this._warned = true;
       }
     }
+    const looksLikePath = this.pythonPath.includes('\\') || this.pythonPath.includes('/') || this.pythonPath.includes(':');
+    if (!this.disabled && looksLikePath && !fs.existsSync(this.pythonPath)) {
+      this.disabled = true;
+      this.disableReason = `Python path not found: ${this.pythonPath}`;
+      if (!this._warned) {
+        console.warn('[Opik] Disabled Python bridge:', this.disableReason);
+        this._warned = true;
+      }
+    }
     console.log('[Opik] Bridge:', {
       enabled: !this.disabled,
       python: this.pythonPath,

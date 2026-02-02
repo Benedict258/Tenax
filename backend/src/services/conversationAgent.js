@@ -28,12 +28,19 @@ const formatTasks = (tasks = [], timezone = 'UTC') =>
     return `- ${task.title} (${time})`;
   }).join('\n');
 
+const formatScheduleBlocks = (blocks = []) =>
+  blocks.slice(0, 5).map((block) => {
+    const label = block.timeLabel || (block.start_time ? formatTimeForUser(block.start_time) : 'anytime');
+    return `- ${block.title} (${label})`;
+  }).join('\n');
+
 const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }) => {
   const toneContext = toneController.buildToneContext(user, context?.stats, context?.reminderStats);
   const reasons = Array.isArray(user?.reason_for_using) ? user.reason_for_using.join(', ') : user?.reason_for_using || '';
   const openers = extractOpeners(memoryTurns);
   const timezone = user?.timezone || 'UTC';
   const tasksList = context?.tasks ? formatTasks(context.tasks, timezone) : '';
+  const scheduleList = toolResult?.scheduleBlocks?.length ? formatScheduleBlocks(toolResult.scheduleBlocks) : '';
   const currentTime = context?.currentTime || '';
 
   return [
@@ -47,6 +54,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     `- Do NOT start with any of these openings: ${openers.join(' | ') || 'none'}.`,
     '- Avoid repeating the same phrasing from recent replies.',
     '- Do not push the user into task planning repeatedly. Offer once, then keep the conversation flowing.',
+    '- If you already asked a planning question recently, do not ask it again.',
     '- Do not guess or mention the current time unless the user asks or provides a time.',
     '- Do not repeat the same observation (e.g., time of day) across turns.',
     '',
@@ -66,6 +74,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     currentTime ? `- Current time (user timezone): ${currentTime}` : '- Current time: unavailable',
     '',
     context?.tasks ? `Today/Upcoming tasks:\n${tasksList || 'No tasks'}` : 'Tasks: unavailable',
+    scheduleList ? `Fixed schedule blocks today:\n${scheduleList}` : 'Fixed schedule blocks: unavailable',
     '',
     'Rules for your reply:',
     '- Always respond as a natural chat message.',
@@ -75,6 +84,8 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     '- If toolResult.requires_time is true, ask for the time or "no fixed time".',
     '- If toolResult.requires_title is true, ask what task they want to add with a quick example.',
     '- If intent is status, summarize tasks in 2-4 lines, not a template.',
+    '- If intent is greeting, keep it light and conversational; do not pivot to planning.',
+    '- If schedule blocks exist, mention them briefly after tasks.',
     '- If no tasks exist, do not pressure them. Offer help or ask if they want to plan, but only once.',
     '- If the user says they are busy or unmotivated, respond with empathy and one small suggestion. Ask permission before coaching more.',
     '- If the user asks about your goal, answer briefly and keep the focus on them without forcing a task question.',
@@ -86,16 +97,27 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
 };
 
 const fallbackReply = ({ intent, toolResult, user }) => {
+  if (toolResult?.action === 'time_now' && toolResult?.currentTime) {
+    return `It is ${toolResult.currentTime} your time.`;
+  }
   if (toolResult?.action === 'add_task' && toolResult?.status === 'created') {
     const timing = toolResult.timingText || '';
     const recurrence = toolResult.recurrenceText || '';
-    return `Added "${toolResult.task?.title || 'task'}"${timing}${recurrence}. Tell me when it's done.`;
+    return `Added ${toolResult.task?.title || 'task'}${timing}${recurrence}. Tell me when it's done.`;
   }
   if (toolResult?.action === 'mark_complete' && toolResult?.status === 'completed') {
-    return `Nice - "${toolResult.task?.title || 'that'}" is marked complete.`;
+    return `Nice - ${toolResult.task?.title || 'that'} is marked complete.`;
   }
   if (toolResult?.action === 'status' && Array.isArray(toolResult.todoTasks)) {
     if (!toolResult.todoTasks.length) {
+      const blocks = toolResult.scheduleBlocks || [];
+      if (blocks.length) {
+        const scheduleLines = blocks.slice(0, 4).map((block) => {
+          const label = block.timeLabel || 'scheduled';
+          return `- ${block.title} (${label})`;
+        }).join('\n');
+        return `You're clear on tasks, but you do have these schedule blocks:\n${scheduleLines}`;
+      }
       return `You're clear for now. Want to add something for today?`;
     }
     const timezone = user?.timezone || 'UTC';
@@ -103,6 +125,13 @@ const fallbackReply = ({ intent, toolResult, user }) => {
       const time = task.start_time ? formatTimeForUser(task.start_time, timezone) : 'anytime';
       return `- ${task.title} (${time})`;
     }).join('\n');
+    if (toolResult.scheduleBlocks?.length) {
+      const scheduleLines = toolResult.scheduleBlocks.slice(0, 3).map((block) => {
+        const label = block.timeLabel || 'scheduled';
+        return `- ${block.title} (${label})`;
+      }).join('\n');
+      return `Here's your lineup:\n${list}\n\nFixed blocks today:\n${scheduleLines}`;
+    }
     return `Here's your lineup:\n${list}`;
   }
   if (toolResult?.requires_selection && toolResult?.optionsList) {
@@ -123,6 +152,9 @@ const fallbackReply = ({ intent, toolResult, user }) => {
 };
 
 async function generateAssistantReply({ user, message, intent, toolResult, memoryTurns = [], context = {} }) {
+  if (toolResult?.action === 'time_now' && toolResult?.currentTime) {
+    return `It is ${toolResult.currentTime} your time.`;
+  }
   const prompt = buildPrompt({ user, message, intent, toolResult, memoryTurns, context });
   try {
     const response = await llmService.generate(prompt, {
@@ -149,4 +181,6 @@ async function generateAssistantReply({ user, message, intent, toolResult, memor
 module.exports = {
   generateAssistantReply
 };
+
+
 

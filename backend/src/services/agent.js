@@ -32,22 +32,22 @@ const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 const reminderOpeners = {
   '30_min': [
-    'Heads up',
-    'Quick warm-up',
-    'Light stretch',
+    'Quick heads-up',
+    'Just a nudge',
+    'Tiny heads-up',
     'Psst'
   ],
   on_time: [
-    'Game time',
-    "Clock's up",
-    'All right',
-    'Let’s launch'
+    'It is time',
+    'You are up',
+    'Starting now',
+    'Right on time'
   ],
   post_start: [
     'Quick check-in',
-    'Still on it',
+    'Just checking',
     'Gentle nudge',
-    'Progress ping'
+    'Still with it'
   ],
   default: [
     'Friendly ping',
@@ -55,7 +55,7 @@ const reminderOpeners = {
   ]
 };
 
-const reminderEmojiPool = ['⚡', '✨', '💪', '🧠', '🔥'];
+const reminderEmojiPool = [':)', ':D', '^^'];
 
 const reminderClosings = [
   "Ping me when you wrap it.",
@@ -155,13 +155,13 @@ const buildSpecificReminderMessage = (task, reminderType) => {
 
   let actionPhrase;
   if (reminderType === 'on_time') {
-    actionPhrase = `Jump into "${taskTitle}" ${windowText}`;
+    actionPhrase = `Start ${taskTitle} ${windowText}`;
   } else if (reminderType === 'post_start') {
-    actionPhrase = `Quick check-in on "${taskTitle}" ${windowText}`;
+    actionPhrase = `Quick check-in on ${taskTitle} ${windowText}`;
   } else if (reminderType === '30_min') {
-    actionPhrase = `Get set for "${taskTitle}" ${windowText}`;
+    actionPhrase = `Get set for ${taskTitle} ${windowText}`;
   } else {
-    actionPhrase = `Carve out time for "${taskTitle}" ${windowText}`;
+    actionPhrase = `Carve out time for ${taskTitle} ${windowText}`;
   }
 
   const resolutionDetails =
@@ -169,7 +169,7 @@ const buildSpecificReminderMessage = (task, reminderType) => {
       ? buildResolutionDetails(task)
       : '';
 
-  return `${opener}! ${actionPhrase}. Give it about ${durationMinutes} minutes and keep me posted ${emoji} ${closing}${resolutionDetails}`;
+  return `${opener}. ${actionPhrase}. Aim for about ${durationMinutes} minutes and keep me posted ${emoji} ${closing}${resolutionDetails}`;
 };
 
 class AgentService {
@@ -646,3 +646,6 @@ class AgentService {
 }
 
 module.exports = new AgentService();
+
+
+

@@ -2,6 +2,7 @@ const { v4: uuid } = require('uuid');
 const agentService = require('./agent');
 const scheduleService = require('./scheduleService');
 const metricsStore = require('./metricsStore');
+const { DateTime } = require('luxon');
 let Queue;
 let Worker;
 let Redis;
@@ -32,6 +33,7 @@ async function runReminderJob(job) {
 
   if (type === 'morning-summary') {
     await agentService.sendMorningSummary(user);
+    await scheduleScheduleBlockReminders(user);
   } else if (type === 'task-reminder') {
     await agentService.sendReminder(user, task, task?.reminderType || '30_min');
   } else if (type === 'end-of-day') {
@@ -41,6 +43,47 @@ async function runReminderJob(job) {
   }
 
   console.log(`✅ Processed ${type} for user ${user.id}`);
+}
+
+async function scheduleScheduleBlockReminders(user) {
+  if (!user?.id) return [];
+  const timezone = user.timezone || 'UTC';
+  const blocks = await scheduleService.buildScheduleBlockInstances(user.id, new Date(), timezone);
+  if (!blocks.length) return [];
+  const nowUtc = DateTime.now().toUTC();
+  const scheduled = [];
+
+  for (const block of blocks) {
+    if (!block.start_time_utc) continue;
+    const start = DateTime.fromISO(block.start_time_utc, { zone: 'utc' });
+    if (!start.isValid || start <= nowUtc) continue;
+    let durationMinutes = 30;
+    if (block.end_time_utc) {
+      const end = DateTime.fromISO(block.end_time_utc, { zone: 'utc' });
+      const diff = (end.toMillis() - start.toMillis()) / 60000;
+      if (Number.isFinite(diff) && diff > 0) {
+        durationMinutes = Math.min(Math.round(diff), 180);
+      }
+    }
+    const pseudoTask = {
+      id: `schedule-${block.id}-${block.start_time_utc}`,
+      title: block.title,
+      category: block.category || 'Schedule',
+      start_time: block.start_time_utc,
+      end_time: block.end_time_utc,
+      duration_minutes: durationMinutes,
+      status: 'todo',
+      metadata: {
+        schedule_block_id: block.id,
+        location: block.location || null,
+        source: 'timetable'
+      }
+    };
+    const reminders = await QueueService.scheduleTaskReminders(user, pseudoTask);
+    scheduled.push(...reminders);
+  }
+
+  return scheduled;
 }
 
 function ensureRedisQueue() {
@@ -250,6 +293,10 @@ class QueueService {
       completed: completedJobs,
       failed: failedJobs
     };
+  }
+
+  static async scheduleScheduleBlockReminders(user) {
+    return scheduleScheduleBlockReminders(user);
   }
 }
 
