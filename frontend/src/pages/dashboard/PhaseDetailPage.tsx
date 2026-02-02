@@ -19,12 +19,14 @@ type Phase = {
 type RoadmapPayload = {
   roadmap: { id: string; goal_text: string };
   phases: Phase[];
+  plan_id?: string | null;
 };
 
 const PhaseDetailPage = () => {
   const { roadmapId, phaseId } = useParams();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase | null>(null);
+  const [planTasks, setPlanTasks] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -35,6 +37,11 @@ const PhaseDetailPage = () => {
         const response = await apiClient.get<RoadmapPayload>(`/resolution/roadmaps/${roadmapId}`);
         const match = response.data?.phases?.find((item) => item.id === phaseId) || null;
         setPhase(match);
+        if (response.data?.plan_id) {
+          const taskResponse = await apiClient.get(`/resolution/plan/${response.data.plan_id}/tasks`);
+          const tasks = taskResponse.data?.tasks || [];
+          setPlanTasks(tasks);
+        }
       } catch (err) {
         console.error(err);
         setError("Unable to load phase details.");
@@ -47,6 +54,42 @@ const PhaseDetailPage = () => {
     const criteria = phase?.completion_criteria_json?.criteria;
     if (Array.isArray(criteria) && criteria.length) return criteria;
     return [];
+  }, [phase]);
+
+  const learnItems = useMemo(() => {
+    if (phase?.what_to_learn_json?.length) {
+      return phase.what_to_learn_json;
+    }
+    if (phase?.topics_json?.length) {
+      return phase.topics_json.map((topic) => topic.title);
+    }
+    return [];
+  }, [phase]);
+
+  const deliverables = useMemo(() => {
+    return phase?.what_to_build_json || [];
+  }, [phase]);
+
+  const phaseTasksByDate = useMemo(() => {
+    if (!phase?.id) return {};
+    return planTasks
+      .filter((task) => task.phase_id === phase.id)
+      .reduce<Record<string, any[]>>((acc, task) => {
+        if (!acc[task.date]) acc[task.date] = [];
+        acc[task.date].push(task);
+        return acc;
+      }, {});
+  }, [planTasks, phase?.id]);
+
+  const resources = useMemo(() => {
+    const list = phase?.resources || [];
+    const seen = new Set<string>();
+    return list.filter((item) => {
+      if (!item.url) return false;
+      if (seen.has(item.url)) return false;
+      seen.add(item.url);
+      return true;
+    });
   }, [phase]);
 
   const handleComplete = async () => {
@@ -91,22 +134,22 @@ const PhaseDetailPage = () => {
         </div>
       </section>
 
-      {phase.what_to_learn_json?.length ? (
+      {learnItems.length ? (
         <section className="rounded-3xl border border-gray-200 bg-white p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-gray-500">What to learn</p>
           <ul className="mt-3 list-disc pl-5 text-sm text-gray-600">
-            {phase.what_to_learn_json.map((item) => (
+            {learnItems.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
         </section>
       ) : null}
 
-      {phase.what_to_build_json?.length ? (
+      {deliverables.length ? (
         <section className="rounded-3xl border border-gray-200 bg-white p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Deliverables</p>
           <ul className="mt-3 list-disc pl-5 text-sm text-gray-600">
-            {phase.what_to_build_json.map((item) => (
+            {deliverables.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
@@ -124,11 +167,11 @@ const PhaseDetailPage = () => {
         </section>
       ) : null}
 
-      {phase.resources && phase.resources.length > 0 && (
+      {resources.length > 0 && (
         <section className="rounded-3xl border border-gray-200 bg-white p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Resources</p>
           <div className="mt-3 space-y-2">
-            {phase.resources.map((resource) => (
+            {resources.map((resource) => (
               <a
                 key={resource.id}
                 href={resource.url}
@@ -142,6 +185,46 @@ const PhaseDetailPage = () => {
           </div>
         </section>
       )}
+
+      <section className="rounded-3xl border border-gray-200 bg-white p-6">
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Tasks mapped to your schedule</p>
+        <h3 className="mt-2 text-xl font-semibold text-black">Phase execution</h3>
+        {Object.keys(phaseTasksByDate).length === 0 ? (
+          <p className="mt-3 text-sm text-gray-500">No scheduled tasks tied to this phase yet.</p>
+        ) : (
+          <div className="mt-4 space-y-4">
+            {Object.entries(phaseTasksByDate).map(([date, tasks]) => (
+              <div key={date} className="rounded-2xl border border-gray-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{date}</p>
+                <div className="mt-3 space-y-2">
+                  {tasks.map((task: any) => (
+                    <div key={task.id} className="rounded-xl border border-gray-200 bg-white px-3 py-2">
+                      <p className="text-sm font-semibold text-black">{task.title}</p>
+                      {task.objective && <p className="text-xs text-gray-500">{task.objective}</p>}
+                      {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
+                      {task.resources_json?.length ? (
+                        <div className="mt-2 space-y-1">
+                          {task.resources_json.map((resource: any) => (
+                            <a
+                              key={`${task.id}-${resource.title}`}
+                              href={resource.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block text-xs text-brand-500"
+                            >
+                              {resource.title}
+                            </a>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 };
