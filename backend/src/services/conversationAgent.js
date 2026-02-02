@@ -2,6 +2,7 @@ const llmService = require('./llm');
 const toneController = require('./toneController');
 const conversationContext = require('./conversationContext');
 const { composeMessage } = require('./messageComposer');
+const { DateTime } = require('luxon');
 
 const MAX_MEMORY_TURNS = 6;
 
@@ -14,11 +15,16 @@ const extractOpeners = (turns = []) =>
 
 const safeList = (items) => (Array.isArray(items) ? items : []);
 
-const formatTasks = (tasks = []) =>
+const formatTimeForUser = (iso, timezone = 'UTC') => {
+  if (!iso) return 'anytime';
+  const dt = DateTime.fromISO(iso, { zone: 'utc' }).setZone(timezone || 'UTC');
+  if (!dt.isValid) return 'anytime';
+  return dt.toFormat('hh:mm a');
+};
+
+const formatTasks = (tasks = [], timezone = 'UTC') =>
   tasks.slice(0, 5).map((task) => {
-    const time = task.start_time
-      ? new Date(task.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : 'anytime';
+    const time = task.start_time ? formatTimeForUser(task.start_time, timezone) : 'anytime';
     return `- ${task.title} (${time})`;
   }).join('\n');
 
@@ -26,7 +32,8 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
   const toneContext = toneController.buildToneContext(user, context?.stats, context?.reminderStats);
   const reasons = Array.isArray(user?.reason_for_using) ? user.reason_for_using.join(', ') : user?.reason_for_using || '';
   const openers = extractOpeners(memoryTurns);
-  const tasksList = context?.tasks ? formatTasks(context.tasks) : '';
+  const timezone = user?.timezone || 'UTC';
+  const tasksList = context?.tasks ? formatTasks(context.tasks, timezone) : '';
 
   return [
     'You are Tenax, a friendly execution companion AI. You chat like a real person: natural, curious, and lightly coachy.',
@@ -39,6 +46,8 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     `- Do NOT start with any of these openings: ${openers.join(' | ') || 'none'}.`,
     '- Avoid repeating the same phrasing from recent replies.',
     '- Do not push the user into task planning repeatedly. Offer once, then keep the conversation flowing.',
+    '- Do not guess or mention the current time unless the user asks or provides a time.',
+    '- Do not repeat the same observation (e.g., time of day) across turns.',
     '',
     'User context:',
     `- Name: ${user?.preferred_name || user?.name || 'there'}`,
@@ -86,10 +95,9 @@ const fallbackReply = ({ intent, toolResult, user }) => {
     if (!toolResult.todoTasks.length) {
       return `You're clear for now. Want to add something for today?`;
     }
+    const timezone = user?.timezone || 'UTC';
     const list = toolResult.todoTasks.slice(0, 4).map((task) => {
-      const time = task.start_time
-        ? new Date(task.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : 'anytime';
+      const time = task.start_time ? formatTimeForUser(task.start_time, timezone) : 'anytime';
       return `- ${task.title} (${time})`;
     }).join('\n');
     return `Here's your lineup:\n${list}`;

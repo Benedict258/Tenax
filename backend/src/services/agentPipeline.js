@@ -67,6 +67,13 @@ function similarity(a, b) {
   return Math.max(0, 1 - distance / maxLen);
 }
 
+function formatTimeForUser(iso, timezone = 'UTC') {
+  if (!iso) return null;
+  const dt = DateTime.fromISO(iso, { zone: 'utc' }).setZone(timezone || 'UTC');
+  if (!dt.isValid) return null;
+  return dt.toFormat('hh:mm a');
+}
+
 function inferSeverity(taskTitle = '') {
   return P1_KEYWORDS.some((keyword) => taskTitle.toLowerCase().includes(keyword)) ? 'p1' : 'p2';
 }
@@ -148,11 +155,10 @@ function requestTaskClarification(session, intent, tasks, prompt, slots = {}) {
   });
 
   const taskMap = new Map(tasks.map((task) => [task.id, task]));
+  const timezone = session.user?.timezone || 'UTC';
   const taskList = options.map((option) => {
     const task = taskMap.get(option.id);
-    const timeLabel = task?.start_time
-      ? new Date(task.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : null;
+    const timeLabel = task?.start_time ? formatTimeForUser(task.start_time, timezone) : null;
     return `${option.index}. ${option.title}${timeLabel ? ` (${timeLabel})` : ''}`;
   }).join('\n');
   return {
@@ -281,7 +287,7 @@ async function handleAddTask(session, slots) {
   }
 
   const timingText = slots.targetTime
-    ? ` for ${new Date(slots.targetTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    ? ` for ${formatTimeForUser(slots.targetTime, session.user?.timezone || 'UTC')}`
     : '';
   const recurrenceText = slots.recurrence ? ` (${slots.recurrence})` : '';
   return {
@@ -412,7 +418,7 @@ async function handleDailyEnd(session) {
 async function handleReminderSnooze(session, slots) {
   const minutes = slots.minutes || 30;
   const until = reminderPreferences.snooze(session.user.id, minutes);
-  const resumeTime = new Date(until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const resumeTime = formatTimeForUser(new Date(until).toISOString(), session.user?.timezone || 'UTC');
   return { action: 'reminder_snooze', minutes, resumeTime };
 }
 
@@ -441,7 +447,7 @@ async function handleGreeting(session) {
 
 async function handleScheduleNote(session, slots) {
   const timeLabel = slots?.targetTime
-    ? new Date(slots.targetTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    ? formatTimeForUser(slots.targetTime, session.user?.timezone || 'UTC')
     : null;
   return { action: 'schedule_note', timeLabel };
 }
@@ -636,7 +642,7 @@ async function handleMessage({
   const pendingAction = conversationContext.getPendingAction(resolvedUser.id);
 
   if (pendingAction) {
-    parsed = nluService.resolvePendingAction(text, pendingAction);
+    parsed = nluService.resolvePendingAction(text, pendingAction, { timezone: resolvedUser.timezone || 'UTC' });
     if (parsed) {
       conversationContext.consumePendingAction(resolvedUser.id);
       if (pendingAction.type === 'timetable_confirmation') {
@@ -649,7 +655,7 @@ async function handleMessage({
   }
 
   if (!parsed) {
-    parsed = nluService.parseMessage(text, { allowPlanFallback: true });
+    parsed = nluService.parseMessage(text, { allowPlanFallback: true, timezone: resolvedUser.timezone || 'UTC' });
   }
 
   if (parsed?.intent === 'unknown') {

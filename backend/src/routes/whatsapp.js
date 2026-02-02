@@ -41,6 +41,10 @@ router.post('/webhook', async (req, res) => {
     }
 
     const phoneNumber = From.replace('whatsapp:', '');
+    const twilioNumber = (process.env.TWILIO_WHATSAPP_NUMBER || '').replace('whatsapp:', '');
+    if (twilioNumber && phoneNumber === twilioNumber) {
+      return res.status(200).send('Ignored system message');
+    }
     console.log('[WhatsApp] Inbound', {
       from: phoneNumber,
       messageSid: MessageSid || null,

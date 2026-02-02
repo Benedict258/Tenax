@@ -1,4 +1,5 @@
 const chrono = require('chrono-node');
+const { DateTime } = require('luxon');
 const llmService = require('./llm');
 
 const COMPLETION_PREFIXES = ['done', 'finished', 'completed'];
@@ -53,21 +54,34 @@ function detectRecurrence(text) {
   return null;
 }
 
-function extractTimeData(text) {
+function extractTimeData(text, timezone = 'UTC') {
   if (!text) return null;
+  const zone = timezone || 'UTC';
+  const now = DateTime.now().setZone(zone);
   const byMatch = text.match(/\bby\s+(\d{1,2}(:\d{2})?\s*(am|pm)?)\b/i);
   if (byMatch) {
-    const quick = chrono.parse(byMatch[1], new Date(), { forwardDate: true });
+    const quick = chrono.parse(byMatch[1], now.toJSDate(), { forwardDate: true });
     if (quick.length && quick[0]?.start?.date?.()) {
-      const date = quick[0].start.date();
+      const result = quick[0].start;
+      const year = result.get('year') || now.year;
+      const month = result.get('month') || now.month;
+      const day = result.get('day') || now.day;
+      const hour = result.get('hour') || 0;
+      const minute = result.get('minute') || 0;
+      const dt = DateTime.fromObject(
+        { year, month, day, hour, minute, second: 0, millisecond: 0 },
+        { zone }
+      );
+      const date = dt.toJSDate();
       return {
-        iso: date.toISOString(),
+        iso: dt.toUTC().toISO(),
         matchedText: byMatch[0],
-        date
+        date,
+        timezone: zone
       };
     }
   }
-  const results = chrono.parse(text, new Date(), { forwardDate: true });
+  const results = chrono.parse(text, now.toJSDate(), { forwardDate: true });
   if (!results.length) {
     return null;
   }
@@ -79,14 +93,25 @@ function extractTimeData(text) {
   };
 
   const preferred = results.find(hasExplicitTime) || results[0];
-  const date = preferred.start?.date?.();
-  if (!date) {
+  const start = preferred.start;
+  if (!start) {
     return null;
   }
+  const year = start.get('year') || now.year;
+  const month = start.get('month') || now.month;
+  const day = start.get('day') || now.day;
+  const hour = start.get('hour') || 0;
+  const minute = start.get('minute') || 0;
+  const dt = DateTime.fromObject(
+    { year, month, day, hour, minute, second: 0, millisecond: 0 },
+    { zone }
+  );
+  const date = dt.toJSDate();
   return {
-    iso: date.toISOString(),
+    iso: dt.toUTC().toISO(),
     matchedText: preferred.text,
-    date
+    date,
+    timezone: zone
   };
 }
 
@@ -147,10 +172,10 @@ function buildIntentResponse(intent, confidence, slots = {}, metadata = {}) {
   return { intent, confidence, slots, metadata };
 }
 
-function parseTaskAddition(text) {
+function parseTaskAddition(text, timezone) {
   const normalized = text.trim();
   const recurrence = detectRecurrence(normalized);
-  const timeData = extractTimeData(normalized);
+  const timeData = extractTimeData(normalized, timezone);
   let taskName = normalized;
   if (timeData?.matchedText) {
     taskName = removeMatchedText(taskName, [timeData.matchedText]);
@@ -174,10 +199,10 @@ function parseTaskRemoval(text) {
   return buildIntentResponse('remove_task', 0.9, { taskName, title: taskName });
 }
 
-function parseTaskReschedule(text) {
+function parseTaskReschedule(text, timezone) {
   const deferMatch = text.match(/tomorrow|next day|push/i);
   const deferDays = deferMatch ? 1 : 0;
-  const timeData = extractTimeData(text);
+  const timeData = extractTimeData(text, timezone);
   const recurrence = detectRecurrence(text);
   let taskName = text.replace(/^(move|shift|reschedule)\s+/i, '').trim();
   if (timeData?.matchedText) {
@@ -246,8 +271,8 @@ function parseGreeting(text) {
   return buildIntentResponse('greeting', 0.86, { text });
 }
 
-function parseScheduleNote(text) {
-  const timeData = extractTimeData(text);
+function parseScheduleNote(text, timezone) {
+  const timeData = extractTimeData(text, timezone);
   return buildIntentResponse('schedule_note', 0.7, {
     note: text.trim(),
     targetTime: timeData?.iso || null,
@@ -265,6 +290,7 @@ function parseMessage(rawText, options = {}) {
   }
   const text = rawText.trim();
   const normalized = normalize(text);
+  const timezone = options.timezone || 'UTC';
 
   if (COMPLETION_PREFIXES.some((prefix) => normalized.startsWith(prefix))) {
     return parseCompletion(text);
@@ -295,11 +321,11 @@ function parseMessage(rawText, options = {}) {
   }
 
   if (normalized.startsWith('add') || normalized.startsWith('create') || normalized.startsWith('schedule')) {
-    return parseTaskAddition(text);
+    return parseTaskAddition(text, timezone);
   }
 
   if (ADD_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
-    const parsed = parseTaskAddition(text);
+    const parsed = parseTaskAddition(text, timezone);
     return buildIntentResponse(parsed.intent, 0.8, parsed.slots);
   }
 
@@ -312,7 +338,7 @@ function parseMessage(rawText, options = {}) {
   }
 
   if (RESCHEDULE_TRIGGERS.some((trigger) => normalized.startsWith(trigger))) {
-    return parseTaskReschedule(text);
+    return parseTaskReschedule(text, timezone);
   }
 
   if (REMINDER_SNOOZE_TRIGGERS.some((phrase) => normalized.startsWith(phrase))) {
@@ -332,7 +358,7 @@ function parseMessage(rawText, options = {}) {
   }
 
   if (SCHEDULE_NOTE_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
-    return parseScheduleNote(text);
+    return parseScheduleNote(text, timezone);
   }
 
   if (options.allowPlanFallback && normalized.includes('plan')) {
@@ -342,11 +368,12 @@ function parseMessage(rawText, options = {}) {
   return parseUnknown(text);
 }
 
-function resolvePendingAction(rawText, pendingAction) {
+function resolvePendingAction(rawText, pendingAction, options = {}) {
   if (!pendingAction || !rawText) {
     return null;
   }
   const normalized = normalize(rawText);
+  const timezone = options.timezone || 'UTC';
 
   if (pendingAction.type === 'task_disambiguation') {
     const numericMatch = normalized.match(/(\d+)/);
@@ -383,7 +410,7 @@ function resolvePendingAction(rawText, pendingAction) {
         noFixedTime: true
       }, { clarified: true });
     }
-    const timeData = extractTimeData(rawText);
+    const timeData = extractTimeData(rawText, timezone);
     if (timeData) {
       return buildIntentResponse(pendingAction.intent, 0.92, {
         ...(pendingAction.slots || {}),
