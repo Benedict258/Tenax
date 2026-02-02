@@ -76,8 +76,9 @@ const PhaseDetailPage = () => {
     return planTasks
       .filter((task) => task.phase_id === phase.id)
       .reduce<Record<string, typeof planTasks>>((acc, task) => {
-        if (!acc[task.date]) acc[task.date] = [];
-        acc[task.date].push(task);
+        const dateKey = task.date || "unscheduled";
+        if (!acc[dateKey]) acc[dateKey] = [];
+        acc[dateKey].push(task);
         return acc;
       }, {});
   }, [planTasks, phase?.id]);
