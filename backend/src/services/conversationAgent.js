@@ -58,6 +58,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     '',
     'Rules for your reply:',
     '- Always respond as a natural chat message.',
+    '- If the user is known (has a name), avoid "Nice to meet you" or first-time greetings.',
     '- If toolResult.requires_selection is true, include the options list and end with: "Reply with the number or the task name."',
     '- If toolResult.requires_time is true, ask for the time or "no fixed time".',
     '- If toolResult.requires_title is true, ask what task they want to add with a quick example.',
@@ -105,7 +106,7 @@ const fallbackReply = ({ intent, toolResult, user }) => {
   if (intent === 'greeting') {
     const tone = toneController.buildToneContext(user).tone;
     return composeMessage('greeting', tone, { name: user?.preferred_name || user?.name || 'there' }) ||
-      `Hey ${user?.preferred_name || user?.name || 'there'}! Good to see you. Want to chat or plan your day?`;
+      `Hey ${user?.preferred_name || user?.name || 'there'}! Good to see you.`;
   }
   return "Got it. I'm here if you want to talk, plan, or update a task.";
 };
