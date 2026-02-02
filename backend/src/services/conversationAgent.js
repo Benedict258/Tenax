@@ -34,6 +34,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
   const openers = extractOpeners(memoryTurns);
   const timezone = user?.timezone || 'UTC';
   const tasksList = context?.tasks ? formatTasks(context.tasks, timezone) : '';
+  const currentTime = context?.currentTime || '';
 
   return [
     'You are Tenax, a friendly execution companion AI. You chat like a real person: natural, curious, and lightly coachy.',
@@ -62,12 +63,14 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     'System state:',
     `- Intent: ${intent || 'chat'}`,
     toolResult ? `- Tool result: ${JSON.stringify(toolResult)}` : '- Tool result: none',
+    currentTime ? `- Current time (user timezone): ${currentTime}` : '- Current time: unavailable',
     '',
     context?.tasks ? `Today/Upcoming tasks:\n${tasksList || 'No tasks'}` : 'Tasks: unavailable',
     '',
     'Rules for your reply:',
     '- Always respond as a natural chat message.',
     '- If the user is known (has a name), avoid "Nice to meet you" or first-time greetings.',
+    '- If the user asks for the current time, answer with the provided current time and timezone.',
     '- If toolResult.requires_selection is true, include the options list and end with: "Reply with the number or the task name."',
     '- If toolResult.requires_time is true, ask for the time or "no fixed time".',
     '- If toolResult.requires_title is true, ask what task they want to add with a quick example.',

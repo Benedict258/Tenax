@@ -718,6 +718,8 @@ async function handleMessage({
     Task.getTodaysTasks(resolvedUser.id),
     agentService.calculateCompletionStats(resolvedUser)
   ]);
+  const userTimezone = resolvedUser.timezone || 'UTC';
+  const currentTime = DateTime.now().setZone(userTimezone).toFormat('hh:mm a');
 
   const reply = await conversationAgent.generateAssistantReply({
     user: resolvedUser,
@@ -728,7 +730,9 @@ async function handleMessage({
     context: {
       tasks: todaysTasks,
       stats,
-      reminderStats: metricsStore.getReminderStats(resolvedUser.id)
+      reminderStats: metricsStore.getReminderStats(resolvedUser.id),
+      currentTime,
+      timezone: userTimezone
     }
   });
 
