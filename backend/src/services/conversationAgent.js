@@ -29,7 +29,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
   const tasksList = context?.tasks ? formatTasks(context.tasks) : '';
 
   return [
-    'You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.',
+    'You are Tenax, a friendly execution companion AI. You chat like a real person: natural, curious, and lightly coachy.',
     'Tone policy:',
     '- Be warm, direct, and helpful. Avoid robotic templates.',
     '- Use short sentences. Optional light emoji (0-2).',
@@ -38,6 +38,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     'Variation policy:',
     `- Do NOT start with any of these openings: ${openers.join(' | ') || 'none'}.`,
     '- Avoid repeating the same phrasing from recent replies.',
+    '- Do not push the user into task planning repeatedly. Offer once, then keep the conversation flowing.',
     '',
     'User context:',
     `- Name: ${user?.preferred_name || user?.name || 'there'}`,
@@ -61,7 +62,11 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     '- If toolResult.requires_time is true, ask for the time or "no fixed time".',
     '- If toolResult.requires_title is true, ask what task they want to add with a quick example.',
     '- If intent is status, summarize tasks in 2-4 lines, not a template.',
-    '- If no tasks exist, ask what they want to accomplish today.',
+    '- If no tasks exist, do not pressure them. Offer help or ask if they want to plan, but only once.',
+    '- If the user says they are busy or unmotivated, respond with empathy and one small suggestion. Ask permission before coaching more.',
+    '- If the user asks about your goal, answer briefly and keep the focus on them without forcing a task question.',
+    '- Ask a question only when it helps the conversation. It is okay to end without a question.',
+    '- Keep responses conversational: include a short reflective line when appropriate.',
     '',
     `User message: ${message}`
   ].join('\n');
@@ -71,14 +76,14 @@ const fallbackReply = ({ intent, toolResult, user }) => {
   if (toolResult?.action === 'add_task' && toolResult?.status === 'created') {
     const timing = toolResult.timingText || '';
     const recurrence = toolResult.recurrenceText || '';
-    return `Added "${toolResult.task?.title || 'task'}"${timing}${recurrence}. Tell me when it’s done.`;
+    return `Added "${toolResult.task?.title || 'task'}"${timing}${recurrence}. Tell me when it's done.`;
   }
   if (toolResult?.action === 'mark_complete' && toolResult?.status === 'completed') {
-    return `Nice — "${toolResult.task?.title || 'that'}" is marked complete ✅`;
+    return `Nice - "${toolResult.task?.title || 'that'}" is marked complete.`;
   }
   if (toolResult?.action === 'status' && Array.isArray(toolResult.todoTasks)) {
     if (!toolResult.todoTasks.length) {
-      return `You’re clear for now. Want to add something for today?`;
+      return `You're clear for now. Want to add something for today?`;
     }
     const list = toolResult.todoTasks.slice(0, 4).map((task) => {
       const time = task.start_time
@@ -86,7 +91,7 @@ const fallbackReply = ({ intent, toolResult, user }) => {
         : 'anytime';
       return `- ${task.title} (${time})`;
     }).join('\n');
-    return `Here’s your lineup:\n${list}`;
+    return `Here's your lineup:\n${list}`;
   }
   if (toolResult?.requires_selection && toolResult?.optionsList) {
     return `${toolResult.prompt}\n\n${toolResult.optionsList}\n\nReply with the number or the task name.`;
@@ -100,9 +105,9 @@ const fallbackReply = ({ intent, toolResult, user }) => {
   if (intent === 'greeting') {
     const tone = toneController.buildToneContext(user).tone;
     return composeMessage('greeting', tone, { name: user?.preferred_name || user?.name || 'there' }) ||
-      `Hey ${user?.preferred_name || user?.name || 'there'}! What are we locking in today?`;
+      `Hey ${user?.preferred_name || user?.name || 'there'}! Good to see you. Want to chat or plan your day?`;
   }
-  return 'Got it. Tell me what you want to do next and I will handle it.';
+  return "Got it. I'm here if you want to talk, plan, or update a task.";
 };
 
 async function generateAssistantReply({ user, message, intent, toolResult, memoryTurns = [], context = {} }) {
@@ -111,11 +116,7 @@ async function generateAssistantReply({ user, message, intent, toolResult, memor
     const response = await llmService.generate(prompt, {
       maxTokens: 160,
       temperature: 0.7,
-<<<<<<< ours
-      preferredModel: null,
-=======
-      preferredModel: 'gemini',
->>>>>>> theirs
+      preferredModel: 'groq',
       opikMeta: {
         action: 'conversation_agent_reply',
         user_id: user?.id,
@@ -136,3 +137,4 @@ async function generateAssistantReply({ user, message, intent, toolResult, memor
 module.exports = {
   generateAssistantReply
 };
+

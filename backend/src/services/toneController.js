@@ -5,7 +5,7 @@ function selectTone({ completionRate = 0, streakDays = 0, reminderStats = { sent
   if (completionRate >= 70) return 'friendly_supportive';
   if (completionRate >= 45) return 'focused_coach';
   if (reminderStats.sent > 0 && reminderStats.completed === 0) return 'strict_but_supportive';
-  return 'strict_but_supportive';
+  return 'friendly_supportive';
 }
 
 function buildToneContext(user, stats = {}, reminderStats = {}) {
@@ -25,4 +25,3 @@ module.exports = {
   selectTone,
   buildToneContext
 };
-
