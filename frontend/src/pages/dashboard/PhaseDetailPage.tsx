@@ -9,6 +9,7 @@ type Phase = {
   title: string;
   description: string | null;
   phase_objective: string | null;
+  objectives_json?: string[];
   what_to_learn_json?: string[];
   what_to_build_json?: string[];
   topics_json?: Array<{ title: string }>;
@@ -67,9 +68,26 @@ const PhaseDetailPage = () => {
     return [];
   }, [phase]);
 
-  const deliverables = useMemo(() => {
-    return phase?.what_to_build_json || [];
-  }, [phase]);
+  const deliverables = useMemo(() => phase?.what_to_build_json || [], [phase]);
+
+  const learningOutcomes = useMemo(() => {
+    if (phase?.objectives_json?.length) {
+      return phase.objectives_json;
+    }
+    return learnItems;
+  }, [phase, learnItems]);
+
+  const objectiveText = phase?.phase_objective || phase?.description || "";
+  const endGoalText = useMemo(() => {
+    const criteria = phase?.completion_criteria_json?.criteria;
+    if (Array.isArray(criteria) && criteria.length) {
+      return criteria[0];
+    }
+    if (deliverables.length) {
+      return deliverables[deliverables.length - 1];
+    }
+    return "";
+  }, [phase, deliverables]);
 
   const phaseTasksByDate = useMemo(() => {
     if (!phase?.id) return {};
@@ -126,8 +144,20 @@ const PhaseDetailPage = () => {
       <section className="rounded-3xl border border-gray-200 bg-white p-6">
         <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Phase {phase.phase_index + 1}</p>
         <h1 className="mt-2 text-2xl font-semibold text-black">{phase.title}</h1>
-        {phase.description && <p className="mt-2 text-sm text-gray-600">{phase.description}</p>}
-        {phase.phase_objective && <p className="mt-2 text-sm text-brand-500">{phase.phase_objective}</p>}
+        {objectiveText && (
+          <div className="mt-4 space-y-3 text-sm text-gray-600">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Objective</p>
+              <p className="mt-2">{objectiveText}</p>
+            </div>
+            {endGoalText && (
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">End goal</p>
+                <p className="mt-2">{endGoalText}</p>
+              </div>
+            )}
+          </div>
+        )}
         <div className="mt-4 flex gap-3">
           <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
           <Button variant="outline" onClick={handleComplete} disabled={phase.completion_status === "completed" || saving}>
@@ -136,11 +166,11 @@ const PhaseDetailPage = () => {
         </div>
       </section>
 
-      {learnItems.length ? (
+      {learningOutcomes.length ? (
         <section className="rounded-3xl border border-gray-200 bg-white p-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">What to learn</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Learning outcomes</p>
           <ul className="mt-3 list-disc pl-5 text-sm text-gray-600">
-            {learnItems.map((item) => (
+            {learningOutcomes.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
