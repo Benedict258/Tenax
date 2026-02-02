@@ -29,9 +29,10 @@ const formatTasks = (tasks = [], timezone = 'UTC') =>
   }).join('\n');
 
 const formatScheduleBlocks = (blocks = []) =>
-  blocks.slice(0, 5).map((block) => {
+  blocks.slice(0, 7).map((block) => {
     const label = block.timeLabel || (block.start_time ? formatTimeForUser(block.start_time) : 'anytime');
-    return `- ${block.title} (${label})`;
+    const dayLabel = block.dayLabel ? `${block.dayLabel} · ` : '';
+    return `- ${dayLabel}${block.title} (${label})`;
   }).join('\n');
 
 const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }) => {
@@ -142,7 +143,8 @@ const fallbackReply = ({ intent, toolResult, user }) => {
     }
     const list = blocks.slice(0, 5).map((block) => {
       const label = block.timeLabel || 'scheduled';
-      return `- ${block.title} (${label})`;
+      const dayLabel = block.dayLabel ? `${block.dayLabel} · ` : '';
+      return `- ${dayLabel}${block.title} (${label})`;
     }).join('\n');
     return `Here is what is on your schedule:\n${list}`;
   }
@@ -166,6 +168,9 @@ const fallbackReply = ({ intent, toolResult, user }) => {
 async function generateAssistantReply({ user, message, intent, toolResult, memoryTurns = [], context = {} }) {
   if (toolResult?.action === 'time_now' && toolResult?.currentTime) {
     return `It is ${toolResult.currentTime} your time.`;
+  }
+  if (toolResult?.action === 'schedule_query') {
+    return fallbackReply({ intent, toolResult, user });
   }
   const prompt = buildPrompt({ user, message, intent, toolResult, memoryTurns, context });
   try {

@@ -508,23 +508,41 @@ async function handleScheduleQuery(session, slots) {
   if (slots?.dayOffset) {
     baseDate.setDate(baseDate.getDate() + slots.dayOffset);
   }
-  const scheduleBlocks = await scheduleService.buildScheduleBlockInstances(session.user.id, baseDate, timezone);
-  const blocks = (scheduleBlocks || [])
-    .filter((block) => block.start_time_utc)
-    .map((block) => ({
-      id: block.id,
-      title: block.title,
-      location: block.location,
-      category: block.category,
-      start_time: block.start_time_utc,
-      end_time: block.end_time_utc,
-      timeLabel: formatTimeForUser(block.start_time_utc, timezone),
-      endLabel: formatTimeForUser(block.end_time_utc, timezone)
-    }));
+  const rangeDays = slots?.rangeDays || 0;
+  const datesToCheck = rangeDays > 0
+    ? Array.from({ length: rangeDays }).map((_, idx) => {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + idx);
+      return d;
+    })
+    : [baseDate];
+
+  const scheduleBlocks = [];
+  for (const date of datesToCheck) {
+    const blocksForDay = await scheduleService.buildScheduleBlockInstances(session.user.id, date, timezone);
+    const dateLabel = DateTime.fromJSDate(date).setZone(timezone).toFormat('cccc');
+    blocksForDay
+      .filter((block) => block.start_time_utc)
+      .forEach((block) => {
+        scheduleBlocks.push({
+          id: block.id,
+          title: block.title,
+          location: block.location,
+          category: block.category,
+          start_time: block.start_time_utc,
+          end_time: block.end_time_utc,
+          timeLabel: formatTimeForUser(block.start_time_utc, timezone),
+          endLabel: formatTimeForUser(block.end_time_utc, timezone),
+          dayLabel: dateLabel
+        });
+      });
+  }
+
   return {
     action: 'schedule_query',
-    scheduleBlocks: blocks,
-    targetDate: baseDate.toISOString()
+    scheduleBlocks,
+    targetDate: baseDate.toISOString(),
+    rangeDays
   };
 }
 

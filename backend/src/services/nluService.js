@@ -55,7 +55,11 @@ const SCHEDULE_QUERY_TRIGGERS = [
   'what do i have tomorrow',
   'what do i have next',
   'what is on my schedule',
-  'check my schedule'
+  'check my schedule',
+  'weekly schedule',
+  'my weekly schedule',
+  'what is on my weekly schedule',
+  'what about my weekly schedule'
 ];
 
 const normalize = (text) => text.toLowerCase().trim();
@@ -310,9 +314,11 @@ function parseScheduleNote(text, timezone) {
 function parseScheduleQuery(text, timezone) {
   const timeData = extractTimeData(text, timezone);
   const dayOffset = /tomorrow/i.test(text) ? 1 : /next\s+week/i.test(text) ? 7 : 0;
+  const rangeDays = /weekly schedule|my weekly schedule|week\b/i.test(text) ? 7 : 0;
   return buildIntentResponse('schedule_query', 0.88, {
     targetDate: timeData?.date ? timeData.date.toISOString() : null,
-    dayOffset
+    dayOffset,
+    rangeDays
   });
 }
 
