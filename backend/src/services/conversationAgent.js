@@ -89,6 +89,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     '- If no tasks exist, do not pressure them. Offer help or ask if they want to plan, but only once.',
     '- If the user says they are busy or unmotivated, respond with empathy and one small suggestion. Ask permission before coaching more.',
     '- If the user asks about your goal, answer briefly and keep the focus on them without forcing a task question.',
+    '- Do not claim you can see the dashboard unless scheduleBlocks are provided in toolResult.',
     '- Ask a question only when it helps the conversation. It is okay to end without a question.',
     '- Keep responses conversational: include a short reflective line when appropriate.',
     '',
@@ -133,6 +134,17 @@ const fallbackReply = ({ intent, toolResult, user }) => {
       return `Here's your lineup:\n${list}\n\nFixed blocks today:\n${scheduleLines}`;
     }
     return `Here's your lineup:\n${list}`;
+  }
+  if (toolResult?.action === 'schedule_query') {
+    const blocks = toolResult.scheduleBlocks || [];
+    if (!blocks.length) {
+      return "I do not see any schedule blocks for that day yet. If you want, upload or add them and I will keep them in view.";
+    }
+    const list = blocks.slice(0, 5).map((block) => {
+      const label = block.timeLabel || 'scheduled';
+      return `- ${block.title} (${label})`;
+    }).join('\n');
+    return `Here is what is on your schedule:\n${list}`;
   }
   if (toolResult?.requires_selection && toolResult?.optionsList) {
     return `${toolResult.prompt}\n\n${toolResult.optionsList}\n\nReply with the number or the task name.`;

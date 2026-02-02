@@ -44,6 +44,19 @@ const WEEKDAY_KEYWORDS = ['weekdays', 'every weekday'];
 const WEEKEND_KEYWORDS = ['weekends', 'weekend'];
 const TIMETABLE_TRIGGERS = ['timetable', 'course list', 'class schedule', 'courses i am taking', 'class timetable'];
 const SCHEDULE_NOTE_TRIGGERS = ['lecture', 'class', 'meeting', 'seminar', 'workshop', 'busy', 'unavailable'];
+const SCHEDULE_QUERY_TRIGGERS = [
+  'what classes',
+  'what class',
+  'classes tomorrow',
+  'class tomorrow',
+  'schedule tomorrow',
+  'my schedule tomorrow',
+  'tomorrow schedule',
+  'what do i have tomorrow',
+  'what do i have next',
+  'what is on my schedule',
+  'check my schedule'
+];
 
 const normalize = (text) => text.toLowerCase().trim();
 
@@ -294,6 +307,15 @@ function parseScheduleNote(text, timezone) {
   });
 }
 
+function parseScheduleQuery(text, timezone) {
+  const timeData = extractTimeData(text, timezone);
+  const dayOffset = /tomorrow/i.test(text) ? 1 : /next\s+week/i.test(text) ? 7 : 0;
+  return buildIntentResponse('schedule_query', 0.88, {
+    targetDate: timeData?.date ? timeData.date.toISOString() : null,
+    dayOffset
+  });
+}
+
 function parseUnknown(text) {
   return buildIntentResponse('unknown', 0.2, { originalText: text });
 }
@@ -373,6 +395,10 @@ function parseMessage(rawText, options = {}) {
 
   if (TIME_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
     return parseTimeNow();
+  }
+
+  if (SCHEDULE_QUERY_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+    return parseScheduleQuery(text, timezone);
   }
 
   if (SCHEDULE_NOTE_TRIGGERS.some((phrase) => normalized.includes(phrase))) {

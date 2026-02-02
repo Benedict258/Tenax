@@ -32,8 +32,9 @@ const GUARD_ALLOWED_INTENTS = new Set([
   'daily_end',
   'reminder_snooze',
   'reminder_pause',
-  'greeting'
-  ,'time_now'
+  'greeting',
+  'time_now',
+  'schedule_query'
 ]);
 
 const P1_KEYWORDS = ['p1', 'deep work', 'priority 1', 'critical focus'];
@@ -501,6 +502,32 @@ async function handleScheduleNote(session, slots) {
   return { action: 'schedule_note', timeLabel };
 }
 
+async function handleScheduleQuery(session, slots) {
+  const timezone = session.user?.timezone || 'UTC';
+  const baseDate = slots?.targetDate ? new Date(slots.targetDate) : new Date();
+  if (slots?.dayOffset) {
+    baseDate.setDate(baseDate.getDate() + slots.dayOffset);
+  }
+  const scheduleBlocks = await scheduleService.buildScheduleBlockInstances(session.user.id, baseDate, timezone);
+  const blocks = (scheduleBlocks || [])
+    .filter((block) => block.start_time_utc)
+    .map((block) => ({
+      id: block.id,
+      title: block.title,
+      location: block.location,
+      category: block.category,
+      start_time: block.start_time_utc,
+      end_time: block.end_time_utc,
+      timeLabel: formatTimeForUser(block.start_time_utc, timezone),
+      endLabel: formatTimeForUser(block.end_time_utc, timezone)
+    }));
+  return {
+    action: 'schedule_query',
+    scheduleBlocks: blocks,
+    targetDate: baseDate.toISOString()
+  };
+}
+
 
 function getNextOccurrenceISO(dayOfWeek, time, timezone = 'UTC') {
   const now = DateTime.now().setZone(timezone);
@@ -602,6 +629,8 @@ async function routeIntent(session, parsed, extras) {
       return handleTimeNow(session);
     case 'schedule_note':
       return handleScheduleNote(session, parsed.slots);
+    case 'schedule_query':
+      return handleScheduleQuery(session, parsed.slots);
     case 'upload_timetable':
       return handleTimetableUpload(session, extras.rawText || '');
     case 'import_timetable_confirm':

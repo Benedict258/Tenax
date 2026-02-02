@@ -11,6 +11,7 @@ type Phase = {
   phase_objective: string | null;
   what_to_learn_json?: string[];
   what_to_build_json?: string[];
+  topics_json?: Array<{ title: string }>;
   resources?: Array<{ id: string; title: string; url: string; type?: string | null }>;
   completion_status: string;
   completion_criteria_json?: { type?: string; threshold?: number; criteria?: string[] };
@@ -26,7 +27,7 @@ const PhaseDetailPage = () => {
   const { roadmapId, phaseId } = useParams();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase | null>(null);
-  const [planTasks, setPlanTasks] = useState<any[]>([]);
+  const [planTasks, setPlanTasks] = useState<Array<{ id: string; phase_id?: string | null; date?: string | null; title: string; objective?: string | null; description?: string | null; resources_json?: Array<{ title?: string; url?: string }> }>>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -61,7 +62,7 @@ const PhaseDetailPage = () => {
       return phase.what_to_learn_json;
     }
     if (phase?.topics_json?.length) {
-      return phase.topics_json.map((topic) => topic.title);
+      return phase.topics_json.map((topic: { title: string }) => topic.title);
     }
     return [];
   }, [phase]);
@@ -74,7 +75,7 @@ const PhaseDetailPage = () => {
     if (!phase?.id) return {};
     return planTasks
       .filter((task) => task.phase_id === phase.id)
-      .reduce<Record<string, any[]>>((acc, task) => {
+      .reduce<Record<string, typeof planTasks>>((acc, task) => {
         if (!acc[task.date]) acc[task.date] = [];
         acc[task.date].push(task);
         return acc;
@@ -197,7 +198,7 @@ const PhaseDetailPage = () => {
               <div key={date} className="rounded-2xl border border-gray-200 bg-white p-4">
                 <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{date}</p>
                 <div className="mt-3 space-y-2">
-                  {tasks.map((task: any) => (
+                  {tasks.map((task) => (
                     <div key={task.id} className="rounded-xl border border-gray-200 bg-white px-3 py-2">
                       <p className="text-sm font-semibold text-black">{task.title}</p>
                       {task.objective && <p className="text-xs text-gray-500">{task.objective}</p>}
