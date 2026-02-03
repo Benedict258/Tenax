@@ -14,7 +14,12 @@ const STATUS_TRIGGERS = [
   "what's my plan",
   'show my plan',
   'what is my plan',
-  'plan'
+  'plan',
+  'have you added',
+  'did you add',
+  'is it added',
+  'is the task added',
+  'have you set it'
 ];
 const PROGRESS_TRIGGERS = [
   'how did i do',
@@ -300,6 +305,16 @@ function parseTaskAddition(text, timezone) {
     taskName = removeMatchedText(taskName, [recurrence.matchedText]);
   }
   const cleaned = cleanTaskTitle(taskName);
+  const normalizedClean = normalize(cleaned);
+  if (!cleaned || GENERIC_TASK_NAMES.has(normalizedClean) || cleaned.length < 3) {
+    return buildIntentResponse('add_task', 0.7, {
+      taskName: '',
+      title: '',
+      recurrence: recurrence?.value || null,
+      targetTime: timeData?.iso || null,
+      datetime: timeData?.iso || null
+    });
+  }
   return buildIntentResponse('add_task', 0.94, {
     taskName: cleaned,
     title: cleaned,
@@ -453,6 +468,10 @@ function parseMessage(rawText, options = {}) {
 
   if (normalized.includes('schedule') && /\?$/.test(normalized)) {
     return parseScheduleQuery(text, timezone);
+  }
+
+  if (normalized.includes('?') && (normalized.includes('task') || normalized.includes('schedule'))) {
+    return parseStatusIntent();
   }
 
   if ((normalized.includes('schedule') || normalized.includes('schedules') || normalized.includes('classes')) &&
@@ -655,6 +674,41 @@ async function inferCompletionWithLLM(text, userId) {
   }
 }
 
+async function extractTaskTitleWithLLM(text, userId) {
+  if (!text || text.trim().length < 3) return '';
+  const prompt = [
+    'You are a strict JSON extractor.',
+    'Extract the task title the user wants to add.',
+    'Return JSON only in the format:',
+    '{"title":"<task title or empty>"}',
+    'Rules:',
+    '- Remove filler like "add", "set a reminder", "please", "today", "by 6pm".',
+    '- Keep it short and concrete.',
+    '- If no task is present, return empty.',
+    'Message: ' + text.trim()
+  ].join('\n');
+
+  try {
+    const response = await llmService.generate(prompt, {
+      maxTokens: 60,
+      temperature: 0,
+      opikMeta: {
+        action: 'extract_task_title',
+        user_id: userId
+      }
+    });
+    const raw = response?.text || '';
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return '';
+    const parsed = JSON.parse(match[0]);
+    const title = String(parsed?.title || '').trim();
+    return title;
+  } catch (error) {
+    console.warn('[NLU] Task title extractor failed:', error.message);
+    return '';
+  }
+}
+
 module.exports = {
   parseMessage,
   resolvePendingAction,
@@ -662,5 +716,6 @@ module.exports = {
   extractTimeData,
   parseResolutionBuilderIntent,
   inferCompletionWithLLM,
-  inferIntentWithLLM
+  inferIntentWithLLM,
+  extractTaskTitleWithLLM
 };

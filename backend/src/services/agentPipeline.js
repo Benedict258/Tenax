@@ -267,7 +267,11 @@ async function handleStatus(session, p1Tasks = []) {
 }
 
 async function handleAddTask(session, slots) {
-  const title = slots.taskName?.trim();
+  let title = slots.taskName?.trim();
+  if (!title) {
+    const extracted = await nluService.extractTaskTitleWithLLM(slots.rawText || '', session.user.id);
+    title = extracted?.trim();
+  }
   if (!title) {
     return { action: 'add_task', requires_title: true };
   }
@@ -620,7 +624,7 @@ async function routeIntent(session, parsed, extras) {
     case 'status':
       return handleStatus(session, p1Tasks);
     case 'add_task':
-      return handleAddTask(session, parsed.slots);
+      return handleAddTask(session, { ...(parsed.slots || {}), rawText: extras.rawText || '' });
     case 'remove_task':
       return handleRemoveTask(session, parsed.slots);
     case 'reschedule_task':
