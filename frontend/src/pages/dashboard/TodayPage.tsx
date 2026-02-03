@@ -304,7 +304,17 @@ const PinnedP1BentoCard = ({ tasks }: { tasks: Task[] }) => {
 };
 
 const ExecutionBoardBentoCard = ({ tasks }: { tasks: Task[] }) => {
-  const firstTask = tasks[0];
+  const now = Date.now();
+  const sorted = [...tasks].sort((a, b) => {
+    const aTime = a.start_time ? new Date(a.start_time).getTime() : Infinity;
+    const bTime = b.start_time ? new Date(b.start_time).getTime() : Infinity;
+    return aTime - bTime;
+  });
+  const upcoming = sorted.find((task) => {
+    if (!task.start_time) return false;
+    return new Date(task.start_time).getTime() >= now;
+  });
+  const firstTask = upcoming || sorted[0];
   return (
     <div className="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] lg:col-start-1 lg:col-end-2 lg:row-start-1 lg:row-end-3">
       <div className="absolute inset-0 bg-amber-50 opacity-30" />

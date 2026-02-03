@@ -52,7 +52,10 @@ const SCHEDULE_QUERY_TRIGGERS = [
   'schedule tomorrow',
   'my schedule tomorrow',
   'tomorrow schedule',
+  'tmrw schedule',
+  'schedule tmrw',
   'what do i have tomorrow',
+  'what do i have tmrw',
   'what do i have next',
   'what is on my schedule',
   'check my schedule',
@@ -173,6 +176,7 @@ function cleanTaskTitle(raw) {
     /^add\s+this\s+/i,
     /^remind\s+me\s+to\s+/i,
     /^remind\s+me\s+/i,
+    /^make\s+sure\s+to\s+remind\s+me\s+/i,
     /^set\s+a\s+reminder\s+for\s+/i,
     /^set\s+a\s+reminder\s+/i,
     /^set\s+reminder\s+for\s+/i,
@@ -189,6 +193,8 @@ function cleanTaskTitle(raw) {
   text = text.replace(/\bon\s+my\s+schedule\b/gi, '');
   text = text.replace(/\bto\s+the\s+schedule\b/gi, '');
   text = text.replace(/\bon\s+the\s+schedule\b/gi, '');
+  text = text.replace(/\bon\s+time\b/gi, '');
+  text = text.replace(/\bremind\s+me\b/gi, '');
   text = text.replace(/^\s*to\s+/i, '');
   text = text.replace(/^\s*build\s+my\s+/i, 'build ');
   text = text.replace(/^(the\s+)?task\s+/i, '');
@@ -326,8 +332,9 @@ function parseScheduleNote(text, timezone) {
 
 function parseScheduleQuery(text, timezone) {
   const timeData = extractTimeData(text, timezone);
-  const dayOffset = /tomorrow/i.test(text) ? 1 : /next\s+week/i.test(text) ? 7 : 0;
-  const rangeDays = /weekly schedule|my weekly schedule|week\b/i.test(text) ? 7 : 0;
+  const normalized = normalize(text);
+  const dayOffset = /tomorrow|tmrw/i.test(normalized) ? 1 : /next\s+week/i.test(normalized) ? 7 : 0;
+  const rangeDays = /weekly schedule|my weekly schedule|week\b/i.test(normalized) ? 7 : 0;
   return buildIntentResponse('schedule_query', 0.88, {
     targetDate: timeData?.date ? timeData.date.toISOString() : null,
     dayOffset,
