@@ -42,6 +42,7 @@ const DAILY_KEYWORDS = ['daily', 'every day', 'each day'];
 const WEEKLY_KEYWORDS = ['weekly', 'every week'];
 const WEEKDAY_KEYWORDS = ['weekdays', 'every weekday'];
 const WEEKEND_KEYWORDS = ['weekends', 'weekend'];
+const WEEKDAY_NAMES = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 const TIMETABLE_TRIGGERS = ['timetable', 'course list', 'class schedule', 'courses i am taking', 'class timetable'];
 const SCHEDULE_NOTE_TRIGGERS = ['lecture', 'class', 'meeting', 'seminar', 'workshop', 'busy', 'unavailable'];
 const SCHEDULE_QUERY_TRIGGERS = [
@@ -218,6 +219,75 @@ function buildIntentResponse(intent, confidence, slots = {}, metadata = {}) {
   return { intent, confidence, slots, metadata };
 }
 
+async function inferIntentWithLLM(text, timezone = 'UTC', userId = null) {
+  if (!text || text.trim().length < 2) return null;
+  const prompt = [
+    'You are a strict JSON intent classifier for Tenax.',
+    'Return JSON only. No prose.',
+    'Allowed intents:',
+    'add_task, mark_complete, reschedule_task, remove_task, status, schedule_query, time_now, reminder_snooze, reminder_pause, task_delay, greeting, chat',
+    'Return format:',
+    '{"intent":"", "confidence":0-1, "slots":{}}',
+    'Slots guidelines:',
+    '- add_task: { taskName?, targetTimeText?, recurrence? }',
+    '- reschedule_task: { taskName?, targetTimeText?, deferDays? }',
+    '- remove_task: { taskName? }',
+    '- schedule_query: { dateText?, rangeDays? }',
+    '- reminder_snooze: { minutes? }',
+    'Message: ' + text.trim()
+  ].join('\n');
+
+  try {
+    const response = await llmService.generate(prompt, {
+      maxTokens: 120,
+      temperature: 0,
+      opikMeta: {
+        action: 'intent_fallback_llm',
+        user_id: userId || undefined
+      }
+    });
+    const raw = response?.text || '';
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]);
+    const intent = String(parsed?.intent || '').trim();
+    const confidence = Number(parsed?.confidence || 0);
+    if (!intent || Number.isNaN(confidence)) return null;
+
+    switch (intent) {
+      case 'add_task':
+        return buildIntentResponse('add_task', Math.max(confidence, 0.6), parseTaskAddition(text, timezone).slots, { llm_fallback: true });
+      case 'mark_complete':
+        return buildIntentResponse('mark_complete', Math.max(confidence, 0.6), parseCompletion(text).slots, { llm_fallback: true });
+      case 'reschedule_task':
+        return buildIntentResponse('reschedule_task', Math.max(confidence, 0.6), parseTaskReschedule(text, timezone).slots, { llm_fallback: true });
+      case 'remove_task':
+        return buildIntentResponse('remove_task', Math.max(confidence, 0.6), parseTaskRemoval(text).slots, { llm_fallback: true });
+      case 'status':
+        return buildIntentResponse('status', Math.max(confidence, 0.6), {}, { llm_fallback: true });
+      case 'schedule_query':
+        return buildIntentResponse('schedule_query', Math.max(confidence, 0.6), parseScheduleQuery(text, timezone).slots, { llm_fallback: true });
+      case 'time_now':
+        return buildIntentResponse('time_now', Math.max(confidence, 0.6), {}, { llm_fallback: true });
+      case 'reminder_snooze':
+        return buildIntentResponse('reminder_snooze', Math.max(confidence, 0.6), parseReminderSnooze(text).slots, { llm_fallback: true });
+      case 'reminder_pause':
+        return buildIntentResponse('reminder_pause', Math.max(confidence, 0.6), {}, { llm_fallback: true });
+      case 'task_delay':
+        return buildIntentResponse('task_delay', Math.max(confidence, 0.6), parseCantFinish(text).slots, { llm_fallback: true });
+      case 'greeting':
+        return buildIntentResponse('greeting', Math.max(confidence, 0.6), parseGreeting(text).slots, { llm_fallback: true });
+      case 'chat':
+        return buildIntentResponse('chat', Math.max(confidence, 0.6), {}, { llm_fallback: true });
+      default:
+        return null;
+    }
+  } catch (error) {
+    console.warn('[NLU] LLM intent fallback failed:', error.message);
+    return null;
+  }
+}
+
 function parseTaskAddition(text, timezone) {
   const normalized = text.trim();
   const recurrence = detectRecurrence(normalized);
@@ -333,10 +403,21 @@ function parseScheduleNote(text, timezone) {
 function parseScheduleQuery(text, timezone) {
   const timeData = extractTimeData(text, timezone);
   const normalized = normalize(text);
+  const weekdayIndex = WEEKDAY_NAMES.findIndex((day) => normalized.includes(day));
   const dayOffset = /tomorrow|tmrw/i.test(normalized) ? 1 : /next\s+week/i.test(normalized) ? 7 : 0;
   const rangeDays = /weekly schedule|my weekly schedule|week\b/i.test(normalized) ? 7 : 0;
+  let targetDate = timeData?.date ? timeData.date.toISOString() : null;
+  if (weekdayIndex >= 0 && !targetDate) {
+    const now = DateTime.now().setZone(timezone || 'UTC');
+    const targetWeekday = weekdayIndex + 1; // luxon: 1=Monday
+    let candidate = now.set({ weekday: targetWeekday });
+    if (candidate < now) {
+      candidate = candidate.plus({ weeks: 1 });
+    }
+    targetDate = candidate.toISO();
+  }
   return buildIntentResponse('schedule_query', 0.88, {
-    targetDate: timeData?.date ? timeData.date.toISOString() : null,
+    targetDate,
     dayOffset,
     rangeDays
   });
@@ -371,6 +452,11 @@ function parseMessage(rawText, options = {}) {
   }
 
   if (normalized.includes('schedule') && /\?$/.test(normalized)) {
+    return parseScheduleQuery(text, timezone);
+  }
+
+  if ((normalized.includes('schedule') || normalized.includes('schedules') || normalized.includes('classes')) &&
+      WEEKDAY_NAMES.some((day) => normalized.includes(day))) {
     return parseScheduleQuery(text, timezone);
   }
 
@@ -575,5 +661,6 @@ module.exports = {
   detectRecurrence,
   extractTimeData,
   parseResolutionBuilderIntent,
-  inferCompletionWithLLM
+  inferCompletionWithLLM,
+  inferIntentWithLLM
 };

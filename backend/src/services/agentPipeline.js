@@ -756,6 +756,13 @@ async function handleMessage({
     parsed = nluService.parseMessage(text, { allowPlanFallback: true, timezone: resolvedUser.timezone || 'UTC' });
   }
 
+  if (parsed?.intent === 'unknown' || (parsed?.confidence || 0) < 0.5) {
+    const llmIntent = await nluService.inferIntentWithLLM(text, resolvedUser.timezone || 'UTC', resolvedUser.id);
+    if (llmIntent) {
+      parsed = llmIntent;
+    }
+  }
+
   if (parsed?.intent === 'unknown') {
     const completionFallback = await nluService.inferCompletionWithLLM(text, resolvedUser.id);
     if (completionFallback) {
