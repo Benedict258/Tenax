@@ -20,8 +20,26 @@ router.get('/', auth, async (req, res) => {
 // Get today's tasks
 router.get('/today', auth, async (req, res) => {
   try {
-    const tasks = await Task.getTodaysTasks(req.user.id);
-    res.json(tasks);
+    const tasks = await Task.getTodaysTasks(req.user.id, req.user.timezone);
+    let scheduleBlocks = [];
+    try {
+      const scheduleService = require('../services/scheduleService');
+      const blocks = await scheduleService.buildScheduleBlockInstances(req.user.id, new Date(), req.user.timezone || 'UTC');
+      scheduleBlocks = (blocks || [])
+        .filter((block) => block.start_time_utc)
+        .map((block) => ({
+          id: `schedule-${block.id}`,
+          title: block.title,
+          status: 'scheduled',
+          category: block.category || 'Schedule',
+          start_time: block.start_time_utc,
+          location: block.location || null,
+          is_schedule_block: true
+        }));
+    } catch (err) {
+      console.warn('[Tasks] schedule blocks unavailable:', err?.message || err);
+    }
+    res.json([...(tasks || []), ...scheduleBlocks]);
   } catch (error) {
     console.error('Get today tasks error:', error);
     res.status(500).json({ error: 'Failed to fetch today\'s tasks' });

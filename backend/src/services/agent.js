@@ -251,7 +251,7 @@ class AgentService {
 
   async sendMorningSummary(user) {
     try {
-      const todaysTasks = await Task.getTodaysTasks(user.id);
+      const todaysTasks = await Task.getTodaysTasks(user.id, user?.timezone || 'UTC');
       const prioritizedTasks = await taskPrioritizer.rankTasksWithAvailability(user.id, todaysTasks);
       const hasTasks = prioritizedTasks.length > 0;
       const p1Tasks = await ruleStateService.getActiveP1Tasks(user.id);
@@ -452,7 +452,7 @@ class AgentService {
 
   async calculateCompletionStats(user) {
     try {
-      const allTasks = await Task.getTodaysTasks(user.id);
+      const allTasks = await Task.getTodaysTasks(user.id, user?.timezone || 'UTC');
       const completed = allTasks.filter(t => t.status === 'done');
       const pending = allTasks.filter(t => t.status === 'todo');
       

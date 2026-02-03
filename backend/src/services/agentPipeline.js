@@ -423,7 +423,7 @@ async function handlePlanOverview(session, p1Tasks) {
 }
 
 async function handleDailyStart(session) {
-  const tasks = await Task.getTodaysTasks(session.user.id);
+  const tasks = await Task.getTodaysTasks(session.user.id, session.user?.timezone || 'UTC');
   const p1Tasks = tasks.filter((task) => task.severity === 'p1');
   const timezone = session.user?.timezone || 'UTC';
   const scheduleBlocks = await scheduleService.buildScheduleBlockInstances(session.user.id, new Date(), timezone);
@@ -777,7 +777,7 @@ async function handleMessage({
       intent: 'p1_guard',
       toolResult: { action: 'p1_guard', message: guardMessage, tasks: p1Tasks },
       memoryTurns,
-      context: { tasks: await Task.getTodaysTasks(resolvedUser.id) }
+      context: { tasks: await Task.getTodaysTasks(resolvedUser.id, resolvedUser.timezone || 'UTC') }
     });
     await session.send(reply, { intent: 'p1_guard' });
     await ruleStateService.recordSurface({
@@ -815,7 +815,7 @@ async function handleMessage({
 
   const memoryTurns = conversationContext.getTurns(resolvedUser.id);
   const [todaysTasks, stats] = await Promise.all([
-    Task.getTodaysTasks(resolvedUser.id),
+    Task.getTodaysTasks(resolvedUser.id, resolvedUser.timezone || 'UTC'),
     agentService.calculateCompletionStats(resolvedUser)
   ]);
   const userTimezone = resolvedUser.timezone || 'UTC';

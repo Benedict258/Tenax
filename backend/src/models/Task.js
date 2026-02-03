@@ -187,13 +187,12 @@ class Task {
     return data;
   }
 
-  static async getTodaysTasks(user_id) {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    const startISO = start.toISOString();
-    const endISO = end.toISOString();
+  static async getTodaysTasks(user_id, timezone = 'UTC') {
+    const { DateTime } = require('luxon');
+    const start = DateTime.now().setZone(timezone || 'UTC').startOf('day').toUTC();
+    const end = start.plus({ days: 1 });
+    const startISO = start.toISO();
+    const endISO = end.toISO();
     
     const { data, error } = await supabase
       .from('tasks')

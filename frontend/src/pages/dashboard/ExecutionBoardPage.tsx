@@ -46,7 +46,7 @@ const ExecutionBoardPage = () => {
                 : 'Flexible'
             }${task.severity ? ` • ${task.severity}` : ''}`,
             icon: <ClipboardList />,
-            action: (
+            action: task.is_schedule_block ? null : (
               <Button
                 variant="ghost"
                 size="icon"

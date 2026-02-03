@@ -5,6 +5,8 @@ export interface Task {
   severity?: string;
   category?: string;
   start_time?: string;
+  location?: string | null;
+  is_schedule_block?: boolean;
 }
 
 export interface CompletionStats {

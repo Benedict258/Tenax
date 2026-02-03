@@ -41,7 +41,8 @@ class WhatsAppService {
       if (!resolvedTo) {
         throw new Error('Missing WhatsApp destination number');
       }
-      const toNumber = resolvedTo.startsWith('whatsapp:') ? resolvedTo : `whatsapp:${resolvedTo}`;
+      const normalized = normalizePhoneNumber(resolvedTo);
+      const toNumber = normalized.startsWith('whatsapp:') ? normalized : `whatsapp:${normalized}`;
 
       const result = await this.client.messages.create({
         from: this.fromNumber,
@@ -94,6 +95,27 @@ class WhatsAppService {
     const message = `Day complete.\n\nYou finished ${completedTasks}/${totalTasks} tasks (${completionRate}%).\n\nKeep it up.`;
     return this.sendMessage(user.phone_number, message);
   }
+}
+
+function normalizePhoneNumber(value) {
+  if (!value) return value;
+  if (value.startsWith('whatsapp:')) {
+    return `whatsapp:${normalizePhoneNumber(value.replace('whatsapp:', ''))}`;
+  }
+  if (value.startsWith('+')) return value;
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return value;
+  const country = process.env.DEFAULT_COUNTRY_CODE || '234';
+  if (digits.startsWith(country)) {
+    return `+${digits}`;
+  }
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return `+${country}${digits.slice(1)}`;
+  }
+  if (digits.length <= 10 && country) {
+    return `+${country}${digits}`;
+  }
+  return `+${digits}`;
 }
 
 module.exports = new WhatsAppService();

@@ -56,6 +56,9 @@ const SCHEDULE_QUERY_TRIGGERS = [
   'what do i have next',
   'what is on my schedule',
   'check my schedule',
+  'what about my schedule',
+  'what about my weekly schedule',
+  'what about from my weekly schedule',
   'weekly schedule',
   'my weekly schedule',
   'what is on my weekly schedule',
@@ -158,10 +161,16 @@ function cleanTaskTitle(raw) {
   let text = raw;
   const prefixes = [
     /^just\s+/i,
+    /^hey\s+/i,
+    /^hey,\s+/i,
+    /^can\s+you\s+/i,
+    /^hey\s+can\s+you\s+/i,
     /^please\s+/i,
     /^add\s+/i,
     /^create\s+/i,
     /^schedule\s+/i,
+    /^add\s+this\s+task\s+/i,
+    /^add\s+this\s+/i,
     /^remind\s+me\s+to\s+/i,
     /^remind\s+me\s+/i,
     /^set\s+a\s+reminder\s+for\s+/i,
@@ -176,6 +185,10 @@ function cleanTaskTitle(raw) {
 
   text = text.replace(/\bfor\s+me\s+to\b/gi, '');
   text = text.replace(/\bfor\s+me\b/gi, '');
+  text = text.replace(/\bto\s+my\s+schedule\b/gi, '');
+  text = text.replace(/\bon\s+my\s+schedule\b/gi, '');
+  text = text.replace(/\bto\s+the\s+schedule\b/gi, '');
+  text = text.replace(/\bon\s+the\s+schedule\b/gi, '');
   text = text.replace(/^\s*to\s+/i, '');
   text = text.replace(/^\s*build\s+my\s+/i, 'build ');
   text = text.replace(/^(the\s+)?task\s+/i, '');
@@ -346,6 +359,14 @@ function parseMessage(rawText, options = {}) {
     return parseCantFinish(text);
   }
 
+  if (SCHEDULE_QUERY_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+    return parseScheduleQuery(text, timezone);
+  }
+
+  if (normalized.includes('schedule') && /\?$/.test(normalized)) {
+    return parseScheduleQuery(text, timezone);
+  }
+
   if (STATUS_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
     return parseStatusIntent();
   }
@@ -401,10 +422,6 @@ function parseMessage(rawText, options = {}) {
 
   if (TIME_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
     return parseTimeNow();
-  }
-
-  if (SCHEDULE_QUERY_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
-    return parseScheduleQuery(text, timezone);
   }
 
   if (SCHEDULE_NOTE_TRIGGERS.some((phrase) => normalized.includes(phrase))) {

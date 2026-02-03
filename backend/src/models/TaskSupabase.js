@@ -87,8 +87,9 @@ class Task {
     return data;
   }
 
-  static async getTodaysTasks(user_id) {
-    const today = new Date().toISOString().split('T')[0];
+  static async getTodaysTasks(user_id, timezone = 'UTC') {
+    const { DateTime } = require('luxon');
+    const today = DateTime.now().setZone(timezone || 'UTC').toISODate();
     
     const { data, error } = await supabase
       .from('tasks')
