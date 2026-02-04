@@ -123,6 +123,42 @@ async function enforceDailyRules(user, dateInput = new Date()) {
   return inserted;
 }
 
+async function verifyDailyRules(user, dateInput = new Date()) {
+  if (!user?.id) return { created: [], missing: [] };
+  const timezone = user.timezone || 'UTC';
+  const created = await enforceDailyRules(user, dateInput);
+  const tasksToday = await Task.getTodaysTasks(user.id, timezone);
+  const missing = [];
+
+  const hasRule = (ruleType, scheduleBlockId = null) => hasRuleTask(tasksToday, ruleType, scheduleBlockId);
+  if (user.enforce_daily_p1 && !hasRule('daily_p1')) {
+    missing.push({ rule_type: 'daily_p1' });
+  }
+  if (user.enforce_workout && !hasRule('workout')) {
+    missing.push({ rule_type: 'workout' });
+  }
+
+  if (user.enforce_pre_class_reading || user.enforce_post_class_review) {
+    const blocks = await scheduleService.buildScheduleBlockInstances(user.id, dateInput, timezone);
+    for (const block of blocks) {
+      if (!block.start_time_utc) continue;
+      if (user.enforce_pre_class_reading && !hasRule('pre_class_reading', block.id)) {
+        missing.push({ rule_type: 'pre_class_reading', schedule_block_id: block.id });
+      }
+      if (user.enforce_post_class_review && block.end_time_utc && !hasRule('post_class_review', block.id)) {
+        missing.push({ rule_type: 'post_class_review', schedule_block_id: block.id });
+      }
+    }
+  }
+
+  if (missing.length) {
+    console.warn('[RuleEngine] Missing enforced rule tasks:', missing);
+  }
+
+  return { created, missing };
+}
+
 module.exports = {
-  enforceDailyRules
+  enforceDailyRules,
+  verifyDailyRules
 };

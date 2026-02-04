@@ -78,7 +78,7 @@ class RuleStateService {
 
     const taskLines = this.formatTaskList(tasks);
     return [
-      '⚠️ P1 guardrail is active.',
+      'P1 guardrail is active.',
       'Wrap these before starting anything new:',
       taskLines,
       '\nReply "done [task]" once you clear one so I can unlock other requests.'
@@ -89,7 +89,7 @@ class RuleStateService {
     if (!tasks.length) return '';
     const names = tasks.map((task) => `"${task.title}"`).slice(0, 3).join(', ');
     const remainder = tasks.length > 3 ? ` + ${tasks.length - 3} more` : '';
-    return `⚠️ P1 focus: ${names}${remainder}. Reply when one is cleared.`;
+    return `P1 focus: ${names}${remainder}. Reply when one is cleared.`;
   }
 
   async recordEvent(event) {

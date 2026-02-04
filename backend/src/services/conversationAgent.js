@@ -102,6 +102,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     '- Do not wrap task titles in quotation marks.',
     '- If toolResult.requires_selection is true, include the options list and end with: "Reply with the number or the task name."',
     '- If toolResult.requires_time is true, ask for the time or "no fixed time".',
+    '- If toolResult.requires_date is true, ask which day they want to check (today, tomorrow, or a weekday).',
     '- If toolResult.requires_title is true, ask what task they want to add with a quick example.',
     '- If intent is status, summarize tasks in 2-4 lines, not a template.',
     '- If intent is greeting, keep it light and conversational; do not pivot to planning.',
@@ -184,6 +185,9 @@ const fallbackReply = ({ intent, toolResult, user }) => {
   }
   if (toolResult?.requires_time) {
     return 'When should I set it? You can reply with a time or say "no fixed time".';
+  }
+  if (toolResult?.requires_date) {
+    return 'Sure — which day should I check? You can say today, tomorrow, or a weekday.';
   }
   if (toolResult?.requires_title) {
     return 'What should I add? Example: "add workout 6am" or "remind me to read 9pm".';

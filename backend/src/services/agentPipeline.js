@@ -11,6 +11,7 @@ const nluService = require('./nluService');
 const conversationContext = require('./conversationContext');
 const reminderPreferences = require('./reminderPreferences');
 const resolutionBuilderService = require('./resolutionBuilderAgent');
+const scheduleService = require('./scheduleService');
 const { parseCoursesFromText, buildConfirmationSummary } = require('./timetableParser');
 const { DateTime } = require('luxon');
 const QueueService = require('./queue');
@@ -303,14 +304,55 @@ async function handleAddTask(session, slots) {
   }
 
   const severity = inferSeverity(title);
+  let startTime = slots.targetTime || null;
+  const metadata = {};
+  if (startTime && scheduleService.scheduleFeatureFlag()) {
+    try {
+      const durationMinutes = Number(slots.durationMinutes) || 30;
+      const adjustment = await scheduleService.findAdjustedReminderTime(
+        session.user.id,
+        startTime,
+        durationMinutes
+      );
+      if (adjustment?.conflictBlock) {
+        metadata.schedule_conflict = adjustment.conflictBlock;
+        const originalTime = new Date(startTime).toISOString();
+        const adjustedIso = adjustment.adjustedTime ? new Date(adjustment.adjustedTime).toISOString() : originalTime;
+        if (adjustedIso !== originalTime) {
+          metadata.schedule_shifted_from = originalTime;
+          metadata.schedule_shifted = true;
+          startTime = adjustedIso;
+          await scheduleService.recordScheduleConflict({
+            userId: session.user.id,
+            conflictType: 'task_vs_schedule',
+            conflictWindow: adjustment.conflictBlock,
+            resolution: 'task_shifted',
+            metadata: { original_time: originalTime, shifted_time: adjustedIso }
+          });
+        } else {
+          await scheduleService.recordScheduleConflict({
+            userId: session.user.id,
+            conflictType: 'task_vs_schedule',
+            conflictWindow: adjustment.conflictBlock,
+            resolution: 'conflict_detected',
+            metadata: { original_time: originalTime }
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('[AgentPipeline] Schedule conflict check failed:', error.message);
+    }
+  }
+
   const task = await Task.create({
     user_id: session.user.id,
     title: nluService.cleanTaskTitle(title) || title,
     category: severity === 'p1' ? 'P1' : 'Other',
-    start_time: slots.targetTime || null,
+    start_time: startTime,
     recurrence: slots.recurrence || null,
     created_via: session.channel,
-    severity
+    severity,
+    metadata
   });
   await notificationService.createNotification(session.user.id, {
     type: 'task',
@@ -327,8 +369,8 @@ async function handleAddTask(session, slots) {
     await QueueService.scheduleTaskReminders(session.user, task);
   }
 
-  const timingText = slots.targetTime
-    ? ` for ${formatTimeForUser(slots.targetTime, session.user?.timezone || 'UTC')}`
+  const timingText = startTime
+    ? ` for ${formatTimeForUser(startTime, session.user?.timezone || 'UTC')}`
     : '';
   const recurrenceText = slots.recurrence ? ` (${slots.recurrence})` : '';
   return {
@@ -539,6 +581,17 @@ async function handleScheduleNote(session, slots) {
 
 async function handleScheduleQuery(session, slots) {
   const timezone = session.user?.timezone || 'UTC';
+  if (slots?.needsDate) {
+    conversationContext.setPendingAction(session.user.id, {
+      type: 'schedule_query',
+      intent: 'schedule_query',
+      slots: {}
+    });
+    return {
+      action: 'schedule_query',
+      requires_date: true
+    };
+  }
   const baseDate = slots?.targetDate ? new Date(slots.targetDate) : new Date();
   if (slots?.dayOffset) {
     baseDate.setDate(baseDate.getDate() + slots.dayOffset);

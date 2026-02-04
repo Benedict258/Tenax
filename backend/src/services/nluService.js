@@ -571,10 +571,12 @@ function parseScheduleQuery(text, timezone) {
     }
     targetDate = candidate.toISO();
   }
+  const needsDate = !targetDate && !dayOffset && !rangeDays;
   return buildIntentResponse('schedule_query', 0.88, {
     targetDate,
     dayOffset,
-    rangeDays
+    rangeDays,
+    needsDate
   });
 }
 
@@ -723,6 +725,14 @@ function resolvePendingAction(rawText, pendingAction, options = {}) {
       }, { clarified: true });
     }
     return null;
+  }
+
+  if (pendingAction.type === 'schedule_query') {
+    const parsed = parseScheduleQuery(rawText, timezone);
+    if (parsed?.slots?.needsDate) {
+      return null;
+    }
+    return buildIntentResponse('schedule_query', 0.9, parsed.slots, { clarified: true });
   }
 
   if (pendingAction.type === 'timetable_confirmation') {

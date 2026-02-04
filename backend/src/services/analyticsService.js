@@ -4,6 +4,8 @@ const agentService = require('./agent');
 const metricsStore = require('./metricsStore');
 const opikBridge = require('../utils/opikBridge');
 const scheduleService = require('./scheduleService');
+const supabase = require('../config/supabase');
+const { DateTime } = require('luxon');
 
 const LOOKBACK_DAYS = 7;
 const ADMIN_LOOKBACK_DAYS = 14;
@@ -93,6 +95,65 @@ async function fetchOpikMetrics(metricNames) {
   }, {});
 }
 
+function buildOpikTrendBuckets(rows, range, timezone) {
+  const buckets = new Map();
+  rows.forEach((row) => {
+    const ts = row.logged_at || row.created_at;
+    if (!ts) return;
+    const dt = DateTime.fromISO(ts, { zone: 'utc' }).setZone(timezone || 'UTC');
+    const key = range === '24h'
+      ? dt.toFormat('HH:00')
+      : dt.toFormat('yyyy-LL-dd');
+    if (!buckets.has(key)) {
+      buckets.set(key, {
+        key,
+        count: 0,
+        tone_score: 0,
+        specificity_score: 0,
+        realism_score: 0,
+        goal_alignment_score: 0,
+        resolution_alignment_score: 0
+      });
+    }
+    const bucket = buckets.get(key);
+    bucket.count += 1;
+    bucket.tone_score += Number(row.tone_score || 0);
+    bucket.specificity_score += Number(row.specificity_score || 0);
+    bucket.realism_score += Number(row.realism_score || 0);
+    bucket.goal_alignment_score += Number(row.goal_alignment_score || 0);
+    bucket.resolution_alignment_score += Number(row.resolution_alignment_score || 0);
+  });
+
+  const points = Array.from(buckets.values()).map((bucket) => ({
+    key: bucket.key,
+    count: bucket.count,
+    tone_score: bucket.count ? Number((bucket.tone_score / bucket.count).toFixed(3)) : 0,
+    specificity_score: bucket.count ? Number((bucket.specificity_score / bucket.count).toFixed(3)) : 0,
+    realism_score: bucket.count ? Number((bucket.realism_score / bucket.count).toFixed(3)) : 0,
+    goal_alignment_score: bucket.count ? Number((bucket.goal_alignment_score / bucket.count).toFixed(3)) : 0,
+    resolution_alignment_score: bucket.count ? Number((bucket.resolution_alignment_score / bucket.count).toFixed(3)) : 0
+  }));
+
+  return points.sort((a, b) => a.key.localeCompare(b.key));
+}
+
+async function fetchOpikTrends(range, timezone) {
+  const now = DateTime.now().toUTC();
+  const start = range === '24h' ? now.minus({ hours: 24 }) : now.minus({ days: 7 });
+
+  const { data: rows, error } = await supabase
+    .from('opik_trace_mirror')
+    .select('logged_at, tone_score, specificity_score, realism_score, goal_alignment_score, resolution_alignment_score')
+    .gte('logged_at', start.toISO());
+
+  if (error) {
+    console.warn('[Analytics] Failed to load Opik trend data:', error.message);
+    return [];
+  }
+
+  return buildOpikTrendBuckets(rows || [], range, timezone);
+}
+
 function buildDemoSummary() {
   const today = new Date().toISOString().slice(0, 10);
   const weeklyTrend = Array.from({ length: LOOKBACK_DAYS }).map((_, idx) => ({
@@ -135,6 +196,21 @@ function buildDemoSummary() {
       specificity_score: 4.1,
       realism_score: 4.0,
       goal_alignment_score: 4.3
+    },
+    opikTrends: {
+      daily: weeklyTrend.map((point) => ({
+        key: point.date,
+        tone_score: 4.2,
+        specificity_score: 4.0,
+        realism_score: 4.1,
+        goal_alignment_score: 4.3,
+        resolution_alignment_score: 4.0
+      })),
+      hourly: []
+    },
+    outcome: {
+      reminder_effectiveness: 70,
+      completion_rate: 67
     }
   };
 }
@@ -180,8 +256,13 @@ async function getUserSummary(userId) {
       'tone_score',
       'specificity_score',
       'realism_score',
-      'goal_alignment_score'
+      'goal_alignment_score',
+      'resolution_alignment_score'
     ]);
+    const opikTrends = {
+      daily: await fetchOpikTrends('7d', user.timezone || 'UTC'),
+      hourly: await fetchOpikTrends('24h', user.timezone || 'UTC')
+    };
 
     return {
       user: {
@@ -198,13 +279,18 @@ async function getUserSummary(userId) {
         streak,
         engagement
       },
+      outcome: {
+        reminder_effectiveness: reminderEffectiveness,
+        completion_rate: completion?.completion_rate ?? 0
+      },
       tasks: {
         today: taskPayload,
         pinned: pinnedTasks
       },
       weeklyTrend,
       categoryBreakdown,
-      opikMetrics
+      opikMetrics,
+      opikTrends
     };
   } catch (error) {
     console.error('[Analytics] Failed to build user summary:', error.message);

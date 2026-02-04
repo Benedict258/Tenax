@@ -15,6 +15,9 @@ const metricOrder = [
 const OpikPulsePage = () => {
   const { summary } = useAnalytics();
   const metrics = summary?.opikMetrics ?? {};
+  const opikTrends = summary?.opikTrends ?? {};
+  const daily = Array.isArray(opikTrends.daily) ? opikTrends.daily : [];
+  const hourly = Array.isArray(opikTrends.hourly) ? opikTrends.hourly : [];
 
   if (!ADMIN_ENABLED) {
     return <AdminGate />;
@@ -49,7 +52,41 @@ const OpikPulsePage = () => {
           );
         })}
       </div>
-      <p className="text-white/60 text-xs">Wire Opik API scores here for live monitoring in production.</p>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/40">Last 7 days</p>
+          {daily.length === 0 && <p className="mt-3 text-sm text-white/60">No Opik trend data yet.</p>}
+          {daily.length > 0 && (
+            <div className="mt-3 space-y-3">
+              {daily.slice(-7).map((row) => (
+                <div key={row.key as string} className="flex items-center justify-between text-sm text-white/70">
+                  <span>{row.key}</span>
+                  <span>
+                    Tone {Number(row.tone_score || 0).toFixed(1)} • Spec {Number(row.specificity_score || 0).toFixed(1)} • Realism {Number(row.realism_score || 0).toFixed(1)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/40">Last 24 hours</p>
+          {hourly.length === 0 && <p className="mt-3 text-sm text-white/60">No hourly Opik trend data yet.</p>}
+          {hourly.length > 0 && (
+            <div className="mt-3 space-y-3">
+              {hourly.slice(-6).map((row) => (
+                <div key={row.key as string} className="flex items-center justify-between text-sm text-white/70">
+                  <span>{row.key}</span>
+                  <span>
+                    Tone {Number(row.tone_score || 0).toFixed(1)} • Goal {Number(row.goal_alignment_score || 0).toFixed(1)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <p className="text-white/60 text-xs">Trend data is sourced from the Opik mirror table and updates with new traces.</p>
     </section>
   );
 };

@@ -13,24 +13,37 @@ const buildTodayWindow = (timezone) => {
   return { startISO: start.toUTC().toISO(), endISO: end.toUTC().toISO() };
 };
 
-const formatEventTasks = (userId, events) =>
-  events.map((event) => ({
-    user_id: userId,
-    title: event.summary || 'Calendar event',
-    description: event.description ? String(event.description).slice(0, 1000) : null,
-    category: 'Calendar',
-    priority: 'P2',
-    created_via: 'google_calendar',
-    start_time: event.start?.dateTime || null,
-    duration_minutes: event.end?.dateTime
-      ? Math.max(15, Math.round((new Date(event.end.dateTime).getTime() - new Date(event.start.dateTime).getTime()) / 60000))
-      : 60,
-    metadata: {
-      source: 'google_calendar',
-      external_id: event.id,
-      location: event.location || null
-    }
-  }));
+const formatEventTasks = (userId, events, timezone) =>
+  events.map((event) => {
+    const startIso = event.start?.dateTime || null;
+    const endIso = event.end?.dateTime || null;
+    const startLocal = startIso ? DateTime.fromISO(startIso, { zone: timezone || 'UTC' }) : null;
+    const endLocal = endIso ? DateTime.fromISO(endIso, { zone: timezone || 'UTC' }) : null;
+    const startUtc = startLocal?.isValid ? startLocal.toUTC().toISO() : startIso;
+    const endUtc = endLocal?.isValid ? endLocal.toUTC().toISO() : endIso;
+    const durationMinutes = startUtc && endUtc
+      ? Math.max(15, Math.round((new Date(endUtc).getTime() - new Date(startUtc).getTime()) / 60000))
+      : 60;
+    const externalKey = startLocal?.isValid
+      ? `${event.id}-${startLocal.toFormat('yyyy-LL-dd')}`
+      : event.id;
+    return {
+      user_id: userId,
+      title: event.summary || 'Calendar event',
+      description: event.description ? String(event.description).slice(0, 1000) : null,
+      category: 'Calendar',
+      priority: 'P2',
+      created_via: 'google_calendar',
+      start_time: startUtc || null,
+      duration_minutes: durationMinutes,
+      metadata: {
+        source: 'google_calendar',
+        external_id: event.id,
+        external_key: externalKey,
+        location: event.location || null
+      }
+    };
+  });
 
 router.get('/google/auth-url', auth, async (req, res) => {
   try {
@@ -91,23 +104,31 @@ router.post('/google/review-today', auth, async (req, res) => {
       return res.json({ inserted: 0, skipped_duplicates: 0, events: [] });
     }
 
-    const externalIds = timedEvents.map((event) => event.id).filter(Boolean);
     const { data: existing, error } = await require('../config/supabase')
       .from('tasks')
       .select('metadata')
       .eq('user_id', req.user.id)
       .eq('created_via', 'google_calendar')
-      .in('metadata->>external_id', externalIds);
-
+      .limit(2000);
     if (error) throw error;
-    const existingIds = new Set((existing || []).map((row) => row?.metadata?.external_id).filter(Boolean));
-    const newEvents = timedEvents.filter((event) => !existingIds.has(event.id));
+    const existingKeys = new Set(
+      (existing || [])
+        .map((row) => row?.metadata?.external_key || row?.metadata?.external_id)
+        .filter(Boolean)
+    );
+    const newEvents = timedEvents.filter((event) => {
+      const startIso = event.start?.dateTime || null;
+      const key = startIso
+        ? `${event.id}-${DateTime.fromISO(startIso, { zone: timezone || 'UTC' }).toFormat('yyyy-LL-dd')}`
+        : event.id;
+      return !existingKeys.has(key);
+    });
 
     if (!newEvents.length) {
       return res.json({ inserted: 0, skipped_duplicates: timedEvents.length, events: [] });
     }
 
-    const tasksPayload = formatEventTasks(req.user.id, newEvents);
+    const tasksPayload = formatEventTasks(req.user.id, newEvents, timezone);
     const createdTasks = await Task.createMany(tasksPayload);
 
     for (const task of createdTasks) {

@@ -51,6 +51,15 @@ class DatasetExporter {
       ...payload
     });
   }
+
+  recordHumanFeedback(payload = {}) {
+    const fileName = 'human_feedback.jsonl';
+    const fullPath = path.join(this.streamDir, fileName);
+    return this.appendJsonLine(fullPath, {
+      event_type: 'human_feedback',
+      ...payload
+    });
+  }
 }
 
 module.exports = new DatasetExporter();

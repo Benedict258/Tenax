@@ -2,6 +2,9 @@
 const jwt = require('jsonwebtoken');
 const adminAuth = require('../middleware/adminAuth');
 const supabase = require('../config/supabase');
+const datasetExporter = require('../services/datasetExporter');
+const optimizerService = require('../services/optimizerService');
+const opikMirror = require('../services/opikMirror');
 const { DateTime } = require('luxon');
 
 const router = express.Router();
@@ -240,6 +243,15 @@ router.post('/opik/feedback', adminAuth, async (req, res) => {
       .select()
       .single();
     if (error) throw error;
+    datasetExporter.recordHumanFeedback({
+      trace_id: payload.trace_id,
+      user_id: payload.user_id,
+      message_type: payload.message_type,
+      score_type: payload.score_type,
+      score_value: payload.score_value,
+      comment: payload.comment,
+      source: payload.source
+    });
     res.json({ feedback: data });
   } catch (error) {
     console.error('[Admin] feedback error:', error.message);
@@ -294,6 +306,64 @@ router.get('/opik/feedback/summary', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('[Admin] feedback summary error:', error.message);
     res.status(500).json({ message: 'Failed to load feedback summary.' });
+  }
+});
+
+router.post('/opik/optimizer/run', adminAuth, async (req, res) => {
+  try {
+    if (!optimizerService.isEnabled()) {
+      return res.status(400).json({ message: 'Optimizer disabled or Opik bridge unavailable.' });
+    }
+
+    const jobs = Array.isArray(req.body?.jobs) && req.body.jobs.length
+      ? req.body.jobs
+      : ['hrpo', 'gepa', 'fewshot'];
+
+    const results = {};
+
+    if (jobs.includes('hrpo')) {
+      results.hrpo = await optimizerService.runReminderPromptOptimization({
+        metric: req.body?.hrpo_metric,
+        datasetName: req.body?.hrpo_dataset,
+        datasetPath: req.body?.hrpo_dataset_path,
+        datasetId: req.body?.hrpo_dataset_id,
+        numTrials: req.body?.hrpo_trials
+      });
+    }
+
+    if (jobs.includes('gepa')) {
+      results.gepa = await optimizerService.runToneEvolutionarySearch({
+        metric: req.body?.gepa_metric,
+        datasetName: req.body?.gepa_dataset,
+        datasetPath: req.body?.gepa_dataset_path,
+        datasetId: req.body?.gepa_dataset_id,
+        generations: req.body?.gepa_generations,
+        populationSize: req.body?.gepa_population
+      });
+    }
+
+    if (jobs.includes('fewshot')) {
+      results.fewshot = await optimizerService.runIntentFewShotSelection({
+        datasetName: req.body?.fewshot_dataset,
+        datasetPath: req.body?.fewshot_dataset_path,
+        datasetId: req.body?.fewshot_dataset_id,
+        numShots: req.body?.fewshot_shots,
+        task: req.body?.fewshot_task
+      });
+    }
+
+    await opikMirror.logTrace({
+      userId: null,
+      messageType: 'optimizer_run',
+      inputContext: { jobs },
+      output: results,
+      metadata: { prompt_version: 'optimizer_validation_v1' }
+    });
+
+    res.json({ status: 'ok', results });
+  } catch (error) {
+    console.error('[Admin] optimizer run error:', error.message);
+    res.status(500).json({ message: 'Optimizer run failed', error: error.message });
   }
 });
 module.exports = router;

@@ -29,7 +29,7 @@ async function logTrace({
   traceId,
   traceUrl
 }) {
-  if (!userId || !messageType) return null;
+  if (!messageType) return null;
   const now = new Date().toISOString();
   const outputText = output?.generated_text || output?.text || '';
   const payload = {

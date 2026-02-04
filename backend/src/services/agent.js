@@ -267,7 +267,7 @@ class AgentService {
 
   async sendMorningSummary(user) {
     try {
-      await ruleEngine.enforceDailyRules(user, new Date());
+      await ruleEngine.verifyDailyRules(user, new Date());
       const todaysTasks = await Task.getTodaysTasks(user.id, user?.timezone || 'UTC');
       const prioritizedTasks = await taskPrioritizer.rankTasksWithAvailability(user.id, todaysTasks);
       const hasTasks = prioritizedTasks.length > 0;

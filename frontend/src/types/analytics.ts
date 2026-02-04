@@ -38,6 +38,10 @@ export interface Summary {
     streak?: number;
     engagement?: number;
   };
+  outcome?: {
+    reminder_effectiveness?: number;
+    completion_rate?: number;
+  };
   tasks?: {
     today?: Task[];
     pinned?: Task[];
@@ -45,6 +49,10 @@ export interface Summary {
   weeklyTrend?: TrendPoint[];
   categoryBreakdown?: CategoryBreakdown;
   opikMetrics?: Record<string, number>;
+  opikTrends?: {
+    daily?: Array<Record<string, number | string>>;
+    hourly?: Array<Record<string, number | string>>;
+  };
 }
 
 export interface AdminOverview {

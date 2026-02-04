@@ -7,10 +7,11 @@ import { Button } from '../../components/ui/button';
 import ScheduleEditorPage from './ScheduleEditorPage';
 
 const WeeklyProgressPage = () => {
-  const { refresh, weeklyTrend } = useAnalytics();
+  const { refresh, weeklyTrend, summary: analyticsSummary } = useAnalytics();
   const { notifications, unreadCount, markRead } = useNotifications();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const summary = useMemo(() => buildWeeklySummary(weeklyTrend), [weeklyTrend]);
+  const reminderEffectiveness = analyticsSummary?.outcome?.reminder_effectiveness ?? 0;
 
   const toggleNotifications = () => {
     const nextOpen = !notificationsOpen;
@@ -64,10 +65,11 @@ const WeeklyProgressPage = () => {
             </Button>
           </div>
         </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-4">
           <InsightCard label="Average completion" value={`${summary.average}%`} hint="Last 7 days" />
           <InsightCard label="Momentum" value={summary.momentumLabel} hint={summary.momentumHint} />
           <InsightCard label="Total completed" value={`${summary.totalCompleted} tasks`} hint={`vs ${summary.totalPlanned} planned`} />
+          <InsightCard label="Reminder effectiveness" value={`${reminderEffectiveness || 0}%`} hint="Last 24h" />
         </div>
       </section>
 

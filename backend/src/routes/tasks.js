@@ -22,7 +22,7 @@ router.get('/', auth, async (req, res) => {
 // Get today's tasks
 router.get('/today', auth, async (req, res) => {
   try {
-    await ruleEngine.enforceDailyRules(req.user, new Date());
+    await ruleEngine.verifyDailyRules(req.user, new Date());
     let tasks = await Task.getTodaysTasks(req.user.id, req.user.timezone);
     const resolutionTaskIds = tasks
       .map((task) => task?.metadata?.resolution_task_id)
@@ -76,8 +76,8 @@ router.get('/today', auth, async (req, res) => {
 // Create new task
 router.post('/', auth, async (req, res) => {
   try {
-    const taskData = { 
-      ...req.body, 
+    const taskData = {
+      ...req.body,
       user_id: req.user.id,
       created_via: req.body.created_via || 'web'
     };
@@ -102,6 +102,66 @@ router.post('/', auth, async (req, res) => {
     }
     delete taskData.priority_label;
     
+    if (taskData.start_time) {
+      try {
+        const scheduleService = require('../services/scheduleService');
+        if (!scheduleService.scheduleFeatureFlag()) {
+          const task = await Task.create(taskData);
+          if (task?.start_time) {
+            await QueueService.scheduleTaskReminders(req.user, task);
+          }
+          await notificationService.createNotification(req.user.id, {
+            type: 'task',
+            title: 'Task added',
+            message: task.title,
+            metadata: { task_id: task.id }
+          });
+          return res.status(201).json({
+            message: 'Task created successfully',
+            task
+          });
+        }
+        const durationMinutes = Number(taskData.duration_minutes) || 30;
+        const adjustment = await scheduleService.findAdjustedReminderTime(
+          req.user.id,
+          taskData.start_time,
+          durationMinutes
+        );
+        if (adjustment?.conflictBlock) {
+          const originalTime = new Date(taskData.start_time).toISOString();
+          const adjustedIso = adjustment.adjustedTime
+            ? new Date(adjustment.adjustedTime).toISOString()
+            : originalTime;
+          taskData.metadata = {
+            ...(taskData.metadata || {}),
+            schedule_conflict: adjustment.conflictBlock
+          };
+          if (adjustedIso !== originalTime) {
+            taskData.start_time = adjustedIso;
+            taskData.metadata.schedule_shifted = true;
+            taskData.metadata.schedule_shifted_from = originalTime;
+            await scheduleService.recordScheduleConflict({
+              userId: req.user.id,
+              conflictType: 'task_vs_schedule',
+              conflictWindow: adjustment.conflictBlock,
+              resolution: 'task_shifted',
+              metadata: { original_time: originalTime, shifted_time: adjustedIso }
+            });
+          } else {
+            await scheduleService.recordScheduleConflict({
+              userId: req.user.id,
+              conflictType: 'task_vs_schedule',
+              conflictWindow: adjustment.conflictBlock,
+              resolution: 'conflict_detected',
+              metadata: { original_time: originalTime }
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('[Tasks] Schedule conflict check failed:', error.message);
+      }
+    }
+
     const task = await Task.create(taskData);
     if (task?.start_time) {
       await QueueService.scheduleTaskReminders(req.user, task);
