@@ -4,6 +4,7 @@ const adminAuth = require('../middleware/adminAuth');
 const supabase = require('../config/supabase');
 const datasetExporter = require('../services/datasetExporter');
 const optimizerService = require('../services/optimizerService');
+const optimizerConfig = require('../config/optimizer');
 const opikMirror = require('../services/opikMirror');
 const { DateTime } = require('luxon');
 
@@ -323,6 +324,7 @@ router.post('/opik/optimizer/run', adminAuth, async (req, res) => {
 
     if (jobs.includes('hrpo')) {
       results.hrpo = await optimizerService.runReminderPromptOptimization({
+        prompt: req.body?.hrpo_prompt || optimizerConfig.reminder.baselinePrompt,
         metric: req.body?.hrpo_metric,
         datasetName: req.body?.hrpo_dataset,
         datasetPath: req.body?.hrpo_dataset_path,
