@@ -11,7 +11,6 @@ const nluService = require('./nluService');
 const conversationContext = require('./conversationContext');
 const reminderPreferences = require('./reminderPreferences');
 const resolutionBuilderService = require('./resolutionBuilderAgent');
-const scheduleService = require('./scheduleService');
 const { parseCoursesFromText, buildConfirmationSummary } = require('./timetableParser');
 const { DateTime } = require('luxon');
 const QueueService = require('./queue');
