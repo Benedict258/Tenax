@@ -6,14 +6,16 @@ import { Button } from '../../components/ui/button';
 const SettingsPage = () => {
   const { user } = useAuth();
   const [calendarStatus, setCalendarStatus] = useState<'connected' | 'disconnected' | 'loading'>('loading');
-  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [calendarEmail, setCalendarEmail] = useState<string | null>(null);
+  const [reviewResult, setReviewResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadStatus = async () => {
       try {
-        const response = await apiClient.get('/calendar/status');
-        setCalendarStatus(response.data.connected ? 'connected' : 'disconnected');
+        const response = await apiClient.get('/integrations/google/status');
+        setCalendarStatus(response.data.status === 'connected' ? 'connected' : 'disconnected');
+        setCalendarEmail(response.data.email || null);
       } catch (err) {
         setCalendarStatus('disconnected');
       }
@@ -23,9 +25,9 @@ const SettingsPage = () => {
 
   const connectCalendar = async () => {
     try {
-      const response = await apiClient.get('/calendar/connect');
-      if (response.data?.authUrl) {
-        window.location.href = response.data.authUrl;
+      const response = await apiClient.get('/integrations/google/auth-url');
+      if (response.data?.url) {
+        window.location.href = response.data.url;
       }
     } catch (err) {
       setError('Unable to start Google Calendar connection.');
@@ -34,26 +36,15 @@ const SettingsPage = () => {
 
   const loadCalendarEvents = async () => {
     try {
-      const response = await apiClient.get('/calendar/events');
-      setCalendarEvents(response.data.events || []);
+      const response = await apiClient.post('/integrations/google/review-today');
+      if (response.data?.inserted > 0) {
+        setReviewResult(`Added ${response.data.inserted} events to Today's Execution.`);
+      } else {
+        setReviewResult('No events found today.');
+      }
       setError(null);
     } catch (err) {
-      setError('Unable to load calendar events.');
-    }
-  };
-
-  const addEventAsTask = async (event: any) => {
-    try {
-      await apiClient.post('/tasks', {
-        title: event.summary || 'Calendar event',
-        start_time: event.start?.dateTime || event.start?.date,
-        end_time: event.end?.dateTime || event.end?.date,
-        category: 'Calendar',
-        created_via: 'calendar'
-      });
-      setError(null);
-    } catch (err) {
-      setError('Failed to add calendar event as task.');
+      setError('Unable to review Today's events.');
     }
   };
 
@@ -77,6 +68,9 @@ const SettingsPage = () => {
           <p className="mt-1 text-xs uppercase tracking-[0.3em] text-white/50">
             Status: {calendarStatus === 'loading' ? 'checking' : calendarStatus}
           </p>
+          {calendarEmail && (
+            <p className="text-white/60 text-sm mt-2">Connected as {calendarEmail}</p>
+          )}
           <p className="text-white/70 mt-2">
             Pull fixed-time commitments and optionally add them to your Tenax schedule.
           </p>
@@ -84,29 +78,19 @@ const SettingsPage = () => {
             <Button onClick={connectCalendar}>
               {calendarStatus === 'connected' ? 'Reconnect Calendar' : 'Connect Google Calendar'}
             </Button>
-            <Button variant="ghost" className="border border-white/20" onClick={loadCalendarEvents}>
+            <Button
+              variant="ghost"
+              className="border border-white/20"
+              onClick={loadCalendarEvents}
+              disabled={calendarStatus !== 'connected'}
+            >
               Review today&apos;s events
             </Button>
           </div>
-          {calendarEvents.length > 0 && (
-            <div className="mt-4 space-y-3">
-              {calendarEvents.map((event) => (
-                <div key={event.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                  <p className="font-semibold">{event.summary || 'Calendar event'}</p>
-                  <p className="text-sm text-white/60">
-                    {event.start?.dateTime || event.start?.date} — {event.end?.dateTime || event.end?.date}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    className="mt-3 border border-white/20"
-                    onClick={() => addEventAsTask(event)}
-                  >
-                    Add to tasks
-                  </Button>
-                </div>
-              ))}
-            </div>
+          {reviewResult && (
+            <p className="mt-4 text-sm text-white/70">{reviewResult}</p>
           )}
+
         </section>
 
         <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
@@ -124,3 +108,7 @@ const SettingsPage = () => {
 };
 
 export default SettingsPage;
+
+
+
+

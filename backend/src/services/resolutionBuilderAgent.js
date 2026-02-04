@@ -14,6 +14,7 @@ const ResolutionProgress = require('../models/ResolutionProgress');
 const scheduleService = require('./scheduleService');
 const QueueService = require('./queue');
 const resourceRetriever = require('./resourceRetriever');
+const resolutionService = require('./resolutionService');
 
 const DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAY_PATTERNS = [
@@ -597,19 +598,31 @@ async function buildRoadmapWithResearch(
 
   const isRoadmapValid = (roadmap) => {
     if (!roadmap?.phases?.length) return false;
+    const goalTokens = (goal || '')
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((token) => token.length >= 4);
     const banned = [
       'core concepts and quick wins',
       'structured practice and repetition',
       'focus on foundations and apply it with practice',
       'foundations',
       'applied practice',
-      'core concepts'
+      'core concepts',
+      'guided practice',
+      'applied build',
+      'review + polish',
+      'orientation'
     ];
     return roadmap.phases.every((phase) => {
       const title = (phase.title || '').toLowerCase();
       const description = (phase.description || '').toLowerCase();
       if (!phase.title || !phase.description) return false;
       if (banned.some((phrase) => title.includes(phrase) || description.includes(phrase))) return false;
+      if (goalTokens.length && !goalTokens.some((token) => title.includes(token))) {
+        const genericHints = ['foundation', 'core', 'practice', 'review', 'applied', 'guided', 'orientation'];
+        if (genericHints.some((token) => title.includes(token))) return false;
+      }
       if (!phase.phase_objective) return false;
       if (!Array.isArray(phase.what_to_build) || !phase.what_to_build.length) return false;
       const outcomes = Array.isArray(phase.what_to_learn)
@@ -704,6 +717,9 @@ Rules:
       });
       const retryParsed = extractJsonBlock(retryResponse.text);
       sanitized = sanitizeRoadmap(retryParsed, goal, outcome, durationWeeks);
+    }
+    if (!isRoadmapValid(sanitized)) {
+      sanitized = buildFallbackRoadmapFromResearch(goal, outcome, durationWeeks, researchPack);
     }
     const expanded = expandPhases(sanitized.phases, 5, 8);
     sanitized = { ...sanitized, phases: expanded };
@@ -1442,21 +1458,33 @@ class ResolutionBuilderFlow {
       roadmap_json: roadmap
     });
 
-    const phasesPayload = roadmap.phases.map((phase) => ({
+    const phasesPayload = roadmap.phases.map((phase) => {
+      const deliverable = Array.isArray(phase.what_to_build) && phase.what_to_build.length
+        ? phase.what_to_build[0]
+        : '';
+      const endGoal = phase.phase_end_goal || deliverable || '';
+      const completionPayload = {
+        ...(phase.completion_criteria || { type: 'threshold', threshold: 0.8 }),
+        end_goal: endGoal || undefined
+      };
+      if (deliverable && (!completionPayload.criteria || !completionPayload.criteria.length)) {
+        completionPayload.criteria = [deliverable];
+      }
+      return ({
       roadmap_id: roadmapRecord.id,
       plan_id: plan.id,
       phase_index: phase.phase_index,
       title: phase.title,
       description: phase.description,
       phase_objective: phase.phase_objective || null,
-      completion_criteria_json: phase.completion_criteria || { type: 'threshold', threshold: 0.8 },
+      completion_criteria_json: completionPayload,
       what_to_learn_json: phase.what_to_learn || [],
       what_to_build_json: phase.what_to_build || [],
       objectives_json: phase.objectives || [],
       topics_json: phase.topics || [],
       resources_json: phase.resources || [],
       completion_status: 'pending'
-    }));
+    });
 
     const phases = await ResolutionPhase.createMany(phasesPayload);
     await ResolutionProgress.createMany(
@@ -1476,23 +1504,7 @@ class ResolutionBuilderFlow {
       }));
     });
     await ResolutionResource.createMany(resourcePayload);
-    const tasks = generateResolutionTasks({
-      user: this.user,
-      planId: plan.id,
-      phases,
-      durationWeeks: this.state.duration_weeks,
-      daysFree: this.state.days_free,
-      preferredBlocks: this.state.preferred_blocks,
-      hoursPerWeek: this.state.time_commitment_hours,
-      pace: this.state.pace,
-      daysPerWeek: this.state.days_per_week,
-      sessionMinutes: this.state.session_minutes
-    });
-
-    const createdTasks = await ResolutionTask.createMany(tasks);
-    await ResolutionDailyItem.createMany(createdTasks);
-    await mirrorTasksToExecution(createdTasks, this.user);
-    await insertResolutionIntoScheduleIntel(this.user, createdTasks, plan.id, this.state.resolution_goal);
+    const createdTasks = await resolutionService.scheduleActivePhase(plan, phases, this.user);
 
     this.state.completed = true;
     this.state.active = false;
@@ -1500,7 +1512,7 @@ class ResolutionBuilderFlow {
     await this.saveState();
 
     return {
-      reply: `Approved. ${createdTasks.length} roadmap sessions added. Execution Agent will handle reminders from here.`,
+      reply: `Approved. ${createdTasks.length} Phase 1 sessions added. Tenax will unlock the next phase after you complete this one.`,
       state: this.publicState(),
       created_tasks: createdTasks.length,
       plan_id: plan.id

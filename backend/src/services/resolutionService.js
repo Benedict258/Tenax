@@ -167,6 +167,174 @@ async function insertResolutionTasksIntoScheduleIntel(userId, tasks) {
   return payloads;
 }
 
+function resolveSessionsPerWeek(hoursPerWeek, daysAvailable, pace = 'standard', daysPerWeek = null) {
+  if (!daysAvailable) return 1;
+  if (daysPerWeek && Number.isFinite(daysPerWeek)) {
+    return Math.max(1, Math.min(daysAvailable, daysPerWeek));
+  }
+  const base = hoursPerWeek ? Math.max(1, Math.round(hoursPerWeek / 2)) : daysAvailable;
+  const paceFactor = pace === 'light' ? 0.8 : pace === 'intense' ? 1.2 : 1;
+  const sessions = Math.round(base * paceFactor);
+  return Math.max(1, Math.min(daysAvailable, sessions));
+}
+
+function allocatePhaseWeeks(durationWeeks, phaseCount) {
+  const totalWeeks = Math.max(1, durationWeeks || phaseCount || 1);
+  const count = Math.max(1, phaseCount || 1);
+  const base = Math.max(1, Math.floor(totalWeeks / count));
+  let remainder = Math.max(0, totalWeeks - base * count);
+  return Array.from({ length: count }).map(() => {
+    const extra = remainder > 0 ? 1 : 0;
+    remainder -= extra;
+    return base + extra;
+  });
+}
+
+function buildPhaseSessionsFromRecord(phase) {
+  const topics = Array.isArray(phase?.topics_json) ? phase.topics_json : [];
+  const topicTitles = topics.map((topic) => topic?.title).filter(Boolean);
+  const learningOutcomes = Array.isArray(phase?.what_to_learn_json) ? phase.what_to_learn_json : [];
+  const deliverables = Array.isArray(phase?.what_to_build_json) ? phase.what_to_build_json : [];
+  const baseObjective = phase?.phase_objective || phase?.description || '';
+  const items = (topicTitles.length ? topicTitles : learningOutcomes).slice(0, 6);
+  if (!items.length && phase?.title) {
+    items.push(phase.title);
+  }
+  return items.map((item, idx) => ({
+    title: `${phase.title}: ${item}`,
+    objective: baseObjective || `Make progress on ${item}.`,
+    deliverable: deliverables[idx] || deliverables[0] || '',
+    topic: item
+  }));
+}
+
+function getDateForWeekDay(baseDate, dayOfWeek, weekOffset = 0) {
+  const start = baseDate.plus({ weeks: weekOffset }).startOf('week');
+  const targetWeekday = dayOfWeek === 0 ? 7 : dayOfWeek;
+  return start.set({ weekday: targetWeekday });
+}
+
+function buildSlotList({ baseDate, daysFree, blocks, sessionsPerWeek, phaseWeeks }) {
+  const slots = [];
+  for (let week = 0; week < phaseWeeks; week += 1) {
+    const selectedDays = daysFree.slice(0, sessionsPerWeek);
+    selectedDays.forEach((day, dayIndex) => {
+      const block = blocks[(dayIndex + week) % blocks.length];
+      const date = getDateForWeekDay(baseDate, day.dayOfWeek, week);
+      slots.push({ date, day, block });
+    });
+  }
+  return slots;
+}
+
+async function schedulePhaseTasks({ plan, phase, phases, user }) {
+  if (!plan || !phase || !user) return [];
+  const availability = plan.availability_json || {};
+  const daysFree = Array.isArray(availability.days_free) ? availability.days_free : [];
+  const preferredBlocks = Array.isArray(availability.preferred_blocks) ? availability.preferred_blocks : [];
+  if (!daysFree.length) return [];
+
+  const phaseCount = phases.length || 1;
+  const phaseWeeksAllocation = allocatePhaseWeeks(plan.duration_weeks || phaseCount, phaseCount);
+  const phaseWeeks = phaseWeeksAllocation[phase.phase_index] || 1;
+  const blocks = preferredBlocks.length ? preferredBlocks : [{ label: 'Evening', time: { hour: 19, minute: 0 } }];
+  const sessionsPerWeek = resolveSessionsPerWeek(
+    availability.hours_per_week,
+    daysFree.length,
+    availability.pace || 'standard',
+    availability.days_per_week
+  );
+  const totalSessions = Math.max(1, phaseWeeks * sessionsPerWeek);
+  const baseDate = DateTime.now().setZone(user.timezone || 'UTC');
+  const slotList = buildSlotList({
+    baseDate,
+    daysFree,
+    blocks,
+    sessionsPerWeek,
+    phaseWeeks
+  });
+  const sessions = buildPhaseSessionsFromRecord(phase);
+  const resources = Array.isArray(phase.resources_json) ? phase.resources_json : [];
+  const estimatedMinutes = availability.session_minutes || Math.max(30, Math.round((availability.hours_per_week || 2) * 30));
+
+  const taskPayload = [];
+  for (let i = 0; i < totalSessions; i += 1) {
+    const slot = slotList[i];
+    if (!slot) break;
+    const session = sessions[i % sessions.length] || { title: phase.title, objective: phase.phase_objective, deliverable: '' };
+    const objective = session.objective || phase.phase_objective || `Advance ${phase.title}`;
+    const deliverable = session.deliverable || '';
+    const resourceTitles = resources.slice(0, 2).map((res) => res.title).filter(Boolean);
+    const description = [
+      session.topic ? `Focus: ${session.topic}.` : '',
+      deliverable ? `Deliverable: ${deliverable}.` : '',
+      resourceTitles.length ? `Resources: ${resourceTitles.join('; ')}` : ''
+    ].filter(Boolean).join(' ');
+
+    taskPayload.push({
+      user_id: user.id,
+      plan_id: plan.id,
+      phase_id: phase.id,
+      date: slot.date.toISODate(),
+      start_time: slot.block.time ? `${String(slot.block.time.hour).padStart(2, '0')}:${String(slot.block.time.minute).padStart(2, '0')}:00` : null,
+      title: session.title || phase.title,
+      objective,
+      description,
+      resources_json: resources,
+      estimated_duration_minutes: estimatedMinutes,
+      topic_key: session.topic ? session.topic.toLowerCase().replace(/[^a-z0-9]+/g, '_') : phase.title.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+      topic_id: session.topic ? session.topic.toLowerCase().replace(/[^a-z0-9]+/g, '_') : phase.title.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+      status: 'todo',
+      order_index: i,
+      locked: false
+    });
+  }
+
+  if (!taskPayload.length) return [];
+  const createdTasks = await ResolutionTask.createMany(taskPayload);
+  await ResolutionDailyItem.createMany(createdTasks);
+  await mirrorUnlockedTasks(createdTasks, user.id);
+  await insertResolutionTasksIntoScheduleIntel(user.id, createdTasks);
+  return createdTasks;
+}
+
+async function scheduleActivePhase(plan, phases, user) {
+  if (!plan || !phases?.length || !user) return [];
+  const activeIndex = Math.max(1, plan.active_phase_index || 1);
+  const phase = phases.find((item) => item.phase_index + 1 === activeIndex);
+  if (!phase) return [];
+  const existing = await ResolutionTask.listByPhase(phase.id);
+  if (existing.length) {
+    const unlocked = await ResolutionTask.unlockPhaseTasks(phase.id);
+    await ResolutionDailyItem.unlockPhaseItems(phase.id);
+    await mirrorUnlockedTasks(unlocked, user.id);
+    await insertResolutionTasksIntoScheduleIntel(user.id, unlocked);
+    return unlocked;
+  }
+  return schedulePhaseTasks({ plan, phase, phases, user });
+}
+
+async function unlockNextPhase(plan, phases, currentPhase, user) {
+  const nextPhase = await ResolutionPhase.getNextPhase(currentPhase.plan_id, currentPhase.phase_index);
+  if (!nextPhase) {
+    await ResolutionPlan.update(plan.id, { status: 'completed' });
+    return { nextPhase: null, unlockedTasks: [] };
+  }
+
+  const existing = await ResolutionTask.listByPhase(nextPhase.id);
+  let unlockedTasks = [];
+  if (existing.length) {
+    unlockedTasks = await ResolutionTask.unlockPhaseTasks(nextPhase.id);
+    await ResolutionDailyItem.unlockPhaseItems(nextPhase.id);
+    await mirrorUnlockedTasks(unlockedTasks, user.id);
+    await insertResolutionTasksIntoScheduleIntel(user.id, unlockedTasks);
+  } else {
+    unlockedTasks = await schedulePhaseTasks({ plan, phase: nextPhase, phases, user });
+  }
+  await ResolutionPlan.update(plan.id, { active_phase_index: nextPhase.phase_index + 1 });
+  return { nextPhase, unlockedTasks };
+}
+
 async function completeResolutionTask(taskId, userId) {
   const task = await ResolutionTask.getById(taskId);
   if (!task || task.user_id !== userId) {
@@ -225,17 +393,11 @@ async function confirmPhaseCompletion(phaseId, userId) {
   }
 
   const updatedPhase = await ResolutionPhase.updateStatus(phase.id, 'completed');
-  const nextPhase = await ResolutionPhase.getNextPhase(phase.plan_id, phase.phase_index);
-
-  let unlockedTasks = [];
-  if (nextPhase) {
-    unlockedTasks = await ResolutionTask.unlockPhaseTasks(nextPhase.id);
-    await mirrorUnlockedTasks(unlockedTasks, userId);
-    await insertResolutionTasksIntoScheduleIntel(userId, unlockedTasks);
-    await ResolutionPlan.update(phase.plan_id, { active_phase_index: nextPhase.phase_index + 1 });
-  } else {
-    await ResolutionPlan.update(plan.id, { status: 'completed' });
-  }
+  const phases = await ResolutionPhase.listByPlan(plan.id);
+  const { nextPhase, unlockedTasks } = await unlockNextPhase(plan, phases, phase, {
+    id: userId,
+    timezone: plan?.timezone || 'UTC'
+  });
 
   return { phase: updatedPhase, nextPhase, unlockedTasks };
 }
@@ -303,6 +465,10 @@ module.exports = {
   completeResolutionTask,
   confirmPhaseCompletion,
   uploadPlanAsset,
+  scheduleActivePhase,
+  unlockNextPhase,
+  scheduleActivePhase,
+  unlockNextPhase,
   async listRoadmaps(userId) {
     return ResolutionRoadmap.listByUser(userId);
   },
@@ -339,16 +505,12 @@ module.exports = {
     }
     await ResolutionPhase.updateStatus(phase.id, 'completed');
     await ResolutionProgress.updateStatus(phase.id, 'completed');
-    const nextPhase = await ResolutionPhase.getNextPhaseByRoadmap(phase.roadmap_id, phase.phase_index);
-    let unlockedDaily = [];
-    let unlockedTasks = [];
-    if (nextPhase) {
-      unlockedDaily = await ResolutionDailyItem.unlockPhaseItems(nextPhase.id);
-      unlockedTasks = await ResolutionTask.unlockPhaseTasks(nextPhase.id);
-      await mirrorUnlockedTasks(unlockedTasks, userId);
-      await insertResolutionTasksIntoScheduleIntel(userId, unlockedTasks);
-      await ResolutionPlan.update(phase.plan_id, { active_phase_index: nextPhase.phase_index + 1 });
-    }
-    return { status: 'ok', nextPhase, unlockedDailyCount: unlockedDaily.length, unlockedTaskCount: unlockedTasks.length };
+    const plan = await ResolutionPlan.getById(phase.plan_id);
+    const phases = await ResolutionPhase.listByPlan(phase.plan_id);
+    const { nextPhase, unlockedTasks } = await unlockNextPhase(plan, phases, phase, {
+      id: userId,
+      timezone: plan?.timezone || 'UTC'
+    });
+    return { status: 'ok', nextPhase, unlockedDailyCount: unlockedTasks.length, unlockedTaskCount: unlockedTasks.length };
   }
 };

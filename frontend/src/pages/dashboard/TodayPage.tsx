@@ -214,7 +214,10 @@ const TodayPage = () => {
               streak={today.streak || 0}
               engagement={today.engagement || 0}
             />
-            <ExecutionBoardBentoCard tasks={tasksToday} />
+            <ExecutionBoardBentoCard
+              tasks={tasksToday}
+              scheduleBlocks={todaysBlocks}
+            />
             <PinnedP1BentoCard tasks={pinnedTasks} />
             {overviewCards.map((card) => (
               <BentoCard key={card.name} {...card} />
@@ -264,7 +267,7 @@ const CompletionBentoCard = ({
       <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Completion</p>
       <div>
         <p className="text-4xl font-semibold text-black">{completionRate}%</p>
-        <p className="text-gray-600">{completed}/{total} tasks locked</p>
+        <p className="text-gray-600">{completed}/{total} tasks today</p>
       </div>
       <div className="space-y-3">
         <MetricPill label="Streak" value={`${streak} days`} icon={Flame} />
@@ -303,25 +306,59 @@ const PinnedP1BentoCard = ({ tasks }: { tasks: Task[] }) => {
   );
 };
 
-const ExecutionBoardBentoCard = ({ tasks }: { tasks: Task[] }) => {
+const ExecutionBoardBentoCard = ({
+  tasks,
+  scheduleBlocks,
+}: {
+  tasks: Task[];
+  scheduleBlocks: TimetableRow[];
+}) => {
   const now = Date.now();
-  const sorted = [...tasks].sort((a, b) => {
-    const aTime = a.start_time ? new Date(a.start_time).getTime() : Infinity;
-    const bTime = b.start_time ? new Date(b.start_time).getTime() : Infinity;
-    return aTime - bTime;
+  const scheduleItems = scheduleBlocks.map((block) => {
+    const base = new Date();
+    const start = block.start_time ? new Date(base) : null;
+    const end = block.end_time ? new Date(base) : null;
+    if (start && block.start_time) {
+      const [hh, mm, ss] = block.start_time.split(':').map((part) => parseInt(part, 10));
+      start.setHours(hh || 0, mm || 0, ss || 0, 0);
+    }
+    if (end && block.end_time) {
+      const [hh, mm, ss] = block.end_time.split(':').map((part) => parseInt(part, 10));
+      end.setHours(hh || 0, mm || 0, ss || 0, 0);
+    }
+    return {
+      id: `schedule-${block.id}`,
+      title: block.title,
+      category: block.category || 'Schedule',
+      start_time: start ? start.toISOString() : null,
+      end_time: end ? end.toISOString() : null,
+      status: 'todo',
+      severity: null
+    };
   });
-  const upcoming = sorted.find((task) => {
-    if (!task.start_time) return false;
-    return new Date(task.start_time).getTime() >= now;
+  const combined = [...tasks, ...scheduleItems];
+  const withTimes = combined.map((item) => ({
+    ...item,
+    startMs: item.start_time ? new Date(item.start_time).getTime() : null,
+    endMs: item.end_time ? new Date(item.end_time).getTime() : null
+  }));
+  const inProgress = withTimes.filter((item) => {
+    if (!item.startMs) return false;
+    const end = item.endMs ?? item.startMs + 60 * 60000;
+    return item.startMs <= now && end >= now && item.status !== 'done';
   });
-  const firstTask = upcoming || sorted[0];
+  const upcoming = withTimes.filter((item) => item.startMs && item.startMs > now && item.status !== 'done');
+  const overdue = withTimes.filter((item) => item.startMs && item.startMs < now && item.status !== 'done');
+  const anytime = withTimes.filter((item) => !item.startMs && item.status !== 'done');
+  const ordered = [...inProgress, ...upcoming, ...overdue, ...anytime];
+  const firstTask = ordered[0];
   return (
     <div className="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] lg:col-start-1 lg:col-end-2 lg:row-start-1 lg:row-end-3">
       <div className="absolute inset-0 bg-amber-50 opacity-30" />
       <div className="relative z-10 flex flex-col gap-4 p-6">
         <div className="flex items-center justify-between">
           <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Today's Execution Board</p>
-          <span className="text-xs text-gray-500">{tasks.length} tasks</span>
+          <span className="text-xs text-gray-500">{combined.length} tasks</span>
         </div>
         {firstTask ? (
           <div className="space-y-2">
@@ -345,7 +382,7 @@ const ExecutionBoardBentoCard = ({ tasks }: { tasks: Task[] }) => {
               View all <ArrowRightIcon className="ml-2 h-4 w-4" />
             </Link>
           </Button>
-          <span className="text-gray-400">{tasks.length} total</span>
+          <span className="text-gray-400">{combined.length} total</span>
         </div>
       </div>
     </div>

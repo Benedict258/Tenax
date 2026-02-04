@@ -1,6 +1,8 @@
 const opikBridge = require('../utils/opikBridge');
 const variantConfig = require('../config/experiment');
 const datasetExporter = require('../services/datasetExporter');
+const llmEvaluator = require('../services/llmEvaluator');
+const opikMirror = require('../services/opikMirror');
 
 const TRACE_FUNCTION_MAP = {
   daily_plan: 'log_daily_plan_trace',
@@ -60,6 +62,32 @@ class OpikAgentTracer {
       input_context: tracePayload.input_context,
       output: tracePayload.output
     });
+
+    let scores = null;
+    try {
+      scores = await llmEvaluator.evaluate({
+        messageType,
+        userGoal,
+        userSchedule,
+        taskMetadata,
+        generatedText
+      });
+    } catch (error) {
+      console.warn('[Opik] Evaluator scoring failed:', error.message);
+    }
+
+    try {
+      await opikMirror.logTrace({
+        userId,
+        messageType,
+        inputContext,
+        output,
+        metadata,
+        scores
+      });
+    } catch (error) {
+      console.warn('[Opik] Mirror log failed:', error.message);
+    }
 
     return opikBridge.log(functionName, tracePayload);
   }

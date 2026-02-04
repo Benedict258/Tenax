@@ -650,10 +650,13 @@ For issues or questions:
 - Run the new SQL scripts in Supabase:
   - `backend/scripts/notifications_schema.sql`
   - `backend/scripts/google_calendar_schema.sql`
+  - `backend/scripts/user_integrations_schema.sql`
+  - `backend/scripts/opik_trace_mirror_schema.sql`
 - Backend env additions:
   - `REDIS_URL` (supports `redis://host:port` or `host:port`)
   - `ASSEMBLYAI_API_KEY` (WhatsApp voice note transcription)
-  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALENDAR_REDIRECT_URL` (Calendar OAuth)
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` (Calendar OAuth)
+  - `ADMIN_PASSCODE` (Admin /admin dashboard gate)
 - Frontend env additions:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`

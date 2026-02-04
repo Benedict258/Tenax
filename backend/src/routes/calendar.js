@@ -22,8 +22,10 @@ router.get('/callback', async (req, res) => {
     if (!code || !state) {
       return res.status(400).send('Missing OAuth parameters');
     }
-    await googleCalendar.exchangeCodeForTokens(code, state);
-    await User.updateProfile(state, { google_calendar_connected: true });
+    const result = await googleCalendar.exchangeCodeForTokens(code, state);
+    if (result?.userId) {
+      await User.updateProfile(result.userId, { google_calendar_connected: true });
+    }
     res.redirect(`${process.env.APP_URL || 'http://localhost:3000'}/dashboard/settings`);
   } catch (error) {
     console.error('[Calendar] callback error:', error.message);
@@ -34,7 +36,7 @@ router.get('/callback', async (req, res) => {
 router.get('/status', auth, async (req, res) => {
   try {
     const tokens = await googleCalendar.getTokens(req.user.id);
-    res.json({ connected: Boolean(tokens) });
+    res.json({ connected: Boolean(tokens?.access_token) });
   } catch (error) {
     console.error('[Calendar] status error:', error.message);
     res.status(500).json({ message: 'Failed to check calendar status' });

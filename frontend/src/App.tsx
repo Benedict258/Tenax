@@ -16,6 +16,8 @@ import PhaseDetailPage from './pages/dashboard/PhaseDetailPage';
 import BehaviorPage from './pages/admin/BehaviorPage';
 import OpikPulsePage from './pages/admin/OpikPulsePage';
 import SignalsPage from './pages/admin/SignalsPage';
+import AdminLoginPage from './pages/admin/AdminLoginPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AddTaskPage from './pages/dashboard/AddTaskPage';
 import ScheduleEditorPage from './pages/dashboard/ScheduleEditorPage';
 import ResolutionBuilderPage from './pages/dashboard/ResolutionBuilderPage';
@@ -40,6 +42,8 @@ function App() {
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/auth/check-email" element={<CheckEmailPage />} />
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/login" element={<AdminLoginPage />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<Navigate to="today" replace />} />
                 <Route path="today" element={<TodayPage />} />

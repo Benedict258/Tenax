@@ -13,6 +13,8 @@ const analyticsRoutes = require('./routes/analytics');
 const resolutionRoutes = require('./routes/resolution');
 const notificationRoutes = require('./routes/notifications');
 const calendarRoutes = require('./routes/calendar');
+const integrationsRoutes = require('./routes/integrations');
+const adminRoutes = require('./routes/admin');
 const scheduleQueues = require('./services/scheduleQueues');
 const optimizerJobs = require('./services/optimizerJobs');
 
@@ -72,6 +74,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/resolution', resolutionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/integrations', integrationsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
