@@ -9,13 +9,14 @@ type Phase = {
   title: string;
   description: string | null;
   phase_objective: string | null;
+  phase_end_goal?: string | null;
   objectives_json?: string[];
   what_to_learn_json?: string[];
   what_to_build_json?: string[];
-  topics_json?: Array<{ title: string }>;
+  topics_json?: Array<{ title?: string | null }>;
   resources?: Array<{ id: string; title: string; url: string; type?: string | null }>;
   completion_status: string;
-  completion_criteria_json?: { type?: string; threshold?: number; criteria?: string[] };
+  completion_criteria_json?: { type?: string; threshold?: number; criteria?: string[]; end_goal?: string };
 };
 
 type RoadmapPayload = {
@@ -28,7 +29,7 @@ const PhaseDetailPage = () => {
   const { roadmapId, phaseId } = useParams();
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase | null>(null);
-  const [planTasks, setPlanTasks] = useState<Array<{ id: string; phase_id?: string | null; date?: string | null; title: string; objective?: string | null; description?: string | null; resources_json?: Array<{ title?: string; url?: string }> }>>([]);
+  const [planTasks, setPlanTasks] = useState<Array<{ id: string; phase_id?: string | null; date?: string | null; title: string; objective?: string | null; description?: string | null; resources_json?: Array<{ title?: string | null; url?: string | null }> }>>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -63,7 +64,7 @@ const PhaseDetailPage = () => {
       return phase.what_to_learn_json;
     }
     if (phase?.topics_json?.length) {
-      return phase.topics_json.map((topic: { title: string }) => topic.title);
+      return phase.topics_json.map((topic) => topic?.title).filter(Boolean) as string[];
     }
     return [];
   }, [phase]);
@@ -79,22 +80,25 @@ const PhaseDetailPage = () => {
 
   const objectiveText = phase?.phase_objective || phase?.description || "";
   const endGoalText = useMemo(() => {
-    const criteria = phase?.completion_criteria_json?.criteria;
-    if (Array.isArray(criteria) && criteria.length) {
-      return criteria[0];
+    if (phase?.completion_criteria_json?.end_goal) {
+      return phase.completion_criteria_json.end_goal;
     }
     if (deliverables.length) {
       return deliverables[deliverables.length - 1];
     }
+    const criteria = phase?.completion_criteria_json?.criteria;
+    if (Array.isArray(criteria) && criteria.length) {
+      return criteria[0];
+    }
     return "";
   }, [phase, deliverables]);
 
-  const phaseTasksByDate = useMemo(() => {
+  const phaseTasksByDate = useMemo<Record<string, typeof planTasks>>(() => {
     if (!phase?.id) return {};
     return planTasks
       .filter((task) => task.phase_id === phase.id)
       .reduce<Record<string, typeof planTasks>>((acc, task) => {
-        const dateKey = task.date || "unscheduled";
+        const dateKey = task.date ?? "unscheduled";
         if (!acc[dateKey]) acc[dateKey] = [];
         acc[dateKey].push(task);
         return acc;
@@ -236,15 +240,15 @@ const PhaseDetailPage = () => {
                       {task.description && <p className="text-xs text-gray-600 mt-1">{task.description}</p>}
                       {task.resources_json?.length ? (
                         <div className="mt-2 space-y-1">
-                          {task.resources_json.map((resource: any) => (
+                          {task.resources_json.map((resource) => (
                             <a
-                              key={`${task.id}-${resource.title}`}
-                              href={resource.url}
+                              key={`${task.id}-${resource.title || resource.url}`}
+                              href={resource.url || undefined}
                               target="_blank"
                               rel="noreferrer"
                               className="block text-xs text-brand-500"
                             >
-                              {resource.title}
+                              {resource.title || resource.url}
                             </a>
                           ))}
                         </div>

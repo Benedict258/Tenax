@@ -40,11 +40,11 @@ const ExecutionBoardPage = () => {
         <FeaturesSectionWithHoverEffects
           features={tasksToday.map((task) => ({
             title: task.title,
-            description: `${task.category || 'General'} • ${
+            description: `${task.category || 'General'} - ${
               task.start_time
                 ? new Date(task.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 : 'Flexible'
-            }${task.severity ? ` • ${task.severity}` : ''}`,
+            }${task.severity ? ` - ${task.severity}` : ''}`,
             icon: <ClipboardList />,
             action: task.is_schedule_block ? null : (
               <Button

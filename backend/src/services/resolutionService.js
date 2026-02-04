@@ -9,6 +9,8 @@ const supabase = require('../config/supabase');
 const ResolutionRoadmap = require('../models/ResolutionRoadmap');
 const ResolutionResource = require('../models/ResolutionResource');
 const ResolutionProgress = require('../models/ResolutionProgress');
+const QueueService = require('./queue');
+const scheduleService = require('./scheduleService');
 
 const STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
 
@@ -100,7 +102,69 @@ async function mirrorUnlockedTasks(tasks, userId) {
   if (!payload.length) return [];
   const created = await Task.createMany(payload);
   await ruleStateService.refreshUserState(userId);
+  for (const task of created) {
+    if (!task.start_time) continue;
+    // eslint-disable-next-line no-await-in-loop
+    await QueueService.scheduleTaskReminders({ id: userId }, task);
+  }
   return created;
+}
+
+async function insertResolutionTasksIntoScheduleIntel(userId, tasks) {
+  if (!tasks?.length) return [];
+  const existingRows = await scheduleService.listExtractionRows(userId);
+  const existingResolutionTaskIds = new Set(
+    existingRows
+      .map((row) => row?.metadata?.resolution_task_id)
+      .filter(Boolean)
+      .map((value) => String(value))
+  );
+  const seen = new Set();
+  const payloads = tasks
+    .filter((task) => task.start_time && task.estimated_duration_minutes)
+    .filter((task) => !existingResolutionTaskIds.has(String(task.id)))
+    .map((task) => {
+      const date = new Date(`${task.date}T00:00:00`);
+      const dayOfWeek = date.getDay();
+      const start = task.start_time;
+      const [hh, mm, ss] = start.split(':').map((value) => Number(value));
+      const startDate = new Date(date);
+      startDate.setHours(hh || 0, mm || 0, ss || 0, 0);
+      const endDate = new Date(startDate.getTime() + task.estimated_duration_minutes * 60000);
+      const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}:00`;
+
+      const payload = {
+        title: task.title,
+        day_of_week: dayOfWeek,
+        start_time: start,
+        end_time: endTime,
+        category: 'Resolution',
+        metadata: {
+          source: 'resolution_builder',
+          resolution_plan_id: task.plan_id,
+          resolution_task_id: task.id
+        }
+      };
+
+      const key = [
+        payload.day_of_week,
+        payload.start_time,
+        payload.end_time,
+        payload.title.toLowerCase(),
+        payload.category.toLowerCase(),
+        payload.metadata.resolution_task_id
+      ].join('|');
+      if (seen.has(key)) return null;
+      seen.add(key);
+      return payload;
+    })
+    .filter(Boolean);
+
+  for (const entry of payloads) {
+    // eslint-disable-next-line no-await-in-loop
+    await scheduleService.createManualExtractionRow(userId, entry);
+  }
+  return payloads;
 }
 
 async function completeResolutionTask(taskId, userId) {
@@ -167,6 +231,8 @@ async function confirmPhaseCompletion(phaseId, userId) {
   if (nextPhase) {
     unlockedTasks = await ResolutionTask.unlockPhaseTasks(nextPhase.id);
     await mirrorUnlockedTasks(unlockedTasks, userId);
+    await insertResolutionTasksIntoScheduleIntel(userId, unlockedTasks);
+    await ResolutionPlan.update(phase.plan_id, { active_phase_index: nextPhase.phase_index + 1 });
   } else {
     await ResolutionPlan.update(plan.id, { status: 'completed' });
   }
@@ -255,7 +321,8 @@ module.exports = {
       }))
     );
     const planId = phasesWithResources[0]?.plan_id || null;
-    return { roadmap, phases: phasesWithResources, plan_id: planId };
+    const plan = planId ? await ResolutionPlan.getById(planId) : null;
+    return { roadmap, phases: phasesWithResources, plan_id: planId, plan };
   },
   async markPhaseComplete(phaseId, userId) {
     const phase = await ResolutionPhase.getById(phaseId);
@@ -278,6 +345,9 @@ module.exports = {
     if (nextPhase) {
       unlockedDaily = await ResolutionDailyItem.unlockPhaseItems(nextPhase.id);
       unlockedTasks = await ResolutionTask.unlockPhaseTasks(nextPhase.id);
+      await mirrorUnlockedTasks(unlockedTasks, userId);
+      await insertResolutionTasksIntoScheduleIntel(userId, unlockedTasks);
+      await ResolutionPlan.update(phase.plan_id, { active_phase_index: nextPhase.phase_index + 1 });
     }
     return { status: 'ok', nextPhase, unlockedDailyCount: unlockedDaily.length, unlockedTaskCount: unlockedTasks.length };
   }

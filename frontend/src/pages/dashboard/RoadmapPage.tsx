@@ -26,6 +26,7 @@ type RoadmapPayload = {
   roadmap: Roadmap;
   phases: Phase[];
   plan_id?: string | null;
+  plan?: { active_phase_index?: number | null };
 };
 
 type RoadmapListPayload = {
@@ -63,6 +64,7 @@ const RoadmapPage = () => {
   }, [roadmapId]);
 
   const phases = data?.phases || [];
+  const activePhaseIndex = data?.plan?.active_phase_index ?? 1;
 
   const phaseProgress = useMemo(() => {
     const map = new Map<string, { total: number; done: number }>();
@@ -146,6 +148,8 @@ const RoadmapPage = () => {
             const progressText = progress?.total
               ? `Progress ${progress.done}/${progress.total} (${Math.round((progress.done / progress.total) * 100)}%)`
               : "Progress tracking available after tasks are scheduled.";
+            const isActive = phase.phase_index + 1 === activePhaseIndex;
+            const isLocked = phase.phase_index + 1 > activePhaseIndex;
             return (
               <button
                 key={phase.id}
@@ -155,6 +159,10 @@ const RoadmapPage = () => {
               >
                 <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Phase {phase.phase_index + 1}</p>
                 <h4 className="mt-2 text-lg font-semibold text-black">{phase.title}</h4>
+                <div className="mt-2 flex items-center gap-2 text-xs">
+                  {isActive && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">Active</span>}
+                  {isLocked && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-500">Locked</span>}
+                </div>
                 <p className="mt-2 text-sm text-gray-500">{objective || "Phase details available."}</p>
                 <p className="mt-3 text-xs text-gray-400">{progressText}</p>
                 <div className="mt-4 flex items-center gap-2 text-xs text-brand-500">

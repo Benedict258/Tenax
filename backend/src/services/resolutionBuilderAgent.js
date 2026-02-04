@@ -34,9 +34,9 @@ const DAY_PART_BLOCKS = [
   { key: 'night', label: 'Night', time: { hour: 21, minute: 0 } }
 ];
 
-const YES_TRIGGERS = ['yes', 'yep', 'sure', 'ok', 'okay', 'approve', 'approved', 'go ahead', 'do it'];
-const NO_TRIGGERS = ['no', 'nope', 'cancel', 'stop', 'not now'];
-const EDIT_TRIGGERS = ['edit', 'change', 'adjust', 'partial'];
+const YES_TRIGGERS = ['yes', 'yep', 'sure', 'ok', 'okay', 'approve', 'approved', 'go ahead', 'do it', 'add it', 'add plan', 'add'];
+const NO_TRIGGERS = ['no', 'nope', 'cancel', 'stop', 'not now', 'skip'];
+const EDIT_TRIGGERS = ['edit', 'change', 'adjust', 'partial', 'change times', 'update times'];
 const PACE_OPTIONS = ['light', 'standard', 'intense'];
 const RESOLUTION_TYPES = ['skill_based', 'habit_based', 'outcome_based', 'hybrid'];
 
@@ -266,54 +266,74 @@ function resolveSessionsPerWeek(hoursPerWeek, daysAvailable, pace = 'standard', 
 
 function buildRoadmap(goal, outcome, durationWeeks) {
   const title = outcome ? `${goal} -> ${outcome}` : `${goal} Roadmap`;
+  const domain = goal.split(' ').slice(0, 4).join(' ').trim() || 'Goal';
   const phases = [
     {
       phase_index: 0,
-      title: 'Orientation + Fundamentals',
-      description: 'Clarify scope, set tooling, and cover the essentials.',
-      objectives: ['Understand key terminology', 'Set up the environment', 'Complete quick exercises'],
-      topics: [{ title: 'Core basics', subtopics: ['Key terms', 'Setup', 'First reps'], type: 'core' }],
+      title: `${domain}: Setup + Fundamentals`,
+      description: `Get the environment ready and learn the building blocks for ${domain}.`,
+      phase_objective: `Understand the core building blocks needed to start ${domain}.`,
+      what_to_learn: [`Core terminology for ${domain}`, 'Basic workflow', 'First practical example'],
+      what_to_build: [`Create a minimal starter example for ${domain}`],
+      objectives: ['Explain the fundamentals', 'Complete a small starter exercise'],
+      topics: [{ title: 'Fundamentals', subtopics: ['Core terms', 'Setup', 'First steps'], type: 'core' }],
       resources: [],
-      completion_criteria: { type: 'threshold', threshold: 0.8 }
+      completion_criteria: { type: 'manual_confirm', criteria: [`Build a starter example for ${domain}`], end_goal: `Build a starter example for ${domain}` }
     },
     {
       phase_index: 1,
-      title: 'Core Concepts',
-      description: 'Build the backbone knowledge required for progress.',
-      objectives: ['Cover the main concepts', 'Practice with small tasks'],
-      topics: [{ title: 'Foundational concepts', subtopics: ['Concept A', 'Concept B'], type: 'core' }],
+      title: `${domain}: Core Skills`,
+      description: `Build the essential skills required to progress in ${domain}.`,
+      phase_objective: `Develop confidence with the core mechanics of ${domain}.`,
+      what_to_learn: ['Key concepts', 'Core techniques', 'Common pitfalls'],
+      what_to_build: ['Solve 2 practical exercises'],
+      objectives: ['Apply core techniques', 'Complete structured drills'],
+      topics: [{ title: 'Core techniques', subtopics: ['Technique A', 'Technique B'], type: 'core' }],
       resources: [],
-      completion_criteria: { type: 'threshold', threshold: 0.8 }
+      completion_criteria: { type: 'manual_confirm', criteria: ['Complete 2 practical exercises'], end_goal: 'Complete 2 practical exercises' }
     },
     {
       phase_index: 2,
-      title: 'Guided Practice',
-      description: 'Apply the concepts with structured practice sessions.',
-      objectives: ['Practice consistently', 'Capture lessons learned'],
-      topics: [{ title: 'Guided drills', subtopics: ['Exercises', 'Feedback'], type: 'core' }],
+      title: `${domain}: Applied Practice`,
+      description: `Practice with real-world tasks and consolidate ${domain} knowledge.`,
+      phase_objective: `Apply your knowledge to real tasks.`,
+      what_to_learn: ['Applied workflows', 'Quality checks', 'Self-review'],
+      what_to_build: ['Finish a mini-project or routine'],
+      objectives: ['Deliver a mini output', 'Reflect on results'],
+      topics: [{ title: 'Applied tasks', subtopics: ['Mini project', 'Review'], type: 'core' }],
       resources: [],
-      completion_criteria: { type: 'threshold', threshold: 0.8 }
-    },
-    {
-      phase_index: 3,
-      title: 'Applied Build',
-      description: 'Turn learning into a concrete output or project.',
-      objectives: ['Build something tangible', 'Document learnings'],
-      topics: [{ title: 'Build milestone', subtopics: ['Prototype', 'Iteration'], type: 'core' }],
-      resources: [],
-      completion_criteria: { type: 'threshold', threshold: 0.8 }
-    },
-    {
-      phase_index: 4,
-      title: 'Review + Polish',
-      description: 'Review, refine, and prepare for the next level.',
-      objectives: ['Fix gaps', 'Ship final updates', 'Plan next steps'],
-      topics: [{ title: 'Review checklist', subtopics: ['Polish', 'Reflection'], type: 'core' }],
-      resources: [],
-      completion_criteria: { type: 'threshold', threshold: 0.8 }
+      completion_criteria: { type: 'manual_confirm', criteria: ['Finish one mini output'], end_goal: 'Finish one mini output' }
     }
   ];
   return { goal, duration_weeks: durationWeeks, title, phases };
+}
+
+function buildFallbackRoadmapFromResearch(goal, outcome, durationWeeks, researchPack = []) {
+  const cleanedTitles = researchPack
+    .map((item) => item?.title || '')
+    .filter(Boolean)
+    .map((title) => title.split(/[-|:]/)[0].trim())
+    .filter(Boolean);
+  const uniqueTopics = [...new Set(cleanedTitles)];
+  const phaseCount = Math.min(8, Math.max(5, uniqueTopics.length || 5));
+  const title = outcome ? `${goal} -> ${outcome}` : `${goal} Roadmap`;
+  const phases = Array.from({ length: phaseCount }).map((_, index) => {
+    const topic = uniqueTopics[index] || `${goal} Focus ${index + 1}`;
+    const deliverable = `Produce a concrete output using ${topic}`;
+    return {
+      phase_index: index,
+      title: `${topic}`,
+      description: `Go deep on ${topic} and connect it to ${goal}.`,
+      phase_objective: `Understand and apply ${topic} toward ${goal}.`,
+      what_to_learn: [`Key concepts of ${topic}`, `Common workflows for ${topic}`, `How ${topic} connects to ${goal}`],
+      what_to_build: [deliverable],
+      objectives: [`Explain ${topic}`, `Apply ${topic} in a practical exercise`],
+      topics: [{ title: topic, type: 'core' }],
+      resources: [],
+      completion_criteria: { type: 'manual_confirm', criteria: [deliverable], end_goal: deliverable }
+    };
+  });
+  return { goal, duration_weeks: durationWeeks || phaseCount, title, phases };
 }
 
 function buildHabitRoadmap(goal, durationWeeks, daysPerWeek, sessionMinutes) {
@@ -392,7 +412,8 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
             .map((resource) => ({
               title: resource?.title || '',
               url: resource?.url || resource?.link || '',
-              type: resource?.type || resource?.kind || 'resource'
+              type: resource?.type || resource?.kind || 'resource',
+              why: resource?.why || resource?.reason || ''
             }))
             .filter((resource) => resource.title && resource.url)
         : [];
@@ -401,6 +422,11 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
         : Array.isArray(phase?.learning_objectives)
         ? phase.learning_objectives
         : [];
+      const learningOutcomes = Array.isArray(phase?.learning_outcomes)
+        ? phase.learning_outcomes
+        : Array.isArray(phase?.topics_to_learn)
+        ? phase.topics_to_learn
+        : [];
       const topics = Array.isArray(phase?.topics)
         ? phase.topics
         : Array.isArray(phase?.topics_to_learn)
@@ -408,6 +434,14 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
             typeof topic === 'string' ? { title: topic, type: 'core' } : topic
           )
         : [];
+      const deliverable = typeof phase?.deliverable === 'string'
+        ? phase.deliverable.trim()
+        : Array.isArray(phase?.what_to_build) && phase.what_to_build.length
+        ? String(phase.what_to_build[0])
+        : '';
+      const endGoal = typeof phase?.end_goal === 'string'
+        ? phase.end_goal.trim()
+        : '';
 
       return {
         phase_index: Number.isFinite(Number(phase?.phase_index)) ? Number(phase.phase_index) : index,
@@ -421,18 +455,26 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
           : typeof phase?.phase_description === 'string'
           ? phase.phase_description.trim()
           : '',
-        phase_objective: typeof phase?.phase_objective === 'string' ? phase.phase_objective.trim() : '',
+        phase_objective: typeof phase?.objective === 'string'
+          ? phase.objective.trim()
+          : typeof phase?.phase_objective === 'string'
+          ? phase.phase_objective.trim()
+          : '',
+        phase_end_goal: endGoal,
         what_to_learn: Array.isArray(phase?.what_to_learn)
           ? phase.what_to_learn.filter(Boolean)
-          : Array.isArray(phase?.topics_to_learn)
-          ? phase.topics_to_learn.filter(Boolean)
-          : [],
-        what_to_build: Array.isArray(phase?.what_to_build) ? phase.what_to_build.filter(Boolean) : [],
+          : learningOutcomes.filter(Boolean),
+        what_to_build: Array.isArray(phase?.what_to_build)
+          ? phase.what_to_build.filter(Boolean)
+          : deliverable ? [deliverable] : [],
         objectives: objectives.filter(Boolean),
         topics,
         resources,
         duration_weeks: Number.isFinite(Number(phase?.duration_weeks)) ? Number(phase.duration_weeks) : null,
-        completion_criteria: phase?.completion_criteria || { type: 'threshold', threshold: 0.8 }
+        completion_criteria: phase?.completion_criteria || {
+          type: 'manual_confirm',
+          criteria: endGoal ? [endGoal] : deliverable ? [deliverable] : []
+        }
       };
     })
     .filter((phase) => phase.title && phase.description);
@@ -444,6 +486,12 @@ function sanitizeRoadmap(raw, fallbackGoal, fallbackOutcome, durationWeeks) {
   phases.forEach((phase) => {
     if (!phase.phase_objective && phase.objectives.length) {
       phase.phase_objective = phase.objectives[0];
+    }
+    if (!phase.phase_end_goal) {
+      phase.phase_end_goal = phase.what_to_build?.[0] || phase.completion_criteria?.criteria?.[0] || '';
+    }
+    if (phase.phase_end_goal && phase.completion_criteria) {
+      phase.completion_criteria.end_goal = phase.phase_end_goal;
     }
   });
 
@@ -495,17 +543,41 @@ function expandPhases(phases, minCount = 5, maxCount = 8) {
 
   while (expanded.length < minCount) {
     const base = phases[0] || expanded[0];
-    if (!base) break;
+    const baseTopics = Array.isArray(base?.topics) ? base.topics : [];
+    if (!base || !baseTopics.length) break;
+    const topic = baseTopics[expanded.length % baseTopics.length];
     expanded.push({
       ...base,
-      title: `${base.title}: Deepen + apply`,
-      description: base.description || 'Deepen and apply the core concepts.',
+      title: `${base.title}: ${topic.title}`,
+      description: base.description || `Focus on ${topic.title}.`,
       objectives: base.objectives || [],
-      topics: base.topics || []
+      topics: [topic]
     });
   }
 
   return expanded.slice(0, maxCount);
+}
+
+function curatePhaseResources(phases, { globalLimit = 8, perPhaseLimit = 2 } = {}) {
+  const seen = new Set();
+  let total = 0;
+  phases.forEach((phase) => {
+    const resources = Array.isArray(phase.resources) ? phase.resources : [];
+    const curated = [];
+    for (const resource of resources) {
+      if (!resource?.url || !resource?.title) continue;
+      if (seen.has(resource.url)) continue;
+      curated.push({
+        ...resource,
+        why: resource.why || resource.reason || `Useful for ${phase.title}`
+      });
+      seen.add(resource.url);
+      total += 1;
+      if (curated.length >= perPhaseLimit || total >= globalLimit) break;
+    }
+    phase.resources = curated;
+  });
+  return phases;
 }
 
 async function buildRoadmapWithResearch(
@@ -538,28 +610,34 @@ async function buildRoadmapWithResearch(
       const description = (phase.description || '').toLowerCase();
       if (!phase.title || !phase.description) return false;
       if (banned.some((phrase) => title.includes(phrase) || description.includes(phrase))) return false;
-      if (!Array.isArray(phase.topics) || phase.topics.length < 3) return false;
-      if (!Array.isArray(phase.resources) || phase.resources.length < 3) return false;
-      if (!Array.isArray(phase.objectives) || phase.objectives.length < 2) return false;
+      if (!phase.phase_objective) return false;
+      if (!Array.isArray(phase.what_to_build) || !phase.what_to_build.length) return false;
+      const outcomes = Array.isArray(phase.what_to_learn)
+        ? phase.what_to_learn
+        : Array.isArray(phase.learning_outcomes)
+        ? phase.learning_outcomes
+        : [];
+      if (!outcomes.length || outcomes.length < 3) return false;
+      if (!Array.isArray(phase.resources) || phase.resources.length < 2) return false;
       return true;
     });
   };
-    const researchPack = await resourceRetriever.retrieveResearchPack(goal, normalizedType);
-    const researchLines = researchPack.length
-      ? researchPack.map((item, index) => `${index + 1}. ${item.title} - ${item.url}`).join('\n')
-      : 'No external sources found.';
+  const researchPack = await resourceRetriever.retrieveResearchPack(goal, normalizedType);
+  const researchLines = researchPack.length
+    ? researchPack.map((item, index) => `${index + 1}. ${item.title} - ${item.url}`).join('\n')
+    : 'No external sources found.';
 
-    const prompt = `You are Tenax Resolution Builder. Produce a high-quality, research-backed curriculum roadmap with strong structure and realistic sequencing.
-  Goal: ${goal}
-  Outcome definition: ${outcome || 'Not specified'}
-  Resolution type: ${normalizedType}
-  Skill level: ${skillLevel || 'unknown'}
-  Duration: ${durationWeeks} weeks
+  const prompt = `You are Tenax Resolution Builder. Produce a research-backed roadmap with domain-specific phases.
+Goal: ${goal}
+Outcome definition: ${outcome || 'Not specified'}
+Resolution type: ${normalizedType}
+Skill level: ${skillLevel || 'unknown'}
+Duration: ${durationWeeks} weeks
 
-  Research sources (use these to ground topics and resources):
-  ${researchLines}
-  
-  Return JSON only with this shape:
+Research sources (use these to ground topics and resources):
+${researchLines}
+
+Return JSON only with this exact shape:
 {
   "roadmap_title": "...",
   "resolution_type": "${normalizedType}",
@@ -568,21 +646,28 @@ async function buildRoadmapWithResearch(
       "phase_index": 0,
       "phase_title": "...",
       "phase_description": "...",
-      "learning_objectives": ["..."],
+      "objective": "...",
+      "deliverable": "...",
+      "end_goal": "...",
+      "learning_outcomes": ["..."],
       "topics_to_learn": ["..."],
-      "resources": [{"title":"...","type":"docs|video|course|article","link":"https://..."}],
+      "resources": [
+        {"title":"...","type":"docs|course|video|article|project","link":"https://...","why":"..."}
+      ],
       "completion_criteria": {"type":"manual_confirm","criteria":["..."]}
     }
   ]
-  }
-  
-  Rules:
-  - 5 to 8 phases (avoid generic 2-phase plans).
-  - Each phase must be narrower and specific (no giant buckets like "Foundations + Practice").
-  - Every phase must list 3-6 concrete topics and clear learning objectives.
-  - Resources must be real URLs and should come from or align with the research sources above.
-  - Avoid vague filler phrases. If you cannot specify what to learn, shrink scope instead.
-  `;
+}
+
+Rules:
+- 5 to 8 phases. No generic buckets like "Foundations" unless paired with specific domain topic.
+- Phase titles must be domain-specific (e.g., "Move Basics", "Ownership Model", "Sui Framework").
+- Each phase must include objective + deliverable + end_goal.
+- Learning outcomes must be concrete and specific (3-6 items).
+- Resources must be real URLs, curated, deduplicated, and explain why each is useful.
+- Max 3 resources per phase.
+- Avoid vague filler. If you cannot specify what to learn, shrink scope.
+`;
 
   const timeoutMs = 25000;
   const timeoutPromise = new Promise((_, reject) => {
@@ -636,24 +721,47 @@ async function buildRoadmapWithResearch(
       };
     });
 
-    // Ensure each phase has resources with URLs (fetch if missing).
+    // Ensure each phase has curated resources with URLs (fetch if missing).
     for (const phase of sanitized.phases) {
       const resources = Array.isArray(phase.resources) ? phase.resources : [];
       const withLinks = resources.filter((res) => res?.title && res?.url);
-      if (withLinks.length >= 3) {
-        phase.resources = withLinks;
+      if (withLinks.length >= 2) {
+        phase.resources = withLinks.slice(0, 3);
         continue;
       }
       const fetched = await resourceRetriever.retrieveResources(goal, phase.title, {
         forceRefresh: true,
         recencyHint: '2024 2025'
       });
-      phase.resources = [...withLinks, ...fetched].slice(0, 6);
+      phase.resources = [...withLinks, ...fetched].slice(0, 3);
+    }
+    sanitized.phases = curatePhaseResources(sanitized.phases, { globalLimit: 8, perPhaseLimit: 2 });
+    let totalResources = sanitized.phases.reduce((sum, phase) => sum + (phase.resources?.length || 0), 0);
+    if (totalResources < 5 && researchPack.length) {
+      const extras = researchPack
+        .filter((item) => item?.title && item?.url)
+        .map((item) => ({
+          title: item.title,
+          url: item.url,
+          type: item.type || 'docs',
+          why: item.why || `Reference for ${goal}`
+        }));
+      for (const phase of sanitized.phases) {
+        if (totalResources >= 5) break;
+        if (!Array.isArray(phase.resources)) phase.resources = [];
+        for (const extra of extras) {
+          if (totalResources >= 5) break;
+          if (phase.resources.some((resource) => resource.url === extra.url)) continue;
+          if (phase.resources.length >= 2) break;
+          phase.resources.push(extra);
+          totalResources += 1;
+        }
+      }
     }
     return sanitized;
   } catch (error) {
     console.warn('[ResolutionBuilder] LLM roadmap generation failed:', error.message);
-    return buildRoadmap(goal, outcome, durationWeeks);
+    return buildFallbackRoadmapFromResearch(goal, outcome, durationWeeks, researchPack);
   }
 }
 
@@ -670,18 +778,38 @@ function buildSchedulePreview(state) {
     state.days_per_week
   );
   const selectedDays = days.slice(0, sessionsPerWeek);
-  const focusTemplates = ['Learn new concept', 'Guided practice', 'Applied build', 'Review + recap'];
   const preview = [];
   const maxEntries = Math.max(6, Math.min(12, selectedDays.length * 3));
-  let focusIndex = 0;
+  let sessionIndex = 0;
+
+  const buildPhaseSessions = (phase) => {
+    const topics = Array.isArray(phase.topics) ? phase.topics : [];
+    const topicTitles = topics.map((topic) => topic?.title).filter(Boolean);
+    const learningOutcomes = Array.isArray(phase.what_to_learn) ? phase.what_to_learn : [];
+    const deliverables = Array.isArray(phase.what_to_build) ? phase.what_to_build : [];
+    const baseObjective = phase.phase_objective || phase.description || '';
+
+    const items = (topicTitles.length ? topicTitles : learningOutcomes).slice(0, 4);
+    if (!items.length) {
+      items.push(phase.title);
+    }
+
+    return items.map((item, idx) => ({
+      title: `${phase.title}: ${item}`,
+      objective: baseObjective || `Make progress on ${item}.`,
+      deliverable: deliverables[idx] || deliverables[0] || '',
+      topic: item
+    }));
+  };
 
   roadmap.forEach((phase, phaseIndex) => {
     const phaseWeeks = phase.duration_weeks || 1;
+    const sessions = buildPhaseSessions(phase);
     for (let week = 0; week < phaseWeeks; week += 1) {
       selectedDays.forEach((day, dayIndex) => {
         if (preview.length >= maxEntries) return;
         const block = blocks[(dayIndex + week) % blocks.length];
-        const focus = focusTemplates[focusIndex % focusTemplates.length];
+        const session = sessions[sessionIndex % sessions.length];
         preview.push({
           day_of_week: day.dayOfWeek,
           day_label: day.label,
@@ -689,9 +817,12 @@ function buildSchedulePreview(state) {
           time_label: block.label,
           phase_index: phaseIndex,
           phase_name: phase.title,
-          focus
+          focus: session?.title || phase.title,
+          objective: session?.objective || phase.phase_objective || phase.description || '',
+          deliverable: session?.deliverable || '',
+          resources: Array.isArray(phase.resources) ? phase.resources : []
         });
-        focusIndex += 1;
+        sessionIndex += 1;
       });
       if (preview.length >= maxEntries) return;
     }
@@ -702,23 +833,40 @@ function buildSchedulePreview(state) {
 
 function buildScheduleMessage(schedule) {
   if (!schedule?.length) return 'Schedule preview not ready yet.';
-  return schedule.map((slot) => (
-    `${slot.day_label}: ${slot.phase_name} - ${slot.focus} (${slot.time_label})`
-  )).join('\n');
+  return schedule.map((slot) => {
+    const objectiveLine = slot.objective ? `Objective: ${slot.objective}` : '';
+    const deliverableLine = slot.deliverable ? `Deliverable: ${slot.deliverable}` : '';
+    const resourcesLine = Array.isArray(slot.resources) && slot.resources.length
+      ? `Resources: ${slot.resources.map((resource) => resource?.title).filter(Boolean).slice(0, 2).join(', ')}`
+      : '';
+    const details = [objectiveLine, deliverableLine, resourcesLine].filter(Boolean).join(' | ');
+    return `${slot.day_label}: ${slot.focus} (${slot.time_label})${details ? ` - ${details}` : ''}`;
+  }).join('\n');
 }
 
 function buildResourcesMessage(resources) {
   if (!resources?.length) return 'No resources added.';
-  const lines = resources.map((resource, index) => (
-    `${index + 1}. ${resource.title} (${resource.kind || resource.type})`
-  ));
+  const grouped = resources.reduce((acc, resource) => {
+    const type = resource.type || resource.kind || 'resource';
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(resource);
+    return acc;
+  }, {});
+  const lines = [];
+  Object.entries(grouped).forEach(([type, items]) => {
+    lines.push(`${type.toUpperCase()}:`);
+    items.forEach((resource) => {
+      const why = resource.why ? ` - ${resource.why}` : '';
+      lines.push(`- ${resource.title} (${resource.url})${why}`);
+    });
+  });
   return lines.join('\n');
 }
 
 function buildRoadmapMessage(roadmap) {
   if (!roadmap?.phases?.length) return 'No roadmap generated yet.';
   return roadmap.phases.map((phase, index) => (
-    `Phase ${index + 1}: ${phase.title} - ${phase.description}`
+    `Phase ${index + 1}: ${phase.title}\nObjective: ${phase.phase_objective || phase.description}\nDeliverable: ${phase.what_to_build?.[0] || 'TBD'}`
   )).join('\n');
 }
 
@@ -726,6 +874,26 @@ function getDateForWeekDay(baseDate, dayOfWeek, weekOffset = 0) {
   const start = baseDate.plus({ weeks: weekOffset }).startOf('week');
   const targetWeekday = dayOfWeek === 0 ? 7 : dayOfWeek;
   return start.set({ weekday: targetWeekday });
+}
+
+function buildPhaseSessions(phase) {
+  const topics = Array.isArray(phase.topics) ? phase.topics : [];
+  const topicTitles = topics.map((topic) => topic?.title).filter(Boolean);
+  const learningOutcomes = Array.isArray(phase.what_to_learn) ? phase.what_to_learn : [];
+  const deliverables = Array.isArray(phase.what_to_build) ? phase.what_to_build : [];
+  const baseObjective = phase.phase_objective || phase.description || '';
+
+  const items = (topicTitles.length ? topicTitles : learningOutcomes).slice(0, 6);
+  if (!items.length) {
+    items.push(phase.title);
+  }
+
+  return items.map((item, idx) => ({
+    title: `${phase.title}: ${item}`,
+    objective: baseObjective || `Make progress on ${item}.`,
+    deliverable: deliverables[idx] || deliverables[0] || '',
+    topic: item
+  }));
 }
 
 function generateResolutionTasks({
@@ -776,26 +944,16 @@ function generateResolutionTasks({
 
   phases.forEach((phase, phaseIndex) => {
     const sessions = phaseSessions[phaseIndex] || 1;
-    const topics = Array.isArray(phase.topics) ? phase.topics : [];
-    const objectives = Array.isArray(phase.objectives) ? phase.objectives : [];
-    const learnItems = Array.isArray(phase.what_to_learn) ? phase.what_to_learn : [];
-    const buildItems = Array.isArray(phase.what_to_build) ? phase.what_to_build : [];
+    const phaseSessionsList = buildPhaseSessions(phase);
     for (let i = 0; i < sessions; i += 1) {
       const slot = slotList[slotIndex];
       if (!slot) break;
-      const topic = topics[i % (topics.length || 1)] || { title: phase.title };
-      const objective =
-        objectives[i % (objectives.length || 1)] ||
-        phase.phase_objective ||
-        `Advance ${phase.title}`;
-      const subtopics = topic.subtopics && topic.subtopics.length ? topic.subtopics : [];
-      const learnLine = learnItems.length ? `Learn: ${learnItems.slice(0, 3).join(', ')}.` : '';
-      const buildLine = buildItems.length ? `Build: ${buildItems.slice(0, 2).join(', ')}.` : '';
-      const topicLine = subtopics.length
-        ? `Focus on ${topic.title}. Cover: ${subtopics.join(', ')}.`
-        : `Focus on ${topic.title || phase.title} and apply it with practice.`;
-      const expectedLine = phase.phase_objective ? `Expected outcome: ${phase.phase_objective}.` : '';
-      const description = [topicLine, learnLine, buildLine, expectedLine].filter(Boolean).join(' ');
+      const session = phaseSessionsList[i % phaseSessionsList.length];
+      const objective = session?.objective || phase.phase_objective || `Advance ${phase.title}`;
+      const deliverable = session?.deliverable || '';
+      const topicLine = session?.topic ? `Focus: ${session.topic}.` : '';
+      const deliverableLine = deliverable ? `Deliverable: ${deliverable}.` : '';
+      const description = [topicLine, deliverableLine].filter(Boolean).join(' ');
       const resources = Array.isArray(phase.resources) ? phase.resources : [];
       const estimatedMinutes = sessionMinutes || Math.max(30, Math.round((hoursPerWeek || 2) * 30));
 
@@ -805,13 +963,13 @@ function generateResolutionTasks({
         phase_id: phase.id,
         date: slot.date.toISODate(),
         start_time: slot.block.time ? `${String(slot.block.time.hour).padStart(2, '0')}:${String(slot.block.time.minute).padStart(2, '0')}:00` : null,
-        title: `${phase.title}: ${topic.title || 'Focused session'}`,
+        title: session?.title || phase.title,
         objective,
         description,
         resources_json: resources,
         estimated_duration_minutes: estimatedMinutes,
-        topic_key: slugify(topic.title || phase.title || 'session'),
-        topic_id: slugify(topic.title || phase.title || 'session'),
+        topic_key: slugify(session?.topic || phase.title || 'session'),
+        topic_id: slugify(session?.topic || phase.title || 'session'),
         status: 'todo',
         order_index: i,
         locked: phaseIndex > 0
@@ -876,6 +1034,7 @@ async function insertResolutionIntoScheduleIntel(user, items, planId, goalText) 
   const seen = new Set();
 
   const payloads = items
+    .filter((item) => !item.locked)
     .filter((item) => item.start_time && item.estimated_duration_minutes)
     .filter((item) => !existingResolutionTaskIds.has(String(item.id)))
     .map((item) => {
@@ -1167,7 +1326,14 @@ class ResolutionBuilderFlow {
     }
 
     if (wantsResources) {
-      this.state.resources = (this.state.roadmap?.phases || []).flatMap((phase) => phase.resources || []);
+      const flat = (this.state.roadmap?.phases || []).flatMap((phase) => phase.resources || []);
+      const seen = new Set();
+      this.state.resources = flat.filter((res) => {
+        if (!res?.url) return false;
+        if (seen.has(res.url)) return false;
+        seen.add(res.url);
+        return true;
+      }).slice(0, 8);
     } else {
       this.state.resources = [];
     }
@@ -1183,7 +1349,7 @@ class ResolutionBuilderFlow {
     const resourcesText = wantsResources ? `Resources added:\n${buildResourcesMessage(this.state.resources)}\n\n` : '';
     const scheduleText = buildScheduleMessage(this.state.schedule_preview);
     return {
-      reply: `${resourcesText}Schedule preview (not yet added):\n${scheduleText}\n\nShould I add this learning roadmap to your daily schedule? Reply approve, edit, or cancel.`,
+      reply: `${resourcesText}Schedule preview (not yet added):\n${scheduleText}\n\nWant me to add this plan to your schedule? You can say "add it", "change times", or "not now".`,
       state: this.publicState()
     };
   }
@@ -1230,7 +1396,7 @@ class ResolutionBuilderFlow {
       return null;
     }
 
-    return { reply: 'Reply approve, edit, or cancel so I can proceed.', state: this.publicState() };
+    return { reply: 'Want me to add it, change times, or skip for now?', state: this.publicState() };
   }
 
   async handoffToExecution() {
@@ -1257,6 +1423,8 @@ class ResolutionBuilderFlow {
       target_outcome: this.state.target_outcome,
       duration_weeks: this.state.duration_weeks,
       end_date: this.state.end_date,
+      active_phase_index: 1,
+      phase_unlock_mode: 'gated',
       availability_json: {
         hours_per_week: this.state.time_commitment_hours,
         days_free: this.state.days_free,
@@ -1281,13 +1449,13 @@ class ResolutionBuilderFlow {
       title: phase.title,
       description: phase.description,
       phase_objective: phase.phase_objective || null,
+      completion_criteria_json: phase.completion_criteria || { type: 'threshold', threshold: 0.8 },
       what_to_learn_json: phase.what_to_learn || [],
       what_to_build_json: phase.what_to_build || [],
       objectives_json: phase.objectives || [],
       topics_json: phase.topics || [],
       resources_json: phase.resources || [],
-      completion_status: 'pending',
-      completion_criteria_json: phase.completion_criteria || { type: 'threshold', threshold: 0.8 }
+      completion_status: 'pending'
     }));
 
     const phases = await ResolutionPhase.createMany(phasesPayload);

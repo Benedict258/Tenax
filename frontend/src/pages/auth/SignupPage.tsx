@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AuthShell, PrimaryButton } from '../../components/ui/auth-form';
+import AuthWizard from '../../components/ui/auth-wizard';
 
 const roleOptions = ['Student', 'Developer/Builder', 'Professional', 'Creator', 'Self-learner', 'Other'];
 const reasons = [
@@ -19,15 +20,20 @@ const timezoneOptions = ['Africa/Lagos', 'UTC', 'America/New_York', 'Europe/Lond
 const SignupPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const [searchParams] = useSearchParams();
+  const prefillEmail = searchParams.get('email') || '';
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
     preferredName: '',
-    email: '',
+    email: prefillEmail,
     password: '',
     phone: '',
-    primaryGoal: '',
+    primaryGoal1: '',
+    primaryGoal2: '',
     dailyStart: '07:00',
     timezone: 'Africa/Lagos',
     availability: 'Mixed',
@@ -39,35 +45,76 @@ const SignupPage = () => {
     timetableEnabled: false,
     calendarConnected: false,
   });
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(['Student']);
-  const [selectedReasons, setSelectedReasons] = useState<string[]>(['Build daily consistency']);
-
-  const canSubmit = useMemo(() => {
-    return (
-      form.name.trim() &&
-      form.preferredName.trim() &&
-      form.email.trim() &&
-      form.password.trim() &&
-      form.primaryGoal.trim() &&
-      selectedRoles.length > 0 &&
-      selectedReasons.length > 0
-    );
-  }, [form, selectedReasons.length, selectedRoles.length]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
 
   const toggleSelection = (value: string, list: string[], setter: (next: string[]) => void) => {
     setter(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!canSubmit) {
-      setError('Please complete all required fields.');
+  const goNext = () => {
+    setDirection('forward');
+    setStep((prev) => Math.min(prev + 1, 3));
+  };
+
+  const goBack = () => {
+    setDirection('backward');
+    setStep((prev) => Math.max(prev - 1, 0));
+  };
+
+  const validateStep = () => {
+    setError(null);
+    if (step === 0) {
+      if (!form.name.trim() || !form.preferredName.trim() || !form.email.trim() || !form.password.trim()) {
+        setError('Fill in all required fields to continue.');
+        return false;
+      }
+      if (form.password.trim().length < 8) {
+        setError('Password must be at least 8 characters.');
+        return false;
+      }
+      return true;
+    }
+    if (step === 1) {
+      if (!selectedRoles.length) {
+        setError('Pick at least one role.');
+        return false;
+      }
+      return true;
+    }
+    if (step === 2) {
+      if (!selectedReasons.length) {
+        setError('Pick at least one reason.');
+        return false;
+      }
+      if (!form.primaryGoal1.trim()) {
+        setError('Add at least one primary goal.');
+        return false;
+      }
+      return true;
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (!validateStep()) return;
+    goNext();
+  };
+
+  const buildPrimaryGoal = () => {
+    const goals = [form.primaryGoal1, form.primaryGoal2].map((goal) => goal.trim()).filter(Boolean);
+    return goals.slice(0, 2).join(' | ');
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep()) return;
+    const primaryGoal = buildPrimaryGoal();
+    if (!primaryGoal) {
+      setError('Add at least one primary goal.');
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     try {
       const payload = {
         name: form.name,
@@ -77,7 +124,7 @@ const SignupPage = () => {
         phone_number: form.phone || undefined,
         role: selectedRoles.length === 1 ? selectedRoles[0] : selectedRoles,
         reason_for_using: selectedReasons,
-        primary_goal: form.primaryGoal,
+        primary_goal: primaryGoal,
         daily_start_time: form.dailyStart,
         timezone: form.timezone,
         availability_pattern: form.availability,
@@ -91,18 +138,120 @@ const SignupPage = () => {
       };
       const result = await register(payload);
       if (result?.needs_email_confirmation) {
-        setError('Check your email to verify your account, then sign in.');
-      } else {
-        navigate('/dashboard/today');
+        navigate(`/auth/check-email?email=${encodeURIComponent(form.email)}`);
+        return;
       }
+      navigate('/dashboard/today');
     } catch (err: any) {
       console.error('Signup failed', err);
       const message = err?.response?.data?.error || err?.response?.data?.message || err?.message;
       setError(typeof message === 'string' ? message : 'Unable to complete signup right now. Try again shortly.');
+      setStep(0);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const stepContent = [
+    <section key="identity" className="space-y-6">
+      <div>
+        <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">Step 1 of 4</p>
+        <h2 className="mt-2 text-xl font-semibold text-black">Identity</h2>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Input label="Full name" value={form.name} onChange={(value) => setForm((prev) => ({ ...prev, name: value }))} required />
+        <Input label="Preferred name" value={form.preferredName} onChange={(value) => setForm((prev) => ({ ...prev, preferredName: value }))} required />
+        <Input label="Email" type="email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} required />
+        <Input label="Password" type="password" value={form.password} onChange={(value) => setForm((prev) => ({ ...prev, password: value }))} required />
+        <Input label="Phone number (optional for WhatsApp)" placeholder="+234..." value={form.phone} onChange={(value) => setForm((prev) => ({ ...prev, phone: value }))} />
+        <Select label="Timezone" value={form.timezone} options={timezoneOptions} onChange={(value) => setForm((prev) => ({ ...prev, timezone: value }))} />
+        <div>
+          <label className="text-sm text-zinc-500">Daily start time *</label>
+          <input
+            type="time"
+            value={form.dailyStart}
+            onChange={(event) => setForm((prev) => ({ ...prev, dailyStart: event.target.value }))}
+            className="mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3"
+          />
+        </div>
+      </div>
+    </section>,
+    <section key="roles" className="space-y-6">
+      <div>
+        <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">Step 2 of 4</p>
+        <h2 className="mt-2 text-xl font-semibold text-black">Role</h2>
+        <p className="text-sm text-zinc-500">Pick everything that applies.</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {roleOptions.map((role) => (
+          <CheckboxChip
+            key={role}
+            label={role}
+            checked={selectedRoles.includes(role)}
+            onChange={() => toggleSelection(role, selectedRoles, setSelectedRoles)}
+          />
+        ))}
+      </div>
+    </section>,
+    <section key="reasons" className="space-y-6">
+      <div>
+        <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">Step 3 of 4</p>
+        <h2 className="mt-2 text-xl font-semibold text-black">Why Tenax</h2>
+        <p className="text-sm text-zinc-500">Pick everything that applies.</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {reasons.map((reason) => (
+          <CheckboxChip
+            key={reason}
+            label={reason}
+            checked={selectedReasons.includes(reason)}
+            onChange={() => toggleSelection(reason, selectedReasons, setSelectedReasons)}
+          />
+        ))}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Input
+          label="Primary goal (required)"
+          value={form.primaryGoal1}
+          onChange={(value) => setForm((prev) => ({ ...prev, primaryGoal1: value }))}
+          required
+        />
+        <Input
+          label="Primary goal (optional second)"
+          value={form.primaryGoal2}
+          onChange={(value) => setForm((prev) => ({ ...prev, primaryGoal2: value }))}
+        />
+      </div>
+    </section>,
+    <section key="preferences" className="space-y-6">
+      <div>
+        <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">Step 4 of 4</p>
+        <h2 className="mt-2 text-xl font-semibold text-black">Preferences + Setup</h2>
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Select label="Availability pattern" value={form.availability} options={availabilityOptions} onChange={(value) => setForm((prev) => ({ ...prev, availability: value }))} />
+        <Select label="Tone preference" value={form.tone} options={toneOptions} onChange={(value) => setForm((prev) => ({ ...prev, tone: value }))} />
+        <Toggle label="Enforce daily P1" checked={form.enforceP1} onChange={(checked) => setForm((prev) => ({ ...prev, enforceP1: checked }))} />
+        <Toggle label="Enforce workout" checked={form.enforceWorkout} onChange={(checked) => setForm((prev) => ({ ...prev, enforceWorkout: checked }))} />
+        <Toggle label="Enforce pre-class reading" checked={form.enforcePreClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePreClass: checked }))} />
+        <Toggle label="Enforce post-class review" checked={form.enforcePostClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePostClass: checked }))} />
+        <Toggle label="Timetable/schedule upload" checked={form.timetableEnabled} onChange={(checked) => setForm((prev) => ({ ...prev, timetableEnabled: checked }))} helper="Optional. You can add this later." />
+        <Toggle label="Google Calendar connect" checked={form.calendarConnected} onChange={(checked) => setForm((prev) => ({ ...prev, calendarConnected: checked }))} helper="Optional, read-only." />
+      </div>
+    </section>,
+  ];
+
+  const canLaunch = useMemo(() => {
+    return (
+      form.name.trim() &&
+      form.preferredName.trim() &&
+      form.email.trim() &&
+      form.password.trim().length >= 8 &&
+      selectedRoles.length > 0 &&
+      selectedReasons.length > 0 &&
+      form.primaryGoal1.trim()
+    );
+  }, [form, selectedRoles.length, selectedReasons.length]);
 
   return (
     <AuthShell
@@ -114,104 +263,48 @@ const SignupPage = () => {
         </Link>
       }
       onBack={() => navigate(-1)}
-      showSocial={false}
       containerClassName="max-w-5xl"
       cardClassName="p-8"
     >
-      <form onSubmit={handleSubmit} className="space-y-10">
+      <div className="space-y-8">
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.4em] text-zinc-500">Tenax onboarding</p>
           <p className="mt-2 text-zinc-500">
-            Only the inputs that help the agent execute correctly from day one.
+            Quick setup so the agent can execute immediately.
           </p>
         </div>
 
-        <section className="rounded-3xl border border-zinc-200 bg-white p-6">
-          <p className="text-sm uppercase tracking-[0.4em] text-zinc-500">Identity</p>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Input label="Full name" value={form.name} onChange={(value) => setForm((prev) => ({ ...prev, name: value }))} required />
-            <Input label="Preferred name" value={form.preferredName} onChange={(value) => setForm((prev) => ({ ...prev, preferredName: value }))} required />
-            <Input label="Email" type="email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} required />
-            <Input label="Password" type="password" value={form.password} onChange={(value) => setForm((prev) => ({ ...prev, password: value }))} required />
-            <Input label="Phone number (optional for WhatsApp)" placeholder="+234..." value={form.phone} onChange={(value) => setForm((prev) => ({ ...prev, phone: value }))} />
-            <Select label="Timezone" value={form.timezone} options={timezoneOptions} onChange={(value) => setForm((prev) => ({ ...prev, timezone: value }))} />
-            <div>
-              <label className="text-sm text-zinc-500">Daily start time</label>
-              <input
-                type="time"
-                value={form.dailyStart}
-                onChange={(event) => setForm((prev) => ({ ...prev, dailyStart: event.target.value }))}
-                className="mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-zinc-200 bg-white p-6 space-y-6">
-          <div>
-            <p className="text-sm uppercase tracking-[0.4em] text-zinc-500">Role</p>
-            <p className="text-zinc-500 text-sm">Pick everything that applies.</p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {roleOptions.map((role) => (
-              <CheckboxChip
-                key={role}
-                label={role}
-                checked={selectedRoles.includes(role)}
-                onChange={() => toggleSelection(role, selectedRoles, setSelectedRoles)}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-zinc-200 bg-white p-6 space-y-6">
-          <div>
-            <p className="text-sm uppercase tracking-[0.4em] text-zinc-500">Reason for using Tenax</p>
-            <p className="text-zinc-500 text-sm">This keeps the agent on-mission.</p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {reasons.map((reason) => (
-              <CheckboxChip
-                key={reason}
-                label={reason}
-                checked={selectedReasons.includes(reason)}
-                onChange={() => toggleSelection(reason, selectedReasons, setSelectedReasons)}
-              />
-            ))}
-          </div>
-          <Input
-            label="Primary goal (1â€“2 max)"
-            value={form.primaryGoal}
-            onChange={(value) => setForm((prev) => ({ ...prev, primaryGoal: value }))}
-            required
-          />
-        </section>
-
-        <section className="rounded-3xl border border-zinc-200 bg-white p-6 grid gap-6 md:grid-cols-2">
-          <Select label="Availability pattern" value={form.availability} options={availabilityOptions} onChange={(value) => setForm((prev) => ({ ...prev, availability: value }))} />
-          <Select label="Tone preference" value={form.tone} options={toneOptions} onChange={(value) => setForm((prev) => ({ ...prev, tone: value }))} />
-          <Toggle label="Enforce daily P1" checked={form.enforceP1} onChange={(checked) => setForm((prev) => ({ ...prev, enforceP1: checked }))} />
-          <Toggle label="Enforce workout" checked={form.enforceWorkout} onChange={(checked) => setForm((prev) => ({ ...prev, enforceWorkout: checked }))} />
-          <Toggle label="Enforce pre-class reading" checked={form.enforcePreClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePreClass: checked }))} />
-          <Toggle label="Enforce post-class review" checked={form.enforcePostClass} onChange={(checked) => setForm((prev) => ({ ...prev, enforcePostClass: checked }))} />
-          <Toggle label="Timetable or schedule" checked={form.timetableEnabled} onChange={(checked) => setForm((prev) => ({ ...prev, timetableEnabled: checked }))} helper="Optional. You can add this later." />
-          <Toggle label="Google Calendar connected" checked={form.calendarConnected} onChange={(checked) => setForm((prev) => ({ ...prev, calendarConnected: checked }))} helper="Optional, read-only." />
-        </section>
+        <AuthWizard step={step} direction={direction} steps={stepContent} />
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <div className="flex flex-col gap-3">
-          <PrimaryButton type="submit" disabled={!canSubmit || submitting} className="w-full md:w-auto">
-            {submitting ? 'Setting upâ€¦' : 'Launch Tenax'}
-          </PrimaryButton>
-          <p className="text-zinc-500 text-sm text-center">
-            Timetable upload is optional. Tenax works immediately after signup.
-          </p>
-          <p className="text-zinc-500 text-xs text-center">
-            Already onboarded? <Link to="/dashboard/today" className="text-blue-600 underline">Enter the command deck</Link>.
-          </p>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex gap-3">
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={goBack}
+                className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700"
+              >
+                Back
+              </button>
+            )}
+          </div>
+          {step < 3 ? (
+            <PrimaryButton type="button" onClick={handleNext}>
+              Next
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton type="button" onClick={handleSubmit} disabled={!canLaunch || submitting}>
+              {submitting ? 'Launching...' : 'Launch Tenax'}
+            </PrimaryButton>
+          )}
         </div>
-      </form>
+
+        <p className="text-zinc-500 text-xs text-center">
+          Timetable upload and calendar connect are optional. You can enable them later.
+        </p>
+      </div>
     </AuthShell>
   );
 };

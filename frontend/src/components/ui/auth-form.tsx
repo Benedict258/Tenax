@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from 'react';
-import { ChevronLeft, Chrome, Twitter } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import googleLogo from '../../assets/brands/google.svg';
+import xLogo from '../../assets/brands/x.svg';
 
 interface AuthShellProps {
   title: string;
@@ -61,8 +63,8 @@ const Divider: React.FC = () => (
 const SocialButtons: React.FC = () => (
   <div className="mb-6 space-y-3">
     <div className="grid grid-cols-2 gap-3">
-      <SocialButton icon={<Twitter size={20} />} />
-      <SocialButton icon={<Chrome size={20} />} />
+      <SocialButton icon={<img src={xLogo} alt="X" className="h-4 w-4 text-zinc-900 dark:invert" />} />
+      <SocialButton icon={<img src={googleLogo} alt="Google" className="h-4 w-4" />} />
     </div>
   </div>
 );

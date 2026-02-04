@@ -33,6 +33,8 @@ create table if not exists resolution_plans (
   end_date date,
   availability_json jsonb,
   preferences_json jsonb,
+  active_phase_index integer not null default 1,
+  phase_unlock_mode text not null default 'gated',
   status text not null default 'draft',
   roadmap_json jsonb,
   svg_url text,
@@ -143,6 +145,8 @@ create index if not exists idx_resolution_progress_phase on resolution_progress(
 -- Safe ALTERs for existing installs
 alter table resolution_plans add column if not exists resolution_type text;
 alter table resolution_plans add column if not exists preferences_json jsonb;
+alter table resolution_plans add column if not exists active_phase_index integer default 1;
+alter table resolution_plans add column if not exists phase_unlock_mode text default 'gated';
 
 alter table resolution_phases add column if not exists phase_objective text;
 alter table resolution_phases add column if not exists what_to_learn_json jsonb;

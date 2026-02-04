@@ -21,6 +21,7 @@ import ScheduleEditorPage from './pages/dashboard/ScheduleEditorPage';
 import ResolutionBuilderPage from './pages/dashboard/ResolutionBuilderPage';
 import SignupPage from './pages/auth/SignupPage';
 import LoginPage from './pages/auth/LoginPage';
+import CheckEmailPage from './pages/auth/CheckEmailPage';
 import { AnalyticsProvider } from './context/AnalyticsContext';
 import { ADMIN_ENABLED } from './lib/env';
 import AuthProvider from './context/AuthContext';
@@ -38,6 +39,7 @@ function App() {
               <Route path="/" element={<HeroLanding />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/auth/check-email" element={<CheckEmailPage />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<Navigate to="today" replace />} />
                 <Route path="today" element={<TodayPage />} />

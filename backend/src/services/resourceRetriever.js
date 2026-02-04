@@ -83,10 +83,14 @@ async function retrieveResources(goal, phaseTitle, options = {}) {
       .map((result) => ({
         title: result.title,
         url: result.url,
-        type: 'resource'
+        type: 'resource',
+        why: `Useful reference for ${phaseTitle}.`
       }));
   } else {
-    items = fallbackResources(goal, phaseTitle);
+    items = fallbackResources(goal, phaseTitle).map((item) => ({
+      ...item,
+      why: `Foundational material for ${phaseTitle}.`
+    }));
   }
 
   cache[key] = { updated_at: Date.now(), items };
