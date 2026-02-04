@@ -1471,19 +1471,20 @@ class ResolutionBuilderFlow {
         completionPayload.criteria = [deliverable];
       }
       return ({
-      roadmap_id: roadmapRecord.id,
-      plan_id: plan.id,
-      phase_index: phase.phase_index,
-      title: phase.title,
-      description: phase.description,
-      phase_objective: phase.phase_objective || null,
-      completion_criteria_json: completionPayload,
-      what_to_learn_json: phase.what_to_learn || [],
-      what_to_build_json: phase.what_to_build || [],
-      objectives_json: phase.objectives || [],
-      topics_json: phase.topics || [],
-      resources_json: phase.resources || [],
-      completion_status: 'pending'
+        roadmap_id: roadmapRecord.id,
+        plan_id: plan.id,
+        phase_index: phase.phase_index,
+        title: phase.title,
+        description: phase.description,
+        phase_objective: phase.phase_objective || null,
+        completion_criteria_json: completionPayload,
+        what_to_learn_json: phase.what_to_learn || [],
+        what_to_build_json: phase.what_to_build || [],
+        objectives_json: phase.objectives || [],
+        topics_json: phase.topics || [],
+        resources_json: phase.resources || [],
+        completion_status: 'pending'
+      });
     });
 
     const phases = await ResolutionPhase.createMany(phasesPayload);
