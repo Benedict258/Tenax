@@ -100,6 +100,16 @@ class ResolutionTask {
     return data || [];
   }
 
+  static async listByIds(ids = []) {
+    if (!ids.length) return [];
+    const { data, error } = await supabase
+      .from('resolution_tasks')
+      .select('id, locked, phase_id, plan_id')
+      .in('id', ids);
+    if (error) throw error;
+    return data || [];
+  }
+
   static async updateStatus(taskId, status) {
     const { data, error } = await supabase
       .from('resolution_tasks')

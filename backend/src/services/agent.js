@@ -9,12 +9,20 @@ const ruleStateService = require('./ruleState');
 const taskPrioritizer = require('./taskPrioritizer');
 const reminderPreferences = require('./reminderPreferences');
 const notificationService = require('./notificationService');
+const scheduleService = require('./scheduleService');
+const ruleEngine = require('./ruleEngine');
+const experimentService = require('./experimentService');
+const { DateTime } = require('luxon');
 
 const forceRegressionFailure = process.env.FORCE_REGRESSION_FAILURE === 'true';
 const forcedReminderMessage = 'Remember to work on your tasks today.';
 
 const getUserGoal = (user) => user?.goal || user?.primary_goal || 'Improve daily execution habits';
-const getExperimentId = (user) => user?.experiment_id || variantConfig.experimentId || 'control';
+const getExperimentId = (user) => {
+  if (user?.experiment_id) return user.experiment_id;
+  const assigned = experimentService.assignVariant(user?.id);
+  return assigned.experimentId || variantConfig.experimentId || 'control';
+};
 
 const mapTasksToMetadata = (tasks = []) => tasks.map((task) => ({
   id: task.id,
@@ -27,7 +35,7 @@ const mapTasksToMetadata = (tasks = []) => tasks.map((task) => ({
   recommended_end: task.recommended_end || null
 }));
 
-const REMINDER_TIME_FORMAT = { hour: 'numeric', minute: '2-digit' };
+const REMINDER_TIME_FORMAT = 'hh:mm a';
 const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 const reminderOpeners = {
@@ -81,19 +89,26 @@ const buildEODSummaryMessage = (tone, stats, user, streak = 0) => {
   return `You closed ${ratio} (${percent}).${streakNote} Not perfect, but you showed up. Let’s reset and hit harder tomorrow — tell me what tripped you up and I’ll adjust the plan.`;
 };
 
-const toTimeLabel = (value) => {
+const toTimeLabel = (value, timezone = 'UTC') => {
   if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleTimeString('en-US', REMINDER_TIME_FORMAT);
+  const dt = DateTime.fromISO(value, { zone: 'utc' }).setZone(timezone || 'UTC');
+  if (!dt.isValid) return null;
+  return dt.toFormat(REMINDER_TIME_FORMAT);
 };
 
-const addMinutesLabel = (value, minutes) => {
+const addMinutesLabel = (value, minutes, timezone = 'UTC') => {
   if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  date.setMinutes(date.getMinutes() + minutes);
-  return date.toLocaleTimeString('en-US', REMINDER_TIME_FORMAT);
+  const dt = DateTime.fromISO(value, { zone: 'utc' }).setZone(timezone || 'UTC');
+  if (!dt.isValid) return null;
+  return dt.plus({ minutes }).toFormat(REMINDER_TIME_FORMAT);
+};
+
+const sanitizeTaskTitle = (title) => {
+  if (!title) return '';
+  let text = String(title).trim();
+  text = text.replace(/^[\"'“”]+|[\"'“”]+$/g, '');
+  text = text.replace(/\s+/g, ' ').trim();
+  return text;
 };
 
 const resolveDurationMinutes = (task, reminderType) => {
@@ -107,10 +122,10 @@ const resolveDurationMinutes = (task, reminderType) => {
   return 25;
 };
 
-const describeWindowText = (task, reminderType, durationMinutes) => {
-  const startLabel = toTimeLabel(task?.start_time);
+const describeWindowText = (task, reminderType, durationMinutes, timezone = 'UTC') => {
+  const startLabel = toTimeLabel(task?.start_time, timezone);
   if (reminderType === 'on_time') {
-    const endLabel = addMinutesLabel(task?.start_time, durationMinutes);
+    const endLabel = addMinutesLabel(task?.start_time, durationMinutes, timezone);
     if (startLabel && endLabel) {
       return `now until ${endLabel}`;
     }
@@ -144,10 +159,10 @@ const buildResolutionDetails = (task) => {
   return detailLines.length ? `\n\n${detailLines.join('\n')}` : '';
 };
 
-const buildSpecificReminderMessage = (task, reminderType) => {
-  const taskTitle = task?.title || 'your next task';
+const buildSpecificReminderMessage = (task, reminderType, timezone = 'UTC') => {
+  const taskTitle = sanitizeTaskTitle(task?.title) || 'your next task';
   const durationMinutes = resolveDurationMinutes(task, reminderType);
-  const windowText = describeWindowText(task, reminderType, durationMinutes);
+  const windowText = describeWindowText(task, reminderType, durationMinutes, timezone);
   const openerPool = reminderOpeners[reminderType] || reminderOpeners.default;
   const opener = pickRandom(openerPool);
   const emoji = pickRandom(reminderEmojiPool);
@@ -182,8 +197,9 @@ class AgentService {
       const taskList = tasks
         .map((t, idx) => {
           const categoryLabel = t.category ? ` (${t.category})` : '';
-          const startLabel = toTimeLabel(t.recommended_start || t.start_time);
-          const endLabel = toTimeLabel(t.recommended_end) || addMinutesLabel(t.recommended_start, resolveDurationMinutes(t, '30_min'));
+          const startLabel = toTimeLabel(t.recommended_start || t.start_time, user?.timezone || 'UTC');
+          const endLabel = toTimeLabel(t.recommended_end, user?.timezone || 'UTC')
+            || addMinutesLabel(t.recommended_start, resolveDurationMinutes(t, '30_min'), user?.timezone || 'UTC');
           const recommendation = startLabel && endLabel ? ` — best window ${startLabel} - ${endLabel}` : startLabel ? ` — best window ${startLabel}` : '';
           return `${idx + 1}. ${t.title}${categoryLabel}${recommendation}`;
         })
@@ -251,6 +267,7 @@ class AgentService {
 
   async sendMorningSummary(user) {
     try {
+      await ruleEngine.enforceDailyRules(user, new Date());
       const todaysTasks = await Task.getTodaysTasks(user.id, user?.timezone || 'UTC');
       const prioritizedTasks = await taskPrioritizer.rankTasksWithAvailability(user.id, todaysTasks);
       const hasTasks = prioritizedTasks.length > 0;
@@ -299,7 +316,7 @@ class AgentService {
       // Demo/testing flag: intentionally degrade reminder quality to trigger regression failures.
       message = forcedReminderMessage;
     } else {
-      message = buildSpecificReminderMessage(task, reminderType);
+      message = buildSpecificReminderMessage(task, reminderType, user?.timezone || 'UTC');
     }
 
     await opikLogger.log('log_reminder_generated', {
@@ -346,8 +363,11 @@ class AgentService {
           ? 'post_start'
           : '30_min';
       let enrichedTask = task;
-      if (enrichedTask?.id && typeof enrichedTask.severity === 'undefined') {
-        enrichedTask = await Task.findById(enrichedTask.id);
+      if (enrichedTask?.id) {
+        const latest = await Task.findById(enrichedTask.id).catch(() => null);
+        if (latest) {
+          enrichedTask = latest;
+        }
       }
 
       if (reminderPreferences.isPaused(user.id)) {
@@ -452,16 +472,34 @@ class AgentService {
 
   async calculateCompletionStats(user) {
     try {
-      const allTasks = await Task.getTodaysTasks(user.id, user?.timezone || 'UTC');
-      const completed = allTasks.filter(t => t.status === 'done');
-      const pending = allTasks.filter(t => t.status === 'todo');
+      const timezone = user?.timezone || 'UTC';
+      const allTasks = await Task.getTodaysTasks(user.id, timezone);
+      let scheduleBlocks = [];
+      try {
+        const blocks = await scheduleService.buildScheduleBlockInstances(user.id, new Date(), timezone);
+        scheduleBlocks = (blocks || [])
+          .filter((block) => block.start_time_utc)
+          .map((block) => ({
+            id: `schedule-${block.id}`,
+            title: block.title,
+            status: 'todo',
+            category: block.category || 'Schedule',
+            start_time: block.start_time_utc,
+            is_schedule_block: true
+          }));
+      } catch (err) {
+        console.warn('[Agent] Schedule blocks unavailable for completion stats:', err?.message || err);
+      }
+      const combined = [...allTasks, ...scheduleBlocks];
+      const completed = combined.filter(t => t.status === 'done');
+      const pending = combined.filter(t => t.status === 'todo' || t.status === 'scheduled');
       
-      const completionRate = allTasks.length > 0 
-        ? Math.round((completed.length / allTasks.length) * 100)
+      const completionRate = combined.length > 0 
+        ? Math.round((completed.length / combined.length) * 100)
         : 0;
 
       const stats = {
-        total: allTasks.length,
+        total: combined.length,
         completed: completed.length,
         pending: pending.length,
         completion_rate: completionRate

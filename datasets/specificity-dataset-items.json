@@ -1,0 +1,742 @@
+[
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3388",
+    "expected_output": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-30T00:38:01.059937"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0c1e-f1d2-7797-9430-930b7b02fe52",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-30T00:38:01.059937"
+        },
+        "start_time": "2026-01-29T23:38:00.529714Z",
+        "end_time": "2026-01-29T23:38:01.059984Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.464280555Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3387",
+    "expected_output": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-30T00:34:00.440420"
+    },
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0c1b-45fa-7afe-a36b-94661264938b",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-30T00:34:00.440420"
+        },
+        "start_time": "2026-01-29T23:33:59.929851Z",
+        "end_time": "2026-01-29T23:34:00.440472Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.464245708Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3386",
+    "expected_output": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-30T01:12:01.074256"
+    },
+    "feedback_scores": [
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being overly aggressive or command-based.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0c3e-10ed-76e4-afdd-40d6f250c716",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-30T01:12:01.074256"
+        },
+        "start_time": "2026-01-30T00:12:00.108388Z",
+        "end_time": "2026-01-30T00:12:01.074319Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.464207055Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3385",
+    "expected_output": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-30T01:09:52.787633"
+    },
+    "feedback_scores": [
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0c3c-1d14-7403-904d-fc7b7b381a81",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-30T01:09:52.787633"
+        },
+        "start_time": "2026-01-30T00:09:52.147812Z",
+        "end_time": "2026-01-30T00:09:52.787681Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.464167961Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3384",
+    "expected_output": {
+      "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+      "total": 1,
+      "completed": 1,
+      "pending": 0,
+      "completion_rate": 100,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-28T20:55:30.410040"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally conversational and supportive, encouraging sustained execution without being overly aggressive or command-based.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+      "total": 1,
+      "completed": 1,
+      "pending": 0,
+      "completion_rate": 100
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c062c-dec3-7010-a21b-d94e5d0b3696",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+          "total": 1,
+          "completed": 1,
+          "pending": 0,
+          "completion_rate": 100
+        },
+        "output": {
+          "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+          "total": 1,
+          "completed": 1,
+          "pending": 0,
+          "completion_rate": 100,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-28T20:55:30.410040"
+        },
+        "start_time": "2026-01-28T19:55:29.858639Z",
+        "end_time": "2026-01-28T19:55:30.410081Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.464128498Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3383",
+    "expected_output": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-30T00:32:31.903102"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0c19-ebf7-7472-b502-3c507206a86e",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-30T00:32:31.903102"
+        },
+        "start_time": "2026-01-29T23:32:31.350144Z",
+        "end_time": "2026-01-29T23:32:31.903160Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.464080713Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3382",
+    "expected_output": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-30T01:12:55.645514"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being overly aggressive or command-based.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0c3e-e7c6-75e2-bd50-a76924754417",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-30T01:12:55.645514"
+        },
+        "start_time": "2026-01-30T00:12:55.109544Z",
+        "end_time": "2026-01-30T00:12:55.645571Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.464050236Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3381",
+    "expected_output": {
+      "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+      "total": 20,
+      "completed": 0,
+      "pending": 20,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-29T20:22:02.338910"
+    },
+    "feedback_scores": [
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+      "total": 20,
+      "completed": 0,
+      "pending": 20,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0b34-9566-76b5-917f-624ecb5ce218",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+          "total": 20,
+          "completed": 0,
+          "pending": 20,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+          "total": 20,
+          "completed": 0,
+          "pending": 20,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-29T20:22:02.338910"
+        },
+        "start_time": "2026-01-29T19:22:01.446086Z",
+        "end_time": "2026-01-29T19:22:02.339020Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.464020512Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3380",
+    "expected_output": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-30T00:56:24.091834"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being overly aggressive or command-based.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0c2f-c66b-79e4-9855-1df6c7cb8338",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "cc4ea028-0198-4776-a74e-36f2b24db8c2",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-30T00:56:24.091834"
+        },
+        "start_time": "2026-01-29T23:56:23.530809Z",
+        "end_time": "2026-01-29T23:56:24.091907Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.463990275Z"
+  },
+  {
+    "id": "019c29cd-b2ce-7293-b1aa-5726c6ac337f",
+    "expected_output": {
+      "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0,
+      "agent_version": "v1.0",
+      "calculated_at": "2026-01-29T19:17:10.785718"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally conversational and supportive, encouraging sustained execution without being overly aggressive or command-based. However, it could benefit from slightly more personalization to enhance emotional connection.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+      "total": 0,
+      "completed": 0,
+      "pending": 0,
+      "completion_rate": 0
+    },
+    "metadata": "",
+    "spans": [
+      {
+        "id": "019c0af9-3595-7ee5-a3cd-62813669e2f5",
+        "name": "completion_stats_calculated",
+        "type": "general",
+        "input": {
+          "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0
+        },
+        "output": {
+          "user_id": "656e265f-c75a-4115-b631-f29655d79593",
+          "total": 0,
+          "completed": 0,
+          "pending": 0,
+          "completion_rate": 0,
+          "agent_version": "v1.0",
+          "calculated_at": "2026-01-29T19:17:10.785718"
+        },
+        "start_time": "2026-01-29T18:17:10.292105Z",
+        "end_time": "2026-01-29T18:17:10.785780Z"
+      }
+    ],
+    "tags": [],
+    "usage": "",
+    "created_at": "2026-02-04T17:57:52.463961634Z"
+  }
+]

@@ -2,7 +2,13 @@ const supabase = require('../config/supabase');
 
 const TABLE = 'opik_trace_mirror';
 
-const scoreKeys = ['tone_score', 'specificity_score', 'realism_score', 'goal_alignment_score'];
+const scoreKeys = [
+  'tone_score',
+  'specificity_score',
+  'realism_score',
+  'goal_alignment_score',
+  'resolution_alignment_score'
+];
 
 const buildScorePayload = (scores = {}) => {
   const payload = {};

@@ -3,11 +3,13 @@ const variantConfig = require('../config/experiment');
 const datasetExporter = require('../services/datasetExporter');
 const llmEvaluator = require('../services/llmEvaluator');
 const opikMirror = require('../services/opikMirror');
+const experimentService = require('../services/experimentService');
 
 const TRACE_FUNCTION_MAP = {
   daily_plan: 'log_daily_plan_trace',
   reminder: 'log_reminder_trace',
-  eod_summary: 'log_eod_summary_trace'
+  eod_summary: 'log_eod_summary_trace',
+  conversation: 'log_conversation_trace'
 };
 
 class OpikAgentTracer {
@@ -39,6 +41,9 @@ class OpikAgentTracer {
       user_id: userId,
       message_type: messageType
     };
+    const assigned = experimentService.assignVariant(userId);
+    metadata.experiment_id = experimentId || assigned.experimentId || this.defaultExperimentId;
+    metadata.experiment_variant = assigned.variant;
 
     const inputContext = {
       user_goal: userGoal || 'unspecified_goal',
@@ -59,6 +64,7 @@ class OpikAgentTracer {
     datasetExporter.recordTrace(messageType, {
       user_id: userId,
       experiment_id: tracePayload.metadata.experiment_id,
+      experiment_variant: tracePayload.metadata.experiment_variant,
       input_context: tracePayload.input_context,
       output: tracePayload.output
     });

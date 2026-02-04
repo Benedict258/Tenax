@@ -4,7 +4,13 @@ import { ADMIN_ENABLED } from '../../lib/env';
 import AdminGate from './AdminGate';
 import { Sparkles } from 'lucide-react';
 
-const metricOrder = ['tone_score', 'specificity_score', 'realism_score', 'goal_alignment_score'];
+const metricOrder = [
+  'tone_score',
+  'specificity_score',
+  'realism_score',
+  'goal_alignment_score',
+  'resolution_alignment_score'
+];
 
 const OpikPulsePage = () => {
   const { summary } = useAnalytics();
@@ -20,7 +26,7 @@ const OpikPulsePage = () => {
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-white/40">Admin panel</p>
           <h2 className="text-2xl font-semibold text-white">Opik quality pulse</h2>
-          <p className="text-white/60 text-sm">Monitor tone, specificity, realism, and goal alignment trends.</p>
+          <p className="text-white/60 text-sm">Monitor tone, specificity, realism, goal alignment, and resolution alignment trends.</p>
         </div>
         <Sparkles className="h-6 w-6 text-white/70" />
       </div>

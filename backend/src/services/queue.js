@@ -42,7 +42,7 @@ async function runReminderJob(job) {
     throw new Error(`Unsupported reminder type: ${type}`);
   }
 
-  console.log(`✅ Processed ${type} for user ${user.id}`);
+  console.log(`Processed ${type} for user ${user.id}`);
 }
 
 async function scheduleScheduleBlockReminders(user) {
@@ -255,6 +255,10 @@ class QueueService {
     if (!task?.start_time) return [];
     const start = new Date(task.start_time);
     if (Number.isNaN(start.getTime())) return [];
+    const now = new Date();
+    if (start <= now) {
+      return [];
+    }
 
     const reminders = [];
     const thirtyBefore = new Date(start);

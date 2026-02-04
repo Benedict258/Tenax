@@ -167,6 +167,39 @@ async function insertResolutionTasksIntoScheduleIntel(userId, tasks) {
   return payloads;
 }
 
+async function pruneFuturePhaseTasks(plan, phases, user) {
+  if (!plan || !phases?.length || !user?.id) return;
+  const activeIndex = Math.max(1, plan.active_phase_index || 1);
+  const futurePhases = phases.filter((phase) => phase.phase_index + 1 > activeIndex);
+  if (!futurePhases.length) return;
+  const futurePhaseIds = futurePhases.map((phase) => phase.id);
+  const { data: futureTasks, error } = await supabase
+    .from('resolution_tasks')
+    .select('id')
+    .eq('plan_id', plan.id)
+    .in('phase_id', futurePhaseIds);
+  if (error) throw error;
+  const resolutionTaskIds = (futureTasks || []).map((task) => String(task.id));
+  if (!resolutionTaskIds.length) return;
+
+  await supabase
+    .from('tasks')
+    .delete()
+    .eq('user_id', user.id)
+    .in('metadata->>resolution_task_id', resolutionTaskIds);
+
+  await supabase
+    .from('timetable_extractions')
+    .delete()
+    .eq('user_id', user.id)
+    .in('metadata->>resolution_task_id', resolutionTaskIds);
+
+  await supabase
+    .from('resolution_tasks')
+    .update({ locked: true, updated_at: new Date().toISOString() })
+    .in('id', resolutionTaskIds);
+}
+
 function resolveSessionsPerWeek(hoursPerWeek, daysAvailable, pace = 'standard', daysPerWeek = null) {
   if (!daysAvailable) return 1;
   if (daysPerWeek && Number.isFinite(daysPerWeek)) {
@@ -300,6 +333,7 @@ async function schedulePhaseTasks({ plan, phase, phases, user }) {
 
 async function scheduleActivePhase(plan, phases, user) {
   if (!plan || !phases?.length || !user) return [];
+  await pruneFuturePhaseTasks(plan, phases, user);
   const activeIndex = Math.max(1, plan.active_phase_index || 1);
   const phase = phases.find((item) => item.phase_index + 1 === activeIndex);
   if (!phase) return [];
@@ -332,6 +366,7 @@ async function unlockNextPhase(plan, phases, currentPhase, user) {
     unlockedTasks = await schedulePhaseTasks({ plan, phase: nextPhase, phases, user });
   }
   await ResolutionPlan.update(plan.id, { active_phase_index: nextPhase.phase_index + 1 });
+  await pruneFuturePhaseTasks({ ...plan, active_phase_index: nextPhase.phase_index + 1 }, phases, user);
   return { nextPhase, unlockedTasks };
 }
 

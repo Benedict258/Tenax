@@ -11,6 +11,36 @@ const ExecutionBoardPage = () => {
   const tasksToday = tasks.length ? tasks : summary?.tasks?.today ?? [];
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  const now = Date.now();
+  const bucketOrder: Record<string, number> = {
+    in_progress: 0,
+    upcoming: 1,
+    overdue: 2,
+    done: 3
+  };
+
+  const getBucket = (task: typeof tasksToday[number]) => {
+    if (task.status === 'done') return 'done';
+    if (!task.start_time) return 'upcoming';
+    const startMs = new Date(task.start_time).getTime();
+    if (Number.isNaN(startMs)) return 'upcoming';
+    const endMs = startMs + 60 * 60 * 1000;
+    if (startMs <= now && now <= endMs) return 'in_progress';
+    if (startMs > now) return 'upcoming';
+    return 'overdue';
+  };
+
+  const tasksSorted = [...tasksToday].sort((a, b) => {
+    const bucketA = getBucket(a);
+    const bucketB = getBucket(b);
+    if (bucketA !== bucketB) {
+      return (bucketOrder[bucketA] ?? 99) - (bucketOrder[bucketB] ?? 99);
+    }
+    const startA = a.start_time ? new Date(a.start_time).getTime() : Number.POSITIVE_INFINITY;
+    const startB = b.start_time ? new Date(b.start_time).getTime() : Number.POSITIVE_INFINITY;
+    return startA - startB;
+  });
+
   const handleDelete = async (taskId?: string) => {
     if (!taskId) return;
     setDeleting(taskId);
@@ -38,7 +68,7 @@ const ExecutionBoardPage = () => {
         </div>
       ) : (
         <FeaturesSectionWithHoverEffects
-          features={tasksToday.map((task) => ({
+          features={tasksSorted.map((task) => ({
             title: task.title,
             description: `${task.category || 'General'} - ${
               task.start_time

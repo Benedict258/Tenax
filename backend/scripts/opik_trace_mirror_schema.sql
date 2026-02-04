@@ -10,6 +10,7 @@ create table if not exists opik_trace_mirror (
   specificity_score numeric,
   realism_score numeric,
   goal_alignment_score numeric,
+  resolution_alignment_score numeric,
   agent_version text,
   prompt_version text,
   experiment_id text,

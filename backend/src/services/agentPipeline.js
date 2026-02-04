@@ -19,6 +19,7 @@ const toneController = require('./toneController');
 const { composeMessage } = require('./messageComposer');
 const conversationAgent = require('./conversationAgent');
 const scheduleService = require('./scheduleService');
+const opikAgentTracer = require('../instrumentation/opikTracer');
 
 
 
@@ -267,13 +268,26 @@ async function handleStatus(session, p1Tasks = []) {
 }
 
 async function handleAddTask(session, slots) {
+  if (slots?.rawText && (nluService.isScheduleQueryText(slots.rawText) || nluService.isStatusQueryText(slots.rawText) || nluService.isTimeQueryText(slots.rawText))) {
+    return { action: 'chat', ignored: true };
+  }
+  if (slots?.rawText && nluService.isQuestionLike(slots.rawText) && !nluService.isAddTaskText(slots.rawText)) {
+    return { action: 'chat', ignored: true };
+  }
   let title = slots.taskName?.trim();
+  if (!title) {
+    const deterministic = nluService.extractTaskTitleDeterministic(slots.rawText || '', session.user.timezone || 'UTC');
+    title = deterministic?.trim();
+  }
   if (!title) {
     const extracted = await nluService.extractTaskTitleWithLLM(slots.rawText || '', session.user.id);
     title = extracted?.trim();
   }
   if (!title) {
     return { action: 'add_task', requires_title: true };
+  }
+  if (nluService.isScheduleQueryText(title) || nluService.isStatusQueryText(title) || nluService.isTimeQueryText(title)) {
+    return { action: 'chat', ignored: true };
   }
 
   if (!slots.targetTime && !slots.noFixedTime) {
@@ -291,7 +305,7 @@ async function handleAddTask(session, slots) {
   const severity = inferSeverity(title);
   const task = await Task.create({
     user_id: session.user.id,
-    title,
+    title: nluService.cleanTaskTitle(title) || title,
     category: severity === 'p1' ? 'P1' : 'Other',
     start_time: slots.targetTime || null,
     recurrence: slots.recurrence || null,
@@ -329,6 +343,23 @@ async function handleAddTask(session, slots) {
 
 async function handleRemoveTask(session, slots) {
   const tasks = await Task.findByUserId(session.user.id, 'todo');
+  if (Array.isArray(slots?.taskIds) && slots.taskIds.length) {
+    const toRemove = tasks.filter((task) => slots.taskIds.includes(task.id));
+    if (!toRemove.length) {
+      return complainAboutMissingTask();
+    }
+    await Promise.all(toRemove.map((task) => Task.updateStatus(task.id, 'archived')));
+    return { action: 'remove_task', status: 'removed', tasks: toRemove };
+  }
+  if (Array.isArray(slots?.taskIndexes) && slots.taskIndexes.length) {
+    const indexMatches = slots.taskIndexes
+      .map((index) => tasks[index - 1])
+      .filter(Boolean);
+    if (indexMatches.length) {
+      await Promise.all(indexMatches.map((task) => Task.updateStatus(task.id, 'archived')));
+      return { action: 'remove_task', status: 'removed', tasks: indexMatches };
+    }
+  }
   const resolution = resolveTaskCandidate(tasks, slots);
 
   if (resolution.options.length) {
@@ -525,6 +556,9 @@ async function handleScheduleQuery(session, slots) {
   for (const date of datesToCheck) {
     const blocksForDay = await scheduleService.buildScheduleBlockInstances(session.user.id, date, timezone);
     const dateLabel = DateTime.fromJSDate(date).setZone(timezone).toFormat('cccc');
+    const dayStart = DateTime.fromJSDate(date).setZone(timezone).startOf('day').toUTC();
+    const dayEnd = dayStart.plus({ days: 1 });
+    const tasksForDay = await Task.listByDateRange(session.user.id, dayStart.toISO(), dayEnd.toISO());
     blocksForDay
       .filter((block) => block.start_time_utc)
       .forEach((block) => {
@@ -540,13 +574,49 @@ async function handleScheduleQuery(session, slots) {
           dayLabel: dateLabel
         });
       });
+    tasksForDay
+      .filter((task) => task.start_time)
+      .forEach((task) => {
+        scheduleBlocks.push({
+          id: task.id,
+          title: task.title,
+          location: null,
+          category: task.category || 'Task',
+          start_time: task.start_time,
+          end_time: task.end_time || null,
+          timeLabel: formatTimeForUser(task.start_time, timezone),
+          endLabel: task.end_time ? formatTimeForUser(task.end_time, timezone) : null,
+          dayLabel: dateLabel,
+          source: 'task'
+        });
+      });
   }
+
+  const summaryLines = [];
+  const grouped = scheduleBlocks.reduce((acc, block) => {
+    const key = block.dayLabel || 'Upcoming';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(block);
+    return acc;
+  }, {});
+
+  Object.entries(grouped).forEach(([dayLabel, blocks]) => {
+    const items = blocks
+      .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
+      .map((block) => {
+        const timeRange = block.endLabel ? `${block.timeLabel} - ${block.endLabel}` : block.timeLabel || 'anytime';
+        return `- ${block.title} (${timeRange})`;
+      });
+    summaryLines.push(`${dayLabel}:`);
+    summaryLines.push(...items);
+  });
 
   return {
     action: 'schedule_query',
     scheduleBlocks,
     targetDate: baseDate.toISOString(),
-    rangeDays
+    rangeDays,
+    summary: summaryLines.length ? summaryLines.join('\n') : ''
   };
 }
 
@@ -756,15 +826,42 @@ async function handleMessage({
     }
   }
 
+  const deterministic = nluService.parseMessage(text, { allowPlanFallback: true, timezone: resolvedUser.timezone || 'UTC' });
   if (!parsed) {
-    parsed = nluService.parseMessage(text, { allowPlanFallback: true, timezone: resolvedUser.timezone || 'UTC' });
+    parsed = deterministic;
   }
 
-  if (parsed?.intent === 'unknown' || (parsed?.confidence || 0) < 0.5) {
+  if (!scheduleQuery && !statusQuery && !timeQuery && (parsed?.intent === 'unknown' || (parsed?.confidence || 0) < 0.5)) {
     const llmIntent = await nluService.inferIntentWithLLM(text, resolvedUser.timezone || 'UTC', resolvedUser.id);
     if (llmIntent) {
       parsed = llmIntent;
     }
+  }
+
+  const scheduleQuery = nluService.isScheduleQueryText(text);
+  const statusQuery = nluService.isStatusQueryText(text);
+  const timeQuery = nluService.isTimeQueryText(text);
+  const addTaskSignal = nluService.isAddTaskText(text);
+  const isQuestion = nluService.isQuestionLike(text);
+
+  if (scheduleQuery) {
+    parsed = nluService.parseMessage(text, { timezone: resolvedUser.timezone || 'UTC' });
+  } else if (statusQuery) {
+    parsed = nluService.parseMessage(text, { timezone: resolvedUser.timezone || 'UTC' });
+  } else if (timeQuery) {
+    parsed = nluService.parseMessage(text, { timezone: resolvedUser.timezone || 'UTC' });
+  } else if ((scheduleQuery || statusQuery || timeQuery) && deterministic?.intent && deterministic.intent !== 'unknown') {
+    parsed = deterministic;
+  }
+
+  if (parsed?.intent === 'add_task' && (!addTaskSignal || scheduleQuery || statusQuery || timeQuery) &&
+      deterministic?.intent && deterministic.intent !== 'unknown') {
+    parsed = deterministic;
+  }
+  if (parsed?.intent === 'add_task' && isQuestion && !addTaskSignal) {
+    parsed = deterministic?.intent && deterministic.intent !== 'unknown'
+      ? deterministic
+      : { intent: 'chat', confidence: 0.5, slots: {} };
   }
 
   if (parsed?.intent === 'unknown') {
@@ -816,13 +913,16 @@ async function handleMessage({
     channel
   });
 
-  const lowFrictionIntents = new Set(['status', 'mark_complete', 'add_task', 'reschedule_task', 'remove_task', 'time_now', 'schedule_note']);
+  const lowFrictionIntents = new Set(['status', 'mark_complete', 'add_task', 'reschedule_task', 'remove_task', 'time_now', 'schedule_note', 'schedule_query']);
   const actionableIntent = parsed?.intent !== 'unknown'
     && ((parsed?.confidence || 0) >= 0.45 || lowFrictionIntents.has(parsed.intent));
   const intentToUse = actionableIntent ? parsed.intent : 'chat';
   const toolResult = intentToUse === 'chat'
     ? { action: 'chat' }
     : await routeIntent(session, parsed, { rawText: text });
+  const finalIntent = toolResult?.action === 'chat' && intentToUse === 'add_task'
+    ? 'chat'
+    : intentToUse;
 
   const memoryTurns = conversationContext.getTurns(resolvedUser.id);
   const [todaysTasks, stats] = await Promise.all([
@@ -837,7 +937,7 @@ async function handleMessage({
   const reply = await conversationAgent.generateAssistantReply({
     user: resolvedUser,
     message: text,
-    intent: intentToUse,
+    intent: finalIntent,
     toolResult,
     memoryTurns,
     context: {
@@ -849,13 +949,30 @@ async function handleMessage({
     }
   });
 
-  await session.send(reply, { intent: intentToUse });
+  await session.send(reply, { intent: finalIntent });
+  try {
+    await opikAgentTracer.traceAgentOutput({
+      messageType: 'conversation',
+      userId: resolvedUser.id,
+      userGoal: resolvedUser?.goal || resolvedUser?.primary_goal,
+      userSchedule: todaysTasks || [],
+      taskMetadata: {
+        intent: finalIntent,
+        schedule_blocks: toolResult?.scheduleBlocks?.length || 0
+      },
+      generatedText: reply,
+      promptVersion: 'conversation_agent_v2',
+      experimentId: resolvedUser?.experiment_id
+    });
+  } catch (traceError) {
+    console.warn('[Opik] Failed to trace conversation:', traceError.message);
+  }
   await Conversation.touch(conversation.id);
 
   return {
     replies: session.replies,
     conversationId: conversation.id,
-    intent: intentToUse
+    intent: finalIntent
   };
 }
 

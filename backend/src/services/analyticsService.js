@@ -3,6 +3,7 @@ const User = require('../models/User');
 const agentService = require('./agent');
 const metricsStore = require('./metricsStore');
 const opikBridge = require('../utils/opikBridge');
+const scheduleService = require('./scheduleService');
 
 const LOOKBACK_DAYS = 7;
 const ADMIN_LOOKBACK_DAYS = 14;
@@ -55,7 +56,23 @@ function mapTaskForClient(task) {
     category: task.category,
     status: task.status,
     start_time: task.start_time,
-    severity: task.severity || 'p2'
+    severity: task.severity || 'p2',
+    is_schedule_block: task.is_schedule_block || false
+  };
+}
+
+function mapScheduleBlockForClient(block, timezone) {
+  const start = block?.start_time_utc || block?.start_time;
+  return {
+    id: `schedule-${block.id}`,
+    title: block.title,
+    category: block.category || 'Schedule',
+    status: 'scheduled',
+    start_time: start,
+    severity: 'p2',
+    is_schedule_block: true,
+    location: block.location || null,
+    timezone
   };
 }
 
@@ -127,26 +144,36 @@ async function getUserSummary(userId) {
     return buildDemoSummary();
   }
   try {
-    const [user, todaysTasks] = await Promise.all([
-      User.findById(userId).catch(() => null),
-      Task.getTodaysTasks(userId)
-    ]);
+    const user = await User.findById(userId).catch(() => null);
 
     if (!user) {
       return buildDemoSummary();
     }
 
+    const todaysTasks = await Task.getTodaysTasks(userId, user.timezone || 'UTC');
+
     const completion = await agentService.calculateCompletionStats(user);
     const reminderStats = metricsStore.getReminderStats(user.id);
+    const reminderEffectiveness = metricsStore.getReminderEffectiveness(user.id);
     const streak = metricsStore.getStreak(user.id);
     const engagement = metricsStore.getEngagementScore(user.id);
+
+    let scheduleBlocks = [];
+    try {
+      const blocks = await scheduleService.buildScheduleBlockInstances(user.id, new Date(), user.timezone || 'UTC');
+      scheduleBlocks = (blocks || [])
+        .filter((block) => block.start_time_utc)
+        .map((block) => mapScheduleBlockForClient(block, user.timezone || 'UTC'));
+    } catch (err) {
+      console.warn('[Analytics] Schedule blocks unavailable:', err?.message || err);
+    }
 
     const trendStart = new Date();
     trendStart.setDate(trendStart.getDate() - (LOOKBACK_DAYS - 1));
     const recentTasks = await Task.findByUserSince(user.id, trendStart.toISOString());
     const weeklyTrend = groupCompletionByDay(recentTasks, trendStart);
-    const categoryBreakdown = buildCategoryBreakdown(todaysTasks);
-    const taskPayload = todaysTasks.map(mapTaskForClient);
+    const taskPayload = [...todaysTasks.map(mapTaskForClient), ...scheduleBlocks];
+    const categoryBreakdown = buildCategoryBreakdown(taskPayload);
     const pinnedTasks = taskPayload.filter((task) => task.severity === 'p1');
 
     const opikMetrics = await fetchOpikMetrics([
@@ -164,7 +191,10 @@ async function getUserSummary(userId) {
       },
       today: {
         completion,
-        reminderStats,
+        reminderStats: {
+          ...reminderStats,
+          effectiveness: reminderEffectiveness
+        },
         streak,
         engagement
       },

@@ -18,6 +18,8 @@ class OptimizerJobs {
     }
 
     this.scheduleNightlyHRPO();
+    this.scheduleWeeklyToneEvolution();
+    this.scheduleWeeklyIntentSelection();
     this.initialized = true;
     console.log('[OptimizerJobs] Nightly HRPO job scheduled (in-memory)');
   }
@@ -52,6 +54,67 @@ class OptimizerJobs {
         console.error('[OptimizerJobs] HRPO run failed:', error.message);
       } finally {
         this.scheduleNightlyHRPO(options);
+      }
+    }, delay);
+
+    return { status: 'scheduled', runAt: nextRun.toISOString() };
+  }
+
+  scheduleWeeklyToneEvolution(options = {}) {
+    const cron = options.cron || optimizerConfig.toneCron;
+    const nextRun = this._computeNextRunFromCron(cron);
+    if (!nextRun) {
+      console.warn('[OptimizerJobs] Invalid tone cron expression; skipping schedule');
+      return { status: 'skipped', reason: 'invalid_cron' };
+    }
+
+    const delay = Math.max(0, nextRun.getTime() - Date.now());
+    setTimeout(async () => {
+      try {
+        await optimizerService.runToneEvolutionarySearch({
+          promptVariants: options.promptVariants || [optimizerConfig.reminder.baselinePrompt],
+          datasetName: options.datasetName,
+          datasetPath: options.datasetPath,
+          metric: options.metric,
+          model: options.model,
+          generations: options.generations,
+          populationSize: options.populationSize
+        });
+        console.log('[OptimizerJobs] Weekly tone evolution run completed');
+      } catch (error) {
+        console.error('[OptimizerJobs] Tone evolution run failed:', error.message);
+      } finally {
+        this.scheduleWeeklyToneEvolution(options);
+      }
+    }, delay);
+
+    return { status: 'scheduled', runAt: nextRun.toISOString() };
+  }
+
+  scheduleWeeklyIntentSelection(options = {}) {
+    const cron = options.cron || optimizerConfig.intentCron;
+    const nextRun = this._computeNextRunFromCron(cron);
+    if (!nextRun) {
+      console.warn('[OptimizerJobs] Invalid intent cron expression; skipping schedule');
+      return { status: 'skipped', reason: 'invalid_cron' };
+    }
+
+    const delay = Math.max(0, nextRun.getTime() - Date.now());
+    setTimeout(async () => {
+      try {
+        await optimizerService.runIntentFewShotSelection({
+          examplePool: options.examplePool,
+          datasetName: options.datasetName,
+          datasetPath: options.datasetPath,
+          metric: options.metric,
+          model: options.model,
+          numShots: options.numShots
+        });
+        console.log('[OptimizerJobs] Weekly intent selection run completed');
+      } catch (error) {
+        console.error('[OptimizerJobs] Intent selection run failed:', error.message);
+      } finally {
+        this.scheduleWeeklyIntentSelection(options);
       }
     }, delay);
 

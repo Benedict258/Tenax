@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const jwt = require('jsonwebtoken');
 const adminAuth = require('../middleware/adminAuth');
 const supabase = require('../config/supabase');
@@ -6,7 +6,21 @@ const { DateTime } = require('luxon');
 
 const router = express.Router();
 
-const SCORE_KEYS = ['tone_score', 'specificity_score', 'realism_score', 'goal_alignment_score'];
+const SCORE_KEYS = [
+  'tone_score',
+  'specificity_score',
+  'realism_score',
+  'goal_alignment_score',
+  'resolution_alignment_score'
+];
+
+const FEEDBACK_SCORE_TYPES = new Set([
+  'tone_score',
+  'specificity_score',
+  'realism_score',
+  'goal_alignment_score',
+  'resolution_alignment_score'
+]);
 
 const rangeToStart = (range) => {
   if (range === '7d') {
@@ -71,6 +85,31 @@ router.get('/opik/summary', adminAuth, async (req, res) => {
     const failRate = computeFailRate(rows || [], threshold);
     const totalTraces = rows?.length || 0;
 
+    let feedbackSummary = { count: 0, averages: {} };
+    try {
+      const { data: feedbackRows } = await supabase
+        .from('opik_human_feedback')
+        .select('score_type, score_value')
+        .gte('created_at', start);
+      if (feedbackRows?.length) {
+        const totals = {};
+        const counts = {};
+        feedbackRows.forEach((row) => {
+          const type = row.score_type;
+          if (!type) return;
+          totals[type] = (totals[type] || 0) + Number(row.score_value || 0);
+          counts[type] = (counts[type] || 0) + 1;
+        });
+        const averages = {};
+        Object.keys(totals).forEach((key) => {
+          averages[key] = Number((totals[key] / (counts[key] || 1)).toFixed(3));
+        });
+        feedbackSummary = { count: feedbackRows.length, averages };
+      }
+    } catch (err) {
+      console.warn('[Admin] feedback summary load failed:', err?.message || err);
+    }
+
     const best = Object.entries(averages).sort((a, b) => b[1] - a[1])[0];
     const worst = Object.entries(averages).sort((a, b) => a[1] - b[1])[0];
 
@@ -81,7 +120,8 @@ router.get('/opik/summary', adminAuth, async (req, res) => {
       averages,
       bestDimension: best ? { metric: best[0], score: best[1] } : null,
       worstDimension: worst ? { metric: worst[0], score: worst[1] } : null,
-      activeExperiment: rows?.[0]?.experiment_id || null
+      activeExperiment: rows?.[0]?.experiment_id || null,
+      feedbackSummary
     });
   } catch (error) {
     console.error('[Admin] summary error:', error.message);
@@ -135,6 +175,9 @@ router.get('/opik/signals', adminAuth, async (req, res) => {
     if (averages.goal_alignment_score > 4 && averages.realism_score < 3.2) {
       signals.push('Goal alignment is high but realism is low — tasks may be too ambitious.');
     }
+    if (averages.resolution_alignment_score && averages.resolution_alignment_score < 3.2) {
+      signals.push('Resolution alignment is trending low — tighten phase objectives or deliverables.');
+    }
 
     const byHour = rows.reduce((acc, row) => {
       const hour = DateTime.fromISO(row.logged_at).hour;
@@ -160,7 +203,7 @@ router.get('/opik/signals', adminAuth, async (req, res) => {
     if (reminderRows.length) {
       const reminderAvg = computeAverages(reminderRows);
       if (reminderAvg.goal_alignment_score < averages.goal_alignment_score - 0.3) {
-        signals.push('Reminder follow-through may drop when goal alignment dips — tweak reminder prompts.');
+        signals.push('Reminder follow-through may drop when goal alignment dips â€” tweak reminder prompts.');
       }
     }
 
@@ -171,4 +214,87 @@ router.get('/opik/signals', adminAuth, async (req, res) => {
   }
 });
 
+
+router.post('/opik/feedback', adminAuth, async (req, res) => {
+  try {
+    const { trace_id, user_id, message_type, score_type, score_value, comment, source } = req.body || {};
+    if (!score_type || !FEEDBACK_SCORE_TYPES.has(score_type)) {
+      return res.status(400).json({ message: 'Invalid score_type.' });
+    }
+    const value = Number(score_value);
+    if (!Number.isFinite(value) || value < 1 || value > 5) {
+      return res.status(400).json({ message: 'score_value must be between 1 and 5.' });
+    }
+    const payload = {
+      trace_id: trace_id || null,
+      user_id: user_id || null,
+      message_type: message_type || null,
+      score_type,
+      score_value: value,
+      comment: comment || null,
+      source: source || 'admin'
+    };
+    const { data, error } = await supabase
+      .from('opik_human_feedback')
+      .insert([payload])
+      .select()
+      .single();
+    if (error) throw error;
+    res.json({ feedback: data });
+  } catch (error) {
+    console.error('[Admin] feedback error:', error.message);
+    res.status(500).json({ message: 'Failed to save feedback.' });
+  }
+});
+
+router.get('/opik/feedback', adminAuth, async (req, res) => {
+  try {
+    const range = req.query.range === '7d' ? '7d' : '24h';
+    const start = rangeToStart(range).toUTC().toISO();
+    const traceId = req.query.trace_id;
+    let query = supabase
+      .from('opik_human_feedback')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (traceId) {
+      query = query.eq('trace_id', traceId);
+    } else {
+      query = query.gte('created_at', start);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ feedback: data || [] });
+  } catch (error) {
+    console.error('[Admin] feedback fetch error:', error.message);
+    res.status(500).json({ message: 'Failed to load feedback.' });
+  }
+});
+
+router.get('/opik/feedback/summary', adminAuth, async (req, res) => {
+  try {
+    const range = req.query.range === '7d' ? '7d' : '24h';
+    const start = rangeToStart(range).toUTC().toISO();
+    const { data: rows, error } = await supabase
+      .from('opik_human_feedback')
+      .select('score_type, score_value')
+      .gte('created_at', start);
+    if (error) throw error;
+    const totals = {};
+    const counts = {};
+    rows?.forEach((row) => {
+      const key = row.score_type;
+      totals[key] = (totals[key] || 0) + Number(row.score_value || 0);
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    const averages = {};
+    Object.keys(totals).forEach((key) => {
+      averages[key] = Number((totals[key] / (counts[key] || 1)).toFixed(3));
+    });
+    res.json({ count: rows?.length || 0, averages });
+  } catch (error) {
+    console.error('[Admin] feedback summary error:', error.message);
+    res.status(500).json({ message: 'Failed to load feedback summary.' });
+  }
+});
 module.exports = router;
+

@@ -347,8 +347,12 @@ const ExecutionBoardBentoCard = ({
     const end = item.endMs ?? item.startMs + 60 * 60000;
     return item.startMs <= now && end >= now && item.status !== 'done';
   });
-  const upcoming = withTimes.filter((item) => item.startMs && item.startMs > now && item.status !== 'done');
-  const overdue = withTimes.filter((item) => item.startMs && item.startMs < now && item.status !== 'done');
+  const upcoming = withTimes
+    .filter((item) => item.startMs && item.startMs > now && item.status !== 'done')
+    .sort((a, b) => (a.startMs ?? 0) - (b.startMs ?? 0));
+  const overdue = withTimes
+    .filter((item) => item.startMs && item.startMs < now && item.status !== 'done')
+    .sort((a, b) => (a.startMs ?? 0) - (b.startMs ?? 0));
   const anytime = withTimes.filter((item) => !item.startMs && item.status !== 'done');
   const ordered = [...inProgress, ...upcoming, ...overdue, ...anytime];
   const firstTask = ordered[0];

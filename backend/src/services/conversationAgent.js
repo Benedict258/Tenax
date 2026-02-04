@@ -5,6 +5,13 @@ const { composeMessage } = require('./messageComposer');
 const { DateTime } = require('luxon');
 
 const MAX_MEMORY_TURNS = 6;
+const TASK_ASK_PATTERNS = [
+  /what do you want to accomplish/i,
+  /what's the first task/i,
+  /what do you want to tackle/i,
+  /want to plan/i,
+  /what are you working on/i
+];
 
 const extractOpeners = (turns = []) =>
   turns
@@ -12,6 +19,11 @@ const extractOpeners = (turns = []) =>
     .map((turn) => turn.text?.split(/\s+/).slice(0, 3).join(' '))
     .filter(Boolean)
     .slice(-5);
+
+const recentlyAskedForTasks = (turns = []) =>
+  turns
+    .filter((turn) => turn.role === 'assistant')
+    .some((turn) => TASK_ASK_PATTERNS.some((pattern) => pattern.test(turn.text || '')));
 
 const safeList = (items) => (Array.isArray(items) ? items : []);
 
@@ -28,10 +40,10 @@ const formatTasks = (tasks = [], timezone = 'UTC') =>
     return `- ${task.title} (${time})`;
   }).join('\n');
 
-const formatScheduleBlocks = (blocks = []) =>
+const formatScheduleBlocks = (blocks = [], timezone = 'UTC') =>
   blocks.slice(0, 7).map((block) => {
-    const label = block.timeLabel || (block.start_time ? formatTimeForUser(block.start_time) : 'anytime');
-    const dayLabel = block.dayLabel ? `${block.dayLabel} · ` : '';
+    const label = block.timeLabel || (block.start_time ? formatTimeForUser(block.start_time, timezone) : 'anytime');
+    const dayLabel = block.dayLabel ? `${block.dayLabel} - ` : '';
     return `- ${dayLabel}${block.title} (${label})`;
   }).join('\n');
 
@@ -39,10 +51,15 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
   const toneContext = toneController.buildToneContext(user, context?.stats, context?.reminderStats);
   const reasons = Array.isArray(user?.reason_for_using) ? user.reason_for_using.join(', ') : user?.reason_for_using || '';
   const openers = extractOpeners(memoryTurns);
+  const avoidTaskAsk = recentlyAskedForTasks(memoryTurns);
   const timezone = user?.timezone || 'UTC';
   const tasksList = context?.tasks ? formatTasks(context.tasks, timezone) : '';
-  const scheduleList = toolResult?.scheduleBlocks?.length ? formatScheduleBlocks(toolResult.scheduleBlocks) : '';
-  const currentTime = context?.currentTime || '';
+  const scheduleList = toolResult?.scheduleBlocks?.length ? formatScheduleBlocks(toolResult.scheduleBlocks, timezone) : '';
+  const showTime = intent === 'time_now';
+  const currentTime = showTime ? (context?.currentTime || '') : '';
+  const currentTimeLine = showTime && currentTime
+    ? `- Current time (user timezone): ${currentTime}`
+    : null;
 
   return [
     'You are Tenax, a friendly execution companion AI. You chat like a real person: natural, curious, and lightly coachy.',
@@ -56,7 +73,8 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     '- Avoid repeating the same phrasing from recent replies.',
     '- Do not push the user into task planning repeatedly. Offer once, then keep the conversation flowing.',
     '- If you already asked a planning question recently, do not ask it again.',
-    '- Do not guess or mention the current time unless the user asks or provides a time.',
+    avoidTaskAsk ? '- You already asked about tasks recently. Do not ask another planning question now.' : '',
+    '- Do not guess or mention the current time unless the user explicitly asks.',
     '- Do not repeat the same observation (e.g., time of day) across turns.',
     '',
     'User context:',
@@ -72,7 +90,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     'System state:',
     `- Intent: ${intent || 'chat'}`,
     toolResult ? `- Tool result: ${JSON.stringify(toolResult)}` : '- Tool result: none',
-    currentTime ? `- Current time (user timezone): ${currentTime}` : '- Current time: unavailable',
+    currentTimeLine,
     '',
     context?.tasks ? `Today/Upcoming tasks:\n${tasksList || 'No tasks'}` : 'Tasks: unavailable',
     scheduleList ? `Fixed schedule blocks today:\n${scheduleList}` : 'Fixed schedule blocks: unavailable',
@@ -81,6 +99,7 @@ const buildPrompt = ({ user, message, intent, toolResult, memoryTurns, context }
     '- Always respond as a natural chat message.',
     '- If the user is known (has a name), avoid "Nice to meet you" or first-time greetings.',
     '- If the user asks for the current time, answer with the provided current time and timezone.',
+    '- Do not wrap task titles in quotation marks.',
     '- If toolResult.requires_selection is true, include the options list and end with: "Reply with the number or the task name."',
     '- If toolResult.requires_time is true, ask for the time or "no fixed time".',
     '- If toolResult.requires_title is true, ask what task they want to add with a quick example.',
@@ -106,6 +125,15 @@ const fallbackReply = ({ intent, toolResult, user }) => {
     const timing = toolResult.timingText || '';
     const recurrence = toolResult.recurrenceText || '';
     return `Added ${toolResult.task?.title || 'task'}${timing}${recurrence}. Tell me when it's done.`;
+  }
+  if (toolResult?.action === 'remove_task' && toolResult?.status === 'removed') {
+    const tasks = toolResult.tasks || (toolResult.task ? [toolResult.task] : []);
+    if (tasks.length > 1) {
+      const names = tasks.map((task) => task.title).join(', ');
+      return `All set. Removed: ${names}.`;
+    }
+    const title = tasks[0]?.title || toolResult.task?.title || 'that task';
+    return `Removed ${title}.`;
   }
   if (toolResult?.action === 'mark_complete' && toolResult?.status === 'completed') {
     return `Nice - ${toolResult.task?.title || 'that'} is marked complete.`;
@@ -138,12 +166,15 @@ const fallbackReply = ({ intent, toolResult, user }) => {
   }
   if (toolResult?.action === 'schedule_query') {
     const blocks = toolResult.scheduleBlocks || [];
+    if (toolResult.summary) {
+      return `Here's what I see:\n${toolResult.summary}`;
+    }
     if (!blocks.length) {
       return "I do not see any schedule blocks for that day yet. If you want, upload or add them and I will keep them in view.";
     }
     const list = blocks.slice(0, 5).map((block) => {
       const label = block.timeLabel || 'scheduled';
-      const dayLabel = block.dayLabel ? `${block.dayLabel} · ` : '';
+      const dayLabel = block.dayLabel ? `${block.dayLabel} - ` : '';
       return `- ${dayLabel}${block.title} (${label})`;
     }).join('\n');
     return `Here is what is on your schedule:\n${list}`;

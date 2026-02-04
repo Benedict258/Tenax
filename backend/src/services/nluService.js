@@ -27,7 +27,7 @@ const PROGRESS_TRIGGERS = [
   'how am i doing',
   'progress'
 ];
-const START_TRIGGERS = ['start my day', 'good morning', "i'm ready", "i’m ready", "i am ready", "let's start"];
+const START_TRIGGERS = ['start my day', 'good morning', "i'm ready", 'i am ready', "let's start"];
 const END_TRIGGERS = ['end my day', 'wrap up', 'good night'];
 const REMINDER_SNOOZE_TRIGGERS = ['snooze', 'remind me later'];
 const REMINDER_PAUSE_TRIGGERS = ['stop reminders', 'pause reminders', "don't remind me", 'no reminders'];
@@ -39,9 +39,13 @@ const TIME_TRIGGERS = [
   'time now',
   'current time',
   "what's the time",
+  "what's the time now",
+  'what time now',
+  'time right now',
   'time please'
 ];
 const GENERIC_TASK_NAMES = new Set(['task', 'a task', 'the task', 'my task', 'it', 'this', 'that']);
+const ACK_WORDS = new Set(['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'alright', 'cool']);
 const ADD_TRIGGERS = ['add', 'create', 'schedule', 'remind me', 'set a reminder', 'set reminder', 'set', 'book'];
 const DAILY_KEYWORDS = ['daily', 'every day', 'each day'];
 const WEEKLY_KEYWORDS = ['weekly', 'every week'];
@@ -56,6 +60,7 @@ const SCHEDULE_QUERY_TRIGGERS = [
   'classes tomorrow',
   'class tomorrow',
   'schedule tomorrow',
+  'schedule for',
   'my schedule tomorrow',
   'tomorrow schedule',
   'tmrw schedule',
@@ -63,7 +68,15 @@ const SCHEDULE_QUERY_TRIGGERS = [
   'what do i have tomorrow',
   'what do i have tmrw',
   'what do i have next',
+  'what do i have on',
+  'what do i have for',
+  'what are my schedules',
+  'what is my schedule',
+  'what are my schedule',
+  'what about my schedule',
+  'what about my schedules',
   'what is on my schedule',
+  "what's on my schedule",
   'check my schedule',
   'what about my schedule',
   'what about my weekly schedule',
@@ -75,6 +88,83 @@ const SCHEDULE_QUERY_TRIGGERS = [
 ];
 
 const normalize = (text) => text.toLowerCase().trim();
+const safeText = (text) => normalize(text || '');
+
+function isScheduleQueryText(text = '') {
+  const normalized = safeText(text);
+  if (!normalized) return false;
+  if (SCHEDULE_QUERY_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+    return true;
+  }
+  if ((normalized.includes('schedule') || normalized.includes('schedules') || normalized.includes('classes')) &&
+      WEEKDAY_NAMES.some((day) => normalized.includes(day))) {
+    return true;
+  }
+  if ((normalized.includes('schedule') || normalized.includes('classes')) &&
+      (normalized.startsWith('what') || normalized.startsWith('which') || normalized.startsWith('do i') || normalized.startsWith('whats'))) {
+    return true;
+  }
+  if (normalized.includes('schedule') && /\?$/.test(normalized)) {
+    return true;
+  }
+  if (normalized.includes('weekly schedule') || normalized.includes('my weekly')) {
+    return true;
+  }
+  if (/tomorrow|tmrw|next\s+week|today/.test(normalized) && normalized.includes('schedule')) {
+    return true;
+  }
+  return false;
+}
+
+function isQuestionLike(text = '') {
+  const normalized = safeText(text);
+  if (!normalized) return false;
+  if (normalized.endsWith('?')) return true;
+  if (/^(what|when|where|why|how|which|who|do i|did i|am i|is|are|can|should)\b/.test(normalized)) {
+    return true;
+  }
+  return /^(hi|hey|hello|yo)[,\s]+(what|when|where|why|how|which|who|do i|did i|am i|is|are|can|should)\b/.test(normalized);
+}
+
+function isStatusQueryText(text = '') {
+  const normalized = safeText(text);
+  if (!normalized) return false;
+  if (STATUS_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+    return true;
+  }
+  if (normalized.includes('?') && (normalized.includes('task') || normalized.includes('plan'))) {
+    return true;
+  }
+  return false;
+}
+
+function isTimeQueryText(text = '') {
+  const normalized = safeText(text);
+  if (!normalized) return false;
+  if (isQuestionLike(normalized) && normalized.includes('time')) {
+    return true;
+  }
+  return TIME_TRIGGERS.some((phrase) => normalized.includes(phrase));
+}
+
+function isAddTaskText(text = '') {
+  const normalized = safeText(text);
+  if (!normalized) return false;
+  if (isScheduleQueryText(normalized) || isStatusQueryText(normalized) || isTimeQueryText(normalized)) {
+    return false;
+  }
+  if (isQuestionLike(normalized) && !ADD_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
+    return false;
+  }
+  if (normalized.startsWith('add') || normalized.startsWith('create') || normalized.startsWith('schedule')) {
+    return true;
+  }
+  if (ADD_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
+    return true;
+  }
+  return /\bby\s+\d{1,2}(:\d{2})?\s*(am|pm)\b/.test(normalized)
+    || /\b\d{1,2}(:\d{2})\s*(am|pm)?\b/.test(normalized);
+}
 
 function detectRecurrence(text) {
   const normalized = normalize(text);
@@ -167,6 +257,12 @@ function removeMatchedText(source, matches = []) {
 
 function cleanTaskTitle(raw) {
   if (!raw) return '';
+  if (isScheduleQueryText(raw) || isStatusQueryText(raw) || isTimeQueryText(raw)) {
+    return '';
+  }
+  if (isQuestionLike(raw)) {
+    return '';
+  }
   let text = raw;
   const prefixes = [
     /^just\s+/i,
@@ -178,6 +274,8 @@ function cleanTaskTitle(raw) {
     /^add\s+/i,
     /^create\s+/i,
     /^schedule\s+/i,
+    /^add\s+this\s+task\s+to\s+my\s+schedule\s+/i,
+    /^add\s+this\s+to\s+my\s+schedule\s+/i,
     /^add\s+this\s+task\s+/i,
     /^add\s+this\s+/i,
     /^remind\s+me\s+to\s+/i,
@@ -193,6 +291,8 @@ function cleanTaskTitle(raw) {
     text = text.replace(pattern, '');
   });
 
+  text = text.replace(/\"/g, '');
+  text = text.replace(/\'/g, '');
   text = text.replace(/\bfor\s+me\s+to\b/gi, '');
   text = text.replace(/\bfor\s+me\b/gi, '');
   text = text.replace(/\bto\s+my\s+schedule\b/gi, '');
@@ -207,7 +307,30 @@ function cleanTaskTitle(raw) {
   text = text.replace(/\b(please|pls)\b/gi, '');
   text = text.replace(/\b(today|tomorrow|tonight)\b/gi, '');
   text = text.replace(/\b(by|for|at)\b\s*$/i, '');
-  return text.replace(/\s+/g, ' ').trim();
+  text = text.replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  if (ACK_WORDS.has(text.toLowerCase())) return '';
+  return text;
+}
+
+function extractTaskTitleDeterministic(text, timezone = 'UTC') {
+  if (!text) return '';
+  if (isScheduleQueryText(text) || isStatusQueryText(text) || isTimeQueryText(text)) {
+    return '';
+  }
+  if (isQuestionLike(text) && !isAddTaskText(text)) {
+    return '';
+  }
+  const recurrence = detectRecurrence(text);
+  const timeData = extractTimeData(text, timezone);
+  let taskName = text;
+  if (timeData?.matchedText) {
+    taskName = removeMatchedText(taskName, [timeData.matchedText]);
+  }
+  if (recurrence?.matchedText) {
+    taskName = removeMatchedText(taskName, [recurrence.matchedText]);
+  }
+  return cleanTaskTitle(taskName);
 }
 
 function extractNumber(text) {
@@ -218,6 +341,18 @@ function extractNumber(text) {
   if (text.includes('half')) return 30;
   if (text.includes('hour')) return 60;
   return null;
+}
+
+function extractNumberList(text = '') {
+  const matches = text.match(/\b\d{1,3}\b/g) || [];
+  const numbers = matches.map((value) => Number(value)).filter((value) => !Number.isNaN(value));
+  const wordMap = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
+  Object.keys(wordMap).forEach((word) => {
+    if (text.includes(word)) {
+      numbers.push(wordMap[word]);
+    }
+  });
+  return Array.from(new Set(numbers));
 }
 
 function buildIntentResponse(intent, confidence, slots = {}, metadata = {}) {
@@ -326,8 +461,13 @@ function parseTaskAddition(text, timezone) {
 
 function parseTaskRemoval(text) {
   const raw = text.replace(/^(remove|delete|cancel)\s+/i, '').trim();
+  const indexes = extractNumberList(raw);
   const taskName = cleanTaskTitle(raw);
-  return buildIntentResponse('remove_task', 0.9, { taskName, title: taskName });
+  return buildIntentResponse('remove_task', 0.9, {
+    taskName,
+    title: taskName,
+    taskIndexes: indexes.length ? indexes : undefined
+  });
 }
 
 function parseTaskReschedule(text, timezone) {
@@ -462,24 +602,11 @@ function parseMessage(rawText, options = {}) {
     return parseCantFinish(text);
   }
 
-  if (SCHEDULE_QUERY_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+  if (isScheduleQueryText(text)) {
     return parseScheduleQuery(text, timezone);
   }
 
-  if (normalized.includes('schedule') && /\?$/.test(normalized)) {
-    return parseScheduleQuery(text, timezone);
-  }
-
-  if (normalized.includes('?') && (normalized.includes('task') || normalized.includes('schedule'))) {
-    return parseStatusIntent();
-  }
-
-  if ((normalized.includes('schedule') || normalized.includes('schedules') || normalized.includes('classes')) &&
-      WEEKDAY_NAMES.some((day) => normalized.includes(day))) {
-    return parseScheduleQuery(text, timezone);
-  }
-
-  if (STATUS_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+  if (isStatusQueryText(text)) {
     return parseStatusIntent();
   }
 
@@ -555,17 +682,16 @@ function resolvePendingAction(rawText, pendingAction, options = {}) {
   const timezone = options.timezone || 'UTC';
 
   if (pendingAction.type === 'task_disambiguation') {
-    const numericMatch = normalized.match(/(\d+)/);
-    const wordMap = { one: 1, two: 2, three: 3, four: 4, five: 5 };
-    const mappedWord = Object.keys(wordMap).find((word) => normalized.includes(word));
-    const numeric = numericMatch ? Number(numericMatch[1]) : mappedWord ? wordMap[mappedWord] : Number(normalized);
-    if (!Number.isNaN(numeric)) {
-      const selected = pendingAction.options.find((option) => option.index === numeric);
-      if (selected) {
+    const numbers = extractNumberList(normalized);
+    if (numbers.length) {
+      const selected = pendingAction.options.filter((option) => numbers.includes(option.index));
+      if (selected.length) {
         return buildIntentResponse(pendingAction.intent, 0.99, {
           ...(pendingAction.slots || {}),
-          taskId: selected.id,
-          taskName: selected.title
+          taskIds: selected.map((option) => option.id),
+          taskNames: selected.map((option) => option.title),
+          taskId: selected[0]?.id,
+          taskName: selected[0]?.title
         }, { clarified: true });
       }
     }
@@ -676,6 +802,9 @@ async function inferCompletionWithLLM(text, userId) {
 
 async function extractTaskTitleWithLLM(text, userId) {
   if (!text || text.trim().length < 3) return '';
+  if (isScheduleQueryText(text) || isStatusQueryText(text) || isTimeQueryText(text)) {
+    return '';
+  }
   const prompt = [
     'You are a strict JSON extractor.',
     'Extract the task title the user wants to add.',
@@ -714,8 +843,16 @@ module.exports = {
   resolvePendingAction,
   detectRecurrence,
   extractTimeData,
+  isQuestionLike,
+  cleanTaskTitle,
+  isScheduleQueryText,
+  isStatusQueryText,
+  isTimeQueryText,
+  isAddTaskText,
   parseResolutionBuilderIntent,
   inferCompletionWithLLM,
   inferIntentWithLLM,
-  extractTaskTitleWithLLM
+  extractTaskTitleWithLLM,
+  extractTaskTitleDeterministic,
+  extractNumberList
 };

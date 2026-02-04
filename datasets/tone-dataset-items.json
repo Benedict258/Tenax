@@ -1,0 +1,966 @@
+[
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f828",
+    "expected_output": "",
+    "feedback_scores": [
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained daily execution while maintaining respect for the user's feelings and motivations.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "conversation_agent_reply",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 508,
+      "latency_ms": 1204,
+      "attempt": 2,
+      "prompt_preview": "You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.\nTone policy:\n- Be warm,",
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "error_message": null,
+      "metadata": {
+        "action": "conversation_agent_reply",
+        "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+        "intent": "chat"
+      }
+    },
+    "spans": [
+      {
+        "id": "019c1aa6-1534-7c84-9df0-126d6ca835b9",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "conversation_agent_reply",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 508,
+          "latency_ms": 1204,
+          "attempt": 2,
+          "prompt_preview": "You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.\nTone policy:\n- Be warm,",
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "error_message": null,
+          "metadata": {
+            "action": "conversation_agent_reply",
+            "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+            "intent": "chat"
+          }
+        },
+        "start_time": "2026-02-01T19:20:17.972068Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.923106049Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f827",
+    "expected_output": {
+      "action": "intent_fallback_completion",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 102,
+      "latency_ms": 101,
+      "attempt": 1,
+      "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+      "error_message": null,
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "metadata": {
+        "action": "intent_fallback_completion",
+        "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c"
+      },
+      "agent_version": "v1.0",
+      "timestamp": "2026-01-31T18:13:42.888851"
+    },
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being overly aggressive or command-based.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "intent_fallback_completion",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 102,
+      "latency_ms": 101,
+      "attempt": 1,
+      "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "error_message": null,
+      "metadata": {
+        "action": "intent_fallback_completion",
+        "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c"
+      }
+    },
+    "spans": [
+      {
+        "id": "019c1542-c347-7d79-b763-a765d5b9654b",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "intent_fallback_completion",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 102,
+          "latency_ms": 101,
+          "attempt": 1,
+          "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "error_message": null,
+          "metadata": {
+            "action": "intent_fallback_completion",
+            "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c"
+          }
+        },
+        "output": {
+          "action": "intent_fallback_completion",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 102,
+          "latency_ms": 101,
+          "attempt": 1,
+          "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+          "error_message": null,
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "metadata": {
+            "action": "intent_fallback_completion",
+            "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c"
+          },
+          "agent_version": "v1.0",
+          "timestamp": "2026-01-31T18:13:42.888851"
+        },
+        "start_time": "2026-01-31T18:13:42.854566Z",
+        "end_time": "2026-01-31T18:13:42.888915Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.923063606Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f826",
+    "expected_output": {
+      "action": "resolution_roadmap_retry",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 1682,
+      "latency_ms": 1766,
+      "attempt": 2,
+      "prompt_preview": "You are Tenax Resolution Builder. Produce a high-quality, research-backed curriculum roadmap with strong structure and r",
+      "error_message": null,
+      "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+      "metadata": {
+        "action": "resolution_roadmap_retry",
+        "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+        "resolution_goal": "to be like dangote aliko"
+      },
+      "agent_version": "v1.0",
+      "timestamp": "2026-01-31T18:48:29.218568"
+    },
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being overly aggressive or command-based.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "resolution_roadmap_retry",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 1682,
+      "latency_ms": 1766,
+      "attempt": 2,
+      "prompt_preview": "You are Tenax Resolution Builder. Produce a high-quality, research-backed curriculum roadmap with strong structure and r",
+      "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+      "error_message": null,
+      "metadata": {
+        "action": "resolution_roadmap_retry",
+        "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+        "resolution_goal": "to be like dangote aliko"
+      }
+    },
+    "spans": [
+      {
+        "id": "019c1562-9901-7c7d-a90d-20b77c8f4834",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "resolution_roadmap_retry",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 1682,
+          "latency_ms": 1766,
+          "attempt": 2,
+          "prompt_preview": "You are Tenax Resolution Builder. Produce a high-quality, research-backed curriculum roadmap with strong structure and r",
+          "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+          "error_message": null,
+          "metadata": {
+            "action": "resolution_roadmap_retry",
+            "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+            "resolution_goal": "to be like dangote aliko"
+          }
+        },
+        "output": {
+          "action": "resolution_roadmap_retry",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 1682,
+          "latency_ms": 1766,
+          "attempt": 2,
+          "prompt_preview": "You are Tenax Resolution Builder. Produce a high-quality, research-backed curriculum roadmap with strong structure and r",
+          "error_message": null,
+          "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+          "metadata": {
+            "action": "resolution_roadmap_retry",
+            "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+            "resolution_goal": "to be like dangote aliko"
+          },
+          "agent_version": "v1.0",
+          "timestamp": "2026-01-31T18:48:29.218568"
+        },
+        "start_time": "2026-01-31T18:48:29.184092Z",
+        "end_time": "2026-01-31T18:48:29.218610Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.923019299Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f825",
+    "expected_output": {
+      "action": "conversation_agent_reply",
+      "model": "openai",
+      "success": false,
+      "tokens_used": 0,
+      "latency_ms": 3390,
+      "attempt": 1,
+      "prompt_preview": "You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.\nTone policy:\n- Be warm,",
+      "error_message": "429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "metadata": {
+        "action": "conversation_agent_reply",
+        "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+        "intent": "chat"
+      },
+      "agent_version": "v1.0",
+      "timestamp": "2026-02-01T19:34:55.958512"
+    },
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally conversational and supportive, encouraging sustained execution without being overly aggressive or command-based. However, it could benefit from slightly more personalization to enhance emotional connection.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "conversation_agent_reply",
+      "model": "openai",
+      "success": false,
+      "tokens_used": 0,
+      "latency_ms": 3390,
+      "attempt": 1,
+      "prompt_preview": "You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.\nTone policy:\n- Be warm,",
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "error_message": "429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+      "metadata": {
+        "action": "conversation_agent_reply",
+        "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+        "intent": "chat"
+      }
+    },
+    "spans": [
+      {
+        "id": "019c1a7c-8acb-7b64-95c0-f49b4dc6dbbc",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "conversation_agent_reply",
+          "model": "openai",
+          "success": false,
+          "tokens_used": 0,
+          "latency_ms": 3390,
+          "attempt": 1,
+          "prompt_preview": "You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.\nTone policy:\n- Be warm,",
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "error_message": "429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+          "metadata": {
+            "action": "conversation_agent_reply",
+            "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+            "intent": "chat"
+          }
+        },
+        "output": {
+          "action": "conversation_agent_reply",
+          "model": "openai",
+          "success": false,
+          "tokens_used": 0,
+          "latency_ms": 3390,
+          "attempt": 1,
+          "prompt_preview": "You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.\nTone policy:\n- Be warm,",
+          "error_message": "429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "metadata": {
+            "action": "conversation_agent_reply",
+            "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+            "intent": "chat"
+          },
+          "agent_version": "v1.0",
+          "timestamp": "2026-02-01T19:34:55.958512"
+        },
+        "start_time": "2026-02-01T18:34:55.562592Z",
+        "end_time": "2026-02-01T18:34:55.958554Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.922975350Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f824",
+    "expected_output": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Hey can you add this task to my schedule today CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS today by 6pm",
+      "intent": "add_task",
+      "confidence": 0.8,
+      "slots": {
+        "taskName": "Hey can you add this task to my schedule CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS",
+        "title": "Hey can you add this task to my schedule CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS",
+        "recurrence": null,
+        "targetTime": "2026-02-03T17:00:00.000Z",
+        "datetime": "2026-02-03T17:00:00.000Z"
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-03T13:29:12.063341"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The message is direct and task-oriented but lacks a conversational and supportive tone, making it feel somewhat robotic and less motivating.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The task is specific and has a clear deadline, but it may add pressure if the user has other commitments today.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The assistant's output directly addresses the user's request to add a specific task to their schedule, demonstrating strong alignment with the user's goal of organizing their tasks effectively.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 5,
+        "reason": "The task is clearly defined with a specific action (contact new team members) and a deadline (by 6pm), making it highly actionable.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Hey can you add this task to my schedule today CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS today by 6pm",
+      "intent": "add_task",
+      "confidence": 0.8,
+      "slots": {
+        "taskName": "Hey can you add this task to my schedule CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS",
+        "title": "Hey can you add this task to my schedule CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS",
+        "recurrence": null,
+        "targetTime": "2026-02-03T17:00:00.000Z",
+        "datetime": "2026-02-03T17:00:00.000Z"
+      },
+      "channel": "whatsapp"
+    },
+    "spans": [
+      {
+        "id": "019c23b1-5c5e-7d9a-a9b3-d497604423f8",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Hey can you add this task to my schedule today CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS today by 6pm",
+          "intent": "add_task",
+          "confidence": 0.8,
+          "slots": {
+            "taskName": "Hey can you add this task to my schedule CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS",
+            "title": "Hey can you add this task to my schedule CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS",
+            "recurrence": null,
+            "targetTime": "2026-02-03T17:00:00.000Z",
+            "datetime": "2026-02-03T17:00:00.000Z"
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Hey can you add this task to my schedule today CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS today by 6pm",
+          "intent": "add_task",
+          "confidence": 0.8,
+          "slots": {
+            "taskName": "Hey can you add this task to my schedule CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS",
+            "title": "Hey can you add this task to my schedule CONTACT NEW TEAM SUIRIFY MEMBERS WITH PROJECT DETAILS",
+            "recurrence": null,
+            "targetTime": "2026-02-03T17:00:00.000Z",
+            "datetime": "2026-02-03T17:00:00.000Z"
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-03T13:29:12.063341"
+        },
+        "start_time": "2026-02-03T13:29:12.029579Z",
+        "end_time": "2026-02-03T13:29:12.063386Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.922928690Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f823",
+    "expected_output": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Hey so what are my schedules for on Thursday",
+      "intent": "schedule_query",
+      "confidence": 0.88,
+      "slots": {
+        "targetDate": "2026-02-05T11:00:00.000Z",
+        "dayOffset": 0,
+        "rangeDays": 0
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-03T21:34:13.538542"
+    },
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The request for schedules is vague and does not provide any specific action or context for the assistant to respond to, leaving the user unclear about what to do next.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address the user's request for their schedule on Thursday, failing to provide relevant information or context.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The message is too brief and lacks a conversational or supportive tone, making it feel more like a command than a friendly reminder.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 1,
+        "reason": "The assistant did not provide any plan or context regarding the user's schedule, making it impossible to evaluate realism or feasibility.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Hey so what are my schedules for on Thursday",
+      "intent": "schedule_query",
+      "confidence": 0.88,
+      "slots": {
+        "targetDate": "2026-02-05T11:00:00.000Z",
+        "dayOffset": 0,
+        "rangeDays": 0
+      },
+      "channel": "whatsapp"
+    },
+    "spans": [
+      {
+        "id": "019c256d-6a00-743d-a5ae-4826acaabfef",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Hey so what are my schedules for on Thursday",
+          "intent": "schedule_query",
+          "confidence": 0.88,
+          "slots": {
+            "targetDate": "2026-02-05T11:00:00.000Z",
+            "dayOffset": 0,
+            "rangeDays": 0
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Hey so what are my schedules for on Thursday",
+          "intent": "schedule_query",
+          "confidence": 0.88,
+          "slots": {
+            "targetDate": "2026-02-05T11:00:00.000Z",
+            "dayOffset": 0,
+            "rangeDays": 0
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-03T21:34:13.538542"
+        },
+        "start_time": "2026-02-03T21:34:13.503775Z",
+        "end_time": "2026-02-03T21:34:13.538582Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.922883524Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f822",
+    "expected_output": {
+      "action": "intent_fallback_completion",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 97,
+      "latency_ms": 132,
+      "attempt": 1,
+      "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+      "error_message": null,
+      "user_id": "11fb8af2-bc3f-4a24-8123-c8a2b4584ec0",
+      "metadata": {
+        "action": "intent_fallback_completion",
+        "user_id": "11fb8af2-bc3f-4a24-8123-c8a2b4584ec0"
+      },
+      "agent_version": "v1.0",
+      "timestamp": "2026-01-31T18:31:49.569623"
+    },
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally conversational and supportive, encouraging sustained execution without being overly aggressive or command-based. However, it could benefit from slightly more personalization to enhance emotional connection.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "intent_fallback_completion",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 97,
+      "latency_ms": 132,
+      "attempt": 1,
+      "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+      "user_id": "11fb8af2-bc3f-4a24-8123-c8a2b4584ec0",
+      "error_message": null,
+      "metadata": {
+        "action": "intent_fallback_completion",
+        "user_id": "11fb8af2-bc3f-4a24-8123-c8a2b4584ec0"
+      }
+    },
+    "spans": [
+      {
+        "id": "019c1553-5820-7eae-b962-9380d12e09df",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "intent_fallback_completion",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 97,
+          "latency_ms": 132,
+          "attempt": 1,
+          "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+          "user_id": "11fb8af2-bc3f-4a24-8123-c8a2b4584ec0",
+          "error_message": null,
+          "metadata": {
+            "action": "intent_fallback_completion",
+            "user_id": "11fb8af2-bc3f-4a24-8123-c8a2b4584ec0"
+          }
+        },
+        "output": {
+          "action": "intent_fallback_completion",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 97,
+          "latency_ms": 132,
+          "attempt": 1,
+          "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+          "error_message": null,
+          "user_id": "11fb8af2-bc3f-4a24-8123-c8a2b4584ec0",
+          "metadata": {
+            "action": "intent_fallback_completion",
+            "user_id": "11fb8af2-bc3f-4a24-8123-c8a2b4584ec0"
+          },
+          "agent_version": "v1.0",
+          "timestamp": "2026-01-31T18:31:49.569623"
+        },
+        "start_time": "2026-01-31T18:31:49.535513Z",
+        "end_time": "2026-01-31T18:31:49.569666Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.922840141Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f821",
+    "expected_output": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Yes just make sure to remind me on time",
+      "intent": "add_task",
+      "confidence": 0.8,
+      "slots": {
+        "taskName": "Yes just make sure to remind me on time",
+        "title": "Yes just make sure to remind me on time",
+        "recurrence": null,
+        "targetTime": null,
+        "datetime": null
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-03T18:47:55.119486"
+    },
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 3,
+        "reason": "The response is straightforward and acknowledges the need for reminders, but it lacks warmth and emotional support that would enhance motivation and connection.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The response indicates a need for a reminder but does not specify when or how to set that reminder, leaving it vague.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 5,
+        "reason": "The response acknowledges the need for reminders, which indicates a realistic approach to managing time and tasks without overwhelming the user.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 5,
+        "reason": "The assistant's response directly acknowledges the user's request for reminders, indicating a clear understanding of the user's goal to stay on track.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Yes just make sure to remind me on time",
+      "intent": "add_task",
+      "confidence": 0.8,
+      "slots": {
+        "taskName": "Yes just make sure to remind me on time",
+        "title": "Yes just make sure to remind me on time",
+        "recurrence": null,
+        "targetTime": null,
+        "datetime": null
+      },
+      "channel": "whatsapp"
+    },
+    "spans": [
+      {
+        "id": "019c24d5-27cd-7c24-9e6e-2953a75ba836",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Yes just make sure to remind me on time",
+          "intent": "add_task",
+          "confidence": 0.8,
+          "slots": {
+            "taskName": "Yes just make sure to remind me on time",
+            "title": "Yes just make sure to remind me on time",
+            "recurrence": null,
+            "targetTime": null,
+            "datetime": null
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Yes just make sure to remind me on time",
+          "intent": "add_task",
+          "confidence": 0.8,
+          "slots": {
+            "taskName": "Yes just make sure to remind me on time",
+            "title": "Yes just make sure to remind me on time",
+            "recurrence": null,
+            "targetTime": null,
+            "datetime": null
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-03T18:47:55.119486"
+        },
+        "start_time": "2026-02-03T18:47:55.084670Z",
+        "end_time": "2026-02-03T18:47:55.119527Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.922796393Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f820",
+    "expected_output": {
+      "action": "intent_fallback_completion",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 100,
+      "latency_ms": 145,
+      "attempt": 1,
+      "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+      "error_message": null,
+      "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+      "metadata": {
+        "action": "intent_fallback_completion",
+        "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e"
+      },
+      "agent_version": "v1.0",
+      "timestamp": "2026-01-31T18:31:01.758683"
+    },
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "intent_fallback_completion",
+      "model": "groq-llama-3.3",
+      "success": true,
+      "tokens_used": 100,
+      "latency_ms": 145,
+      "attempt": 1,
+      "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+      "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+      "error_message": null,
+      "metadata": {
+        "action": "intent_fallback_completion",
+        "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e"
+      }
+    },
+    "spans": [
+      {
+        "id": "019c1552-9d57-737a-b665-714cda87d7ca",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "intent_fallback_completion",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 100,
+          "latency_ms": 145,
+          "attempt": 1,
+          "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+          "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+          "error_message": null,
+          "metadata": {
+            "action": "intent_fallback_completion",
+            "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e"
+          }
+        },
+        "output": {
+          "action": "intent_fallback_completion",
+          "model": "groq-llama-3.3",
+          "success": true,
+          "tokens_used": 100,
+          "latency_ms": 145,
+          "attempt": 1,
+          "prompt_preview": "You are a strict JSON classifier.\nDetermine if the user message indicates they completed a task.\nReturn JSON only in the",
+          "error_message": null,
+          "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e",
+          "metadata": {
+            "action": "intent_fallback_completion",
+            "user_id": "9359511e-a230-48f0-85d6-3f2906c70e3e"
+          },
+          "agent_version": "v1.0",
+          "timestamp": "2026-01-31T18:31:01.758683"
+        },
+        "start_time": "2026-01-31T18:31:01.718300Z",
+        "end_time": "2026-01-31T18:31:01.758727Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.922751755Z"
+  },
+  {
+    "id": "019c29c9-5b4d-7433-896c-7f9d3fb7f81f",
+    "expected_output": "",
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or overly commanding.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "action": "conversation_agent_reply",
+      "model": "gemini",
+      "success": false,
+      "tokens_used": 0,
+      "latency_ms": 874,
+      "attempt": 1,
+      "prompt_preview": "You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.\nTone policy:\n- Be warm,",
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "error_message": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+      "metadata": {
+        "action": "conversation_agent_reply",
+        "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+        "intent": "greeting"
+      }
+    },
+    "spans": [
+      {
+        "id": "019c1ab7-ec57-795b-9016-e96d647a43af",
+        "name": "llm_call",
+        "type": "general",
+        "input": {
+          "action": "conversation_agent_reply",
+          "model": "gemini",
+          "success": false,
+          "tokens_used": 0,
+          "latency_ms": 874,
+          "attempt": 1,
+          "prompt_preview": "You are Tenax, a friendly execution companion AI. You are conversational, human, and supportive.\nTone policy:\n- Be warm,",
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "error_message": "[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+          "metadata": {
+            "action": "conversation_agent_reply",
+            "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+            "intent": "greeting"
+          }
+        },
+        "start_time": "2026-02-01T19:39:47.158796Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T17:53:07.922708726Z"
+  }
+]

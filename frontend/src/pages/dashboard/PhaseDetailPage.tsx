@@ -93,12 +93,12 @@ const PhaseDetailPage = () => {
     return "";
   }, [phase, deliverables]);
 
-  const phaseTasksByDate = useMemo<Record<string, typeof planTasks>>(() => {
+  const phaseTasksByDate = useMemo<Record<string, Array<(typeof planTasks)[number]>>>(() => {
     if (!phase?.id) return {};
     return planTasks
       .filter((task) => task.phase_id === phase.id)
-      .reduce<Record<string, typeof planTasks>>((acc, task) => {
-        const dateKey = task.date ?? "unscheduled";
+      .reduce<Record<string, Array<(typeof planTasks)[number]>>>((acc, task) => {
+        const dateKey = task.date ? String(task.date) : "unscheduled";
         if (!acc[dateKey]) acc[dateKey] = [];
         acc[dateKey].push(task);
         return acc;

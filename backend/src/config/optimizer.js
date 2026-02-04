@@ -26,6 +26,8 @@ const optimizerConfig = {
   defaultModel: process.env.OPIK_OPTIMIZER_MODEL || 'gpt-4o-mini',
   maxTrials: Number(process.env.OPIK_OPTIMIZER_MAX_TRIALS) || 5,
   nightlyCron: process.env.OPIK_OPTIMIZER_CRON || '0 2 * * *',
+  toneCron: process.env.OPIK_TONE_CRON || '30 2 * * 0',
+  intentCron: process.env.OPIK_INTENT_CRON || '0 3 * * 0',
   reminder: {
     dataset: process.env.OPIK_REMINDER_DATASET || 'failure_cases.json',
     datasetId: process.env.OPIK_REMINDER_DATASET_ID,

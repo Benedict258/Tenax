@@ -1,8 +1,10 @@
 const express = require('express');
 const Task = require('../models/Task');
+const ResolutionTask = require('../models/ResolutionTask');
 const auth = require('../middleware/auth');
 const QueueService = require('../services/queue');
 const notificationService = require('../services/notificationService');
+const ruleEngine = require('../services/ruleEngine');
 const router = express.Router();
 
 // Get all user tasks
@@ -20,7 +22,27 @@ router.get('/', auth, async (req, res) => {
 // Get today's tasks
 router.get('/today', auth, async (req, res) => {
   try {
-    const tasks = await Task.getTodaysTasks(req.user.id, req.user.timezone);
+    await ruleEngine.enforceDailyRules(req.user, new Date());
+    let tasks = await Task.getTodaysTasks(req.user.id, req.user.timezone);
+    const resolutionTaskIds = tasks
+      .map((task) => task?.metadata?.resolution_task_id)
+      .filter(Boolean)
+      .map((value) => String(value));
+    if (resolutionTaskIds.length) {
+      try {
+        const lockedRows = await ResolutionTask.listByIds(resolutionTaskIds);
+        const lockedMap = new Map(
+          lockedRows.map((row) => [String(row.id), Boolean(row.locked)])
+        );
+        tasks = tasks.filter((task) => {
+          const resolutionId = task?.metadata?.resolution_task_id;
+          if (!resolutionId) return true;
+          return !lockedMap.get(String(resolutionId));
+        });
+      } catch (err) {
+        console.warn('[Tasks] Unable to filter locked resolution tasks:', err?.message || err);
+      }
+    }
     let scheduleBlocks = [];
     try {
       const scheduleService = require('../services/scheduleService');
@@ -36,6 +58,11 @@ router.get('/today', auth, async (req, res) => {
           location: block.location || null,
           is_schedule_block: true
         }));
+      try {
+        await QueueService.scheduleScheduleBlockReminders(req.user);
+      } catch (err) {
+        console.warn('[Tasks] Failed to schedule timetable reminders:', err?.message || err);
+      }
     } catch (err) {
       console.warn('[Tasks] schedule blocks unavailable:', err?.message || err);
     }

@@ -249,6 +249,21 @@ class Task {
     if (error) throw error;
     return data || [];
   }
+
+  static async listByDateRange(user_id, startISO, endISO) {
+    if (!user_id || !startISO || !endISO) return [];
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user_id)
+      .not('status', 'in', '("archived","deleted")')
+      .gte('start_time', startISO)
+      .lt('start_time', endISO)
+      .order('start_time', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
 }
 
 module.exports = Task;

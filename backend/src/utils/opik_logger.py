@@ -5,12 +5,15 @@ Ensures EVERY agent action is traced with behavioral metrics
 
 from opik import track, Opik
 from datetime import datetime
+import os
 
-client = Opik(project_name="Tenax", workspace="Tenax")
+PROJECT_NAME = os.getenv("OPIK_PROJECT_NAME", "Tenax")
+WORKSPACE_NAME = os.getenv("OPIK_WORKSPACE", "Tenax")
+client = Opik(project_name=PROJECT_NAME, workspace=WORKSPACE_NAME)
 
 AGENT_VERSION = "v1.0"
 
-@track(name="morning_summary_generated", project_name="Tenax")
+@track(name="morning_summary_generated", project_name=PROJECT_NAME)
 def log_morning_summary(user_id, task_count, summary, tokens_used):
     """Log morning summary generation with full context"""
     return {
@@ -22,7 +25,7 @@ def log_morning_summary(user_id, task_count, summary, tokens_used):
         "timestamp": datetime.now().isoformat()
     }
 
-@track(name="morning_summary_dispatched", project_name="Tenax")
+@track(name="morning_summary_dispatched", project_name=PROJECT_NAME)
 def log_morning_summary_dispatch(user_id, task_count, message_preview):
     """Log the sending of morning summaries via WhatsApp."""
     return {
@@ -33,7 +36,7 @@ def log_morning_summary_dispatch(user_id, task_count, message_preview):
         "dispatched_at": datetime.now().isoformat()
     }
 
-@track(name="reminder_sent", project_name="Tenax")
+@track(name="reminder_sent", project_name=PROJECT_NAME)
 def log_reminder_sent(user_id, task_id, task_title, reminder_type, message):
     """Log reminder with tracking for effectiveness measurement"""
     return {
@@ -48,7 +51,7 @@ def log_reminder_sent(user_id, task_id, task_title, reminder_type, message):
     }
 
 
-@track(name="reminder_generated", project_name="Tenax")
+@track(name="reminder_generated", project_name=PROJECT_NAME)
 def log_reminder_generated(user_id, task_id, task_title, reminder_type, message_preview):
     """Trace reminder content creation before delivery."""
     return {
@@ -61,7 +64,7 @@ def log_reminder_generated(user_id, task_id, task_title, reminder_type, message_
         "generated_at": datetime.now().isoformat()
     }
 
-@track(name="task_completed", project_name="Tenax")
+@track(name="task_completed", project_name=PROJECT_NAME)
 def log_task_completion(user_id, task_id, task_title, completed_via, reminder_was_sent, latency_minutes=None):
     """
     Log task completion with behavioral metrics
@@ -78,7 +81,7 @@ def log_task_completion(user_id, task_id, task_title, completed_via, reminder_wa
         "completed_at": datetime.now().isoformat()
     }
 
-@track(name="intent_parsed", project_name="Tenax")
+@track(name="intent_parsed", project_name=PROJECT_NAME)
 def log_intent_parsing(user_id, message, intent, confidence, slots, channel=None):
     """Log WhatsApp intent parsing for accuracy tracking"""
     return {
@@ -93,7 +96,7 @@ def log_intent_parsing(user_id, message, intent, confidence, slots, channel=None
     }
 
 
-@track(name="completion_stats_calculated", project_name="Tenax")
+@track(name="completion_stats_calculated", project_name=PROJECT_NAME)
 def log_completion_stats(user_id, total, completed, pending, completion_rate):
     """Capture daily completion stats for dashboards."""
     return {
@@ -106,7 +109,7 @@ def log_completion_stats(user_id, total, completed, pending, completion_rate):
         "calculated_at": datetime.now().isoformat()
     }
 
-@track(name="eod_summary_draft", project_name="Tenax")
+@track(name="eod_summary_draft", project_name=PROJECT_NAME)
 def log_eod_summary_draft(user_id, tone, completion_rate, message_preview):
     """Trace EOD draft content before messaging."""
     return {
@@ -118,7 +121,7 @@ def log_eod_summary_draft(user_id, tone, completion_rate, message_preview):
         "drafted_at": datetime.now().isoformat()
     }
 
-@track(name="eod_summary_sent", project_name="Tenax")
+@track(name="eod_summary_sent", project_name=PROJECT_NAME)
 def log_eod_summary(user_id, completed, total, completion_rate, tone, message):
     """Log end-of-day summary with performance metrics"""
     return {
@@ -132,7 +135,7 @@ def log_eod_summary(user_id, completed, total, completion_rate, tone, message):
         "sent_at": datetime.now().isoformat()
     }
 
-@track(name="agent_effectiveness_calculated", project_name="Tenax")
+@track(name="agent_effectiveness_calculated", project_name=PROJECT_NAME)
 def log_agent_effectiveness(user_id, period, metrics):
     """
     Log overall agent effectiveness
@@ -173,7 +176,7 @@ def calculate_reminder_effectiveness(reminders_sent, tasks_completed_after_remin
     return {"value": effectiveness}
 
 
-@track(name="llm_call", project_name="Tenax")
+@track(name="llm_call", project_name=PROJECT_NAME)
 def log_llm_call(action, model, success, tokens_used, latency_ms, attempt, prompt_preview,
                  user_id=None, error_message=None, metadata=None):
     """Trace every LLM invocation to tie model quality back to behavior."""
@@ -204,7 +207,7 @@ def log_experiment_variant(user_id, experiment_id, variant, outcome):
     })
 
 
-@track(name="daily_plan", project_name="Tenax")
+@track(name="daily_plan", project_name=PROJECT_NAME)
 def log_daily_plan_trace(input_context, output, metadata):
     """Generic trace for daily plan generation with structured context."""
     return {
@@ -215,7 +218,7 @@ def log_daily_plan_trace(input_context, output, metadata):
     }
 
 
-@track(name="reminder", project_name="Tenax")
+@track(name="reminder", project_name=PROJECT_NAME)
 def log_reminder_trace(input_context, output, metadata):
     """Generic trace for reminder messages so LLM-as-judge can score tone."""
     return {
@@ -226,9 +229,19 @@ def log_reminder_trace(input_context, output, metadata):
     }
 
 
-@track(name="eod_summary", project_name="Tenax")
+@track(name="eod_summary", project_name=PROJECT_NAME)
 def log_eod_summary_trace(input_context, output, metadata):
     """Generic trace for end-of-day summaries."""
+    return {
+        "input_context": input_context,
+        "output": output,
+        "metadata": metadata,
+        "logged_at": datetime.now().isoformat()
+    }
+
+@track(name="conversation", project_name=PROJECT_NAME)
+def log_conversation_trace(input_context, output, metadata):
+    """Generic trace for chat/intent responses."""
     return {
         "input_context": input_context,
         "output": output,
@@ -253,5 +266,6 @@ __all__ = [
     'log_experiment_variant',
     'log_daily_plan_trace',
     'log_reminder_trace',
-    'log_eod_summary_trace'
+    'log_eod_summary_trace',
+    'log_conversation_trace'
 ]

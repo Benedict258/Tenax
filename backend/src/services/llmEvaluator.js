@@ -1,13 +1,19 @@
 const llmService = require('./llm');
 
-const SCORE_KEYS = ['tone_score', 'specificity_score', 'realism_score', 'goal_alignment_score'];
+const SCORE_KEYS = [
+  'tone_score',
+  'specificity_score',
+  'realism_score',
+  'goal_alignment_score',
+  'resolution_alignment_score'
+];
 
 class LlmEvaluatorService {
   async evaluate({ messageType, userGoal, userSchedule, taskMetadata, generatedText }) {
     const prompt = [
       'You are Tenax\'s quality judge.',
-      'Rate the provided agent output on four dimensions from 1 (poor) to 5 (excellent).',
-      'Return strict JSON with keys tone_score, specificity_score, realism_score, goal_alignment_score.',
+      'Rate the provided agent output on five dimensions from 1 (poor) to 5 (excellent).',
+      'Return strict JSON with keys tone_score, specificity_score, realism_score, goal_alignment_score, resolution_alignment_score.',
       'Do not include explanations.',
       '',
       `message_type: ${messageType}`,

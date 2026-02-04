@@ -127,6 +127,12 @@ class MetricsStore {
     };
   }
 
+  getReminderEffectiveness(userId, horizonMs = DAY_MS) {
+    const stats = this.getReminderStats(userId, horizonMs);
+    if (!stats.sent) return 0;
+    return Math.round((stats.completed / stats.sent) * 100);
+  }
+
   recordUserMessage(userId) {
     if (!this.userMessages.has(userId)) {
       this.userMessages.set(userId, []);
