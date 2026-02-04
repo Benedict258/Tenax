@@ -95,7 +95,7 @@ class Task {
       .from('tasks')
       .select('*')
       .eq('user_id', user_id)
-      .neq('status', 'archived')
+      .not('status', 'in', '("archived","deleted")')
       .or(`start_time::date.eq.${today},start_time.is.null`)
       .order('priority', { ascending: true })
       .order('start_time', { ascending: true });
