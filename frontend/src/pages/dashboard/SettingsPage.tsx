@@ -44,7 +44,7 @@ const SettingsPage = () => {
       }
       setError(null);
     } catch (err) {
-      setError('Unable to review Today's events.');
+      setError("Unable to review today's events.");
     }
   };
 
