@@ -8,6 +8,8 @@ import contextlib
 from difflib import SequenceMatcher
 from typing import Any, Callable, Dict, List, Optional
 
+_OPTIMIZER_IMPORT_ERROR = None
+
 try:
     from opik_optimizer import (
         GepaOptimizer,
@@ -24,13 +26,14 @@ try:
     GEPAOptimizer = GepaOptimizer
     FewShotOptimizer = FewShotBayesianOptimizer
     OPTIMIZER_AVAILABLE = True
-except ImportError:  # pragma: no cover - environment setup issue
+except ImportError as exc:  # pragma: no cover - environment setup issue
     GEPAOptimizer = HRPOptimizer = FewShotOptimizer = ChatPrompt = None
     _opik_reporting = None
     _hrpo_reporting = None
     _gepa_reporting = None
     _fewshot_reporting = None
     OPTIMIZER_AVAILABLE = False
+    _OPTIMIZER_IMPORT_ERROR = exc
 
 
 MOCK_MODE = os.environ.get('OPIK_OPTIMIZER_MOCK_MODE', 'true').lower() != 'false'
@@ -200,9 +203,10 @@ def _load_remote_entries(dataset_identifier: str, limit: Optional[int] = None) -
 
 def _ensure_optimizer_installed():
     if not OPTIMIZER_AVAILABLE:
+        detail = f" Import error: {_OPTIMIZER_IMPORT_ERROR}" if _OPTIMIZER_IMPORT_ERROR else ""
         raise RuntimeError(
             'Missing dependency: opik-optimizer is not installed. '
-            'Activate the Python environment used by PYTHON_PATH and run "pip install opik-optimizer".'
+            f'Activate the Python environment used by PYTHON_PATH and run "pip install opik-optimizer".{detail}'
         )
     _ensure_reporting_patch()
 
