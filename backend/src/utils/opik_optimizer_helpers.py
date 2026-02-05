@@ -17,10 +17,6 @@ try:
         FewShotBayesianOptimizer,
         ChatPrompt
     )
-    from opik_optimizer import reporting_utils as _opik_reporting
-    from opik_optimizer.algorithms.hierarchical_reflective_optimizer import reporting as _hrpo_reporting
-    from opik_optimizer.algorithms.gepa_optimizer import reporting as _gepa_reporting
-    from opik_optimizer.algorithms.few_shot_bayesian_optimizer import reporting as _fewshot_reporting
 
     HRPOptimizer = HierarchicalReflectiveOptimizer
     GEPAOptimizer = GepaOptimizer
@@ -34,6 +30,31 @@ except ImportError as exc:  # pragma: no cover - environment setup issue
     _fewshot_reporting = None
     OPTIMIZER_AVAILABLE = False
     _OPTIMIZER_IMPORT_ERROR = exc
+else:
+    _opik_reporting = None
+    _hrpo_reporting = None
+    _gepa_reporting = None
+    _fewshot_reporting = None
+
+    try:
+        from opik_optimizer import reporting_utils as _opik_reporting
+    except ImportError:
+        _opik_reporting = None
+
+    try:
+        from opik_optimizer.algorithms.hierarchical_reflective_optimizer import reporting as _hrpo_reporting
+    except ImportError:
+        _hrpo_reporting = None
+
+    try:
+        from opik_optimizer.algorithms.gepa_optimizer import reporting as _gepa_reporting
+    except ImportError:
+        _gepa_reporting = None
+
+    try:
+        from opik_optimizer.algorithms.few_shot_bayesian_optimizer import reporting as _fewshot_reporting
+    except ImportError:
+        _fewshot_reporting = None
 
 
 MOCK_MODE = os.environ.get('OPIK_OPTIMIZER_MOCK_MODE', 'true').lower() != 'false'
