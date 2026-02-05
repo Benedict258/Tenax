@@ -333,10 +333,7 @@ def _feedback_metric(metric_name: str) -> Callable[..., Any]:
                 normalized = max(0.0, min(1.0, value / 5.0 if value > 1 else value))
                 reason = score.get('reason') or f'Auto reason for {metric_name}'
                 if ScoreResult is not None:
-                    score_result = ScoreResult(name=metric_name, value=normalized, reason=reason)
-                    if MetricValue is not None:
-                        return MetricValue(value=normalized, metadata={'raw_score_results': [score_result]})
-                    return score_result
+                    return ScoreResult(name=metric_name, value=normalized, reason=reason)
                 return normalized
         return 0.0
 
