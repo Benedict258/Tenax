@@ -1,930 +1,1172 @@
 [
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805d1",
-        "expected_output":  {
-                                "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                "message":  "Just check what are on my schedule for tomorrow",
-                                "intent":  "add_task",
-                                "confidence":  0.8,
-                                "slots":  {
-                                              "taskName":  "check what are on my schedule",
-                                              "title":  "check what are on my schedule",
-                                              "recurrence":  null,
-                                              "targetTime":  "2026-02-03T19:41:00.000Z",
-                                              "datetime":  "2026-02-03T19:41:00.000Z"
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-02-02T20:42:00.080656"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "realism_score",
-                                    "value":  5,
-                                    "reason":  "The output suggests a simple action of checking the schedule, which is realistic and respects the user\u0027s time constraints.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  1,
-                                    "reason":  "The output does not address the user\u0027s request to check their schedule for tomorrow, failing to provide any relevant information or assistance.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  3,
-                                    "reason":  "The instruction to check the schedule is clear, but it lacks specific details on how to do so or what to look for.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  2,
-                                    "reason":  "The message is very brief and lacks a conversational or supportive tone, making it feel more like a command than a motivational prompt.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  1,
-                                    "reason":  "Proxy from goal alignment score: The output does not address the user\u0027s request to check their schedule for tomorrow, failing to provide any relevant information or assistance.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                      "message":  "Just check what are on my schedule for tomorrow",
-                      "intent":  "add_task",
-                      "confidence":  0.8,
-                      "slots":  {
-                                    "taskName":  "check what are on my schedule",
-                                    "title":  "check what are on my schedule",
-                                    "recurrence":  null,
-                                    "targetTime":  "2026-02-03T19:41:00.000Z",
-                                    "datetime":  "2026-02-03T19:41:00.000Z"
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c2017-3deb-7030-8d55-3277d0d5d0eb",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                        "message":  "Just check what are on my schedule for tomorrow",
-                                        "intent":  "add_task",
-                                        "confidence":  0.8,
-                                        "slots":  {
-                                                      "taskName":  "check what are on my schedule",
-                                                      "title":  "check what are on my schedule",
-                                                      "recurrence":  null,
-                                                      "targetTime":  "2026-02-03T19:41:00.000Z",
-                                                      "datetime":  "2026-02-03T19:41:00.000Z"
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                         "message":  "Just check what are on my schedule for tomorrow",
-                                         "intent":  "add_task",
-                                         "confidence":  0.8,
-                                         "slots":  {
-                                                       "taskName":  "check what are on my schedule",
-                                                       "title":  "check what are on my schedule",
-                                                       "recurrence":  null,
-                                                       "targetTime":  "2026-02-03T19:41:00.000Z",
-                                                       "datetime":  "2026-02-03T19:41:00.000Z"
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-02-02T20:42:00.080656"
-                                     },
-                          "start_time":  "2026-02-02T20:42:00.042729Z",
-                          "end_time":  "2026-02-02T20:42:00.080702Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.975070328Z"
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805d1",
+    "expected_output": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Just check what are on my schedule for tomorrow",
+      "intent": "add_task",
+      "confidence": 0.8,
+      "slots": {
+        "taskName": "check what are on my schedule",
+        "title": "check what are on my schedule",
+        "recurrence": null,
+        "targetTime": "2026-02-03T19:41:00.000Z",
+        "datetime": "2026-02-03T19:41:00.000Z"
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-02T20:42:00.080656"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805d0",
-        "expected_output":  {
-                                "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                "message":  "Hey Tenax",
-                                "intent":  "greeting",
-                                "confidence":  0.86,
-                                "slots":  {
-                                              "text":  "Hey Tenax"
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-02-02T13:38:58.071775"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "tone_score",
-                                    "value":  4,
-                                    "reason":  "The tone is conversational and supportive, encouraging engagement without being aggressive or overly commanding.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "realism_score",
-                                    "value":  4,
-                                    "reason":  "The plan is mostly realistic and achievable, considering the user\u0027s schedule, but may require careful time management to avoid overload.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  1,
-                                    "reason":  "The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user\u0027s intent.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  1,
-                                    "reason":  "The message does not provide any specific instructions or actionable steps for the user to follow.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  1,
-                                    "reason":  "Proxy from goal alignment score: The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user\u0027s intent.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                      "message":  "Hey Tenax",
-                      "intent":  "greeting",
-                      "confidence":  0.86,
-                      "slots":  {
-                                    "text":  "Hey Tenax"
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1e93-f176-754f-a67b-79fbfcc939d5",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                        "message":  "Hey Tenax",
-                                        "intent":  "greeting",
-                                        "confidence":  0.86,
-                                        "slots":  {
-                                                      "text":  "Hey Tenax"
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                         "message":  "Hey Tenax",
-                                         "intent":  "greeting",
-                                         "confidence":  0.86,
-                                         "slots":  {
-                                                       "text":  "Hey Tenax"
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-02-02T13:38:58.071775"
-                                     },
-                          "start_time":  "2026-02-02T13:38:58.037445Z",
-                          "end_time":  "2026-02-02T13:38:58.071818Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.975015709Z"
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 5,
+        "reason": "The output suggests a simple action of checking the schedule, which is realistic and respects the user's time constraints.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address the user's request to check their schedule for tomorrow, failing to provide any relevant information or assistance.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The instruction to check the schedule is clear, but it lacks specific details on how to do so or what to look for.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The message is very brief and lacks a conversational or supportive tone, making it feel more like a command than a motivational prompt.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address the user's request to check their schedule for tomorrow, failing to provide any relevant information or assistance.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Just check what are on my schedule for tomorrow",
+      "intent": "add_task",
+      "confidence": 0.8,
+      "slots": {
+        "taskName": "check what are on my schedule",
+        "title": "check what are on my schedule",
+        "recurrence": null,
+        "targetTime": "2026-02-03T19:41:00.000Z",
+        "datetime": "2026-02-03T19:41:00.000Z"
+      },
+      "channel": "whatsapp"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805cf",
-        "expected_output":  "",
-        "feedback_scores":  [
-                                {
-                                    "name":  "realism_score",
-                                    "value":  4,
-                                    "reason":  "The plan is mostly realistic and achievable, considering the user\u0027s schedule, but may require careful time management to avoid potential overload.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  4,
-                                    "reason":  "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  3,
-                                    "reason":  "The output acknowledges the user\u0027s goals but lacks specific references to their progress or context, making it somewhat generic.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  3,
-                                    "reason":  "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  3,
-                                    "reason":  "Proxy from goal alignment score: The output acknowledges the user\u0027s goals but lacks specific references to their progress or context, making it somewhat generic.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                      "message":  "What\u0027s are you built for?",
-                      "intent":  "unknown",
-                      "confidence":  0.2,
-                      "slots":  {
-                                    "originalText":  "What\u0027s are you built for?"
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1bcf-ffa7-7e44-b220-cf13bbe0885b",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                        "message":  "What\u0027s are you built for?",
-                                        "intent":  "unknown",
-                                        "confidence":  0.2,
-                                        "slots":  {
-                                                      "originalText":  "What\u0027s are you built for?"
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "start_time":  "2026-02-02T00:45:42.182195Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.974968521Z"
+    "spans": [
+      {
+        "id": "019c2017-3deb-7030-8d55-3277d0d5d0eb",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Just check what are on my schedule for tomorrow",
+          "intent": "add_task",
+          "confidence": 0.8,
+          "slots": {
+            "taskName": "check what are on my schedule",
+            "title": "check what are on my schedule",
+            "recurrence": null,
+            "targetTime": "2026-02-03T19:41:00.000Z",
+            "datetime": "2026-02-03T19:41:00.000Z"
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Just check what are on my schedule for tomorrow",
+          "intent": "add_task",
+          "confidence": 0.8,
+          "slots": {
+            "taskName": "check what are on my schedule",
+            "title": "check what are on my schedule",
+            "recurrence": null,
+            "targetTime": "2026-02-03T19:41:00.000Z",
+            "datetime": "2026-02-03T19:41:00.000Z"
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-02T20:42:00.080656"
+        },
+        "start_time": "2026-02-02T20:42:00.042729Z",
+        "end_time": "2026-02-02T20:42:00.080702Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.975070328Z",
+    "score_results": [
+      {
+        "name": "realism_score",
+        "value": 5,
+        "reason": "The output suggests a simple action of checking the schedule, which is realistic and respects the user's time constraints."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address the user's request to check their schedule for tomorrow, failing to provide any relevant information or assistance."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The instruction to check the schedule is clear, but it lacks specific details on how to do so or what to look for."
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The message is very brief and lacks a conversational or supportive tone, making it feel more like a command than a motivational prompt."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address the user's request to check their schedule for tomorrow, failing to provide any relevant information or assistance."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805d0",
+    "expected_output": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "Hey Tenax",
+      "intent": "greeting",
+      "confidence": 0.86,
+      "slots": {
+        "text": "Hey Tenax"
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-02T13:38:58.071775"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805ce",
-        "expected_output":  {
-                                "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                "message":  "Just wanted to make sure what was on my schedule",
-                                "intent":  "add_task",
-                                "confidence":  0.8,
-                                "slots":  {
-                                              "taskName":  "wanted to make sure what was on my schedule",
-                                              "title":  "wanted to make sure what was on my schedule",
-                                              "recurrence":  null,
-                                              "targetTime":  null,
-                                              "datetime":  null
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-02-02T18:04:15.691233"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  1,
-                                    "reason":  "The output does not provide any specific next steps or actionable instructions for the user to follow regarding their schedule.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "realism_score",
-                                    "value":  5,
-                                    "reason":  "The assistant\u0027s output acknowledges the user\u0027s need to check their schedule, which is a realistic and achievable action that respects their time constraints.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  1,
-                                    "reason":  "The output does not address the user\u0027s request to check their schedule and lacks any relevant information or context.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  3,
-                                    "reason":  "The message is neutral and straightforward, but lacks warmth and emotional support that would enhance motivation and engagement.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  1,
-                                    "reason":  "Proxy from goal alignment score: The output does not address the user\u0027s request to check their schedule and lacks any relevant information or context.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                      "message":  "Just wanted to make sure what was on my schedule",
-                      "intent":  "add_task",
-                      "confidence":  0.8,
-                      "slots":  {
-                                    "taskName":  "wanted to make sure what was on my schedule",
-                                    "title":  "wanted to make sure what was on my schedule",
-                                    "recurrence":  null,
-                                    "targetTime":  null,
-                                    "datetime":  null
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1f86-d3a8-7438-adae-985803bc5364",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                        "message":  "Just wanted to make sure what was on my schedule",
-                                        "intent":  "add_task",
-                                        "confidence":  0.8,
-                                        "slots":  {
-                                                      "taskName":  "wanted to make sure what was on my schedule",
-                                                      "title":  "wanted to make sure what was on my schedule",
-                                                      "recurrence":  null,
-                                                      "targetTime":  null,
-                                                      "datetime":  null
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                         "message":  "Just wanted to make sure what was on my schedule",
-                                         "intent":  "add_task",
-                                         "confidence":  0.8,
-                                         "slots":  {
-                                                       "taskName":  "wanted to make sure what was on my schedule",
-                                                       "title":  "wanted to make sure what was on my schedule",
-                                                       "recurrence":  null,
-                                                       "targetTime":  null,
-                                                       "datetime":  null
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-02-02T18:04:15.691233"
-                                     },
-                          "start_time":  "2026-02-02T18:04:15.655756Z",
-                          "end_time":  "2026-02-02T18:04:15.691276Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.974928064Z"
+    "feedback_scores": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging engagement without being aggressive or overly commanding.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user's intent.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The message does not provide any specific instructions or actionable steps for the user to follow.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user's intent.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "Hey Tenax",
+      "intent": "greeting",
+      "confidence": 0.86,
+      "slots": {
+        "text": "Hey Tenax"
+      },
+      "channel": "whatsapp"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805cd",
-        "expected_output":  {
-                                "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                "message":  "Before then after the time zone check again how much time do I have to my next work out",
-                                "intent":  "unknown",
-                                "confidence":  0.2,
-                                "slots":  {
-                                              "originalText":  "Before then after the time zone check again how much time do I have to my next work out"
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-02-02T02:31:03.316922"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  2,
-                                    "reason":  "The output does not directly address the user\u0027s request for a time check before their workout, and lacks specific guidance or information relevant to their immediate goal.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "realism_score",
-                                    "value":  3,
-                                    "reason":  "The request to check the time before the next workout is practical, but it lacks specific details about the user\u0027s current schedule and available time, making it difficult to fully assess the feasibility of the plan.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  2,
-                                    "reason":  "The message is somewhat functional but lacks a conversational and supportive tone, making it feel more robotic than engaging.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  2,
-                                    "reason":  "The instruction to check the time before the workout is somewhat clear, but it lacks specific details on how to perform the time zone check or what exactly to do with the information after checking the time.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  2,
-                                    "reason":  "Proxy from goal alignment score: The output does not directly address the user\u0027s request for a time check before their workout, and lacks specific guidance or information relevant to their immediate goal.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                      "message":  "Before then after the time zone check again how much time do I have to my next work out",
-                      "intent":  "unknown",
-                      "confidence":  0.2,
-                      "slots":  {
-                                    "originalText":  "Before then after the time zone check again how much time do I have to my next work out"
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1c30-7364-71a9-a9e5-4616903871ff",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                        "message":  "Before then after the time zone check again how much time do I have to my next work out",
-                                        "intent":  "unknown",
-                                        "confidence":  0.2,
-                                        "slots":  {
-                                                      "originalText":  "Before then after the time zone check again how much time do I have to my next work out"
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                         "message":  "Before then after the time zone check again how much time do I have to my next work out",
-                                         "intent":  "unknown",
-                                         "confidence":  0.2,
-                                         "slots":  {
-                                                       "originalText":  "Before then after the time zone check again how much time do I have to my next work out"
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-02-02T02:31:03.316922"
-                                     },
-                          "start_time":  "2026-02-02T02:31:03.267463Z",
-                          "end_time":  "2026-02-02T02:31:03.316971Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.974877859Z"
+    "spans": [
+      {
+        "id": "019c1e93-f176-754f-a67b-79fbfcc939d5",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "Hey Tenax",
+          "intent": "greeting",
+          "confidence": 0.86,
+          "slots": {
+            "text": "Hey Tenax"
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "Hey Tenax",
+          "intent": "greeting",
+          "confidence": 0.86,
+          "slots": {
+            "text": "Hey Tenax"
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-02T13:38:58.071775"
+        },
+        "start_time": "2026-02-02T13:38:58.037445Z",
+        "end_time": "2026-02-02T13:38:58.071818Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.975015709Z",
+    "score_results": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging engagement without being aggressive or overly commanding."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid overload."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user's intent."
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The message does not provide any specific instructions or actionable steps for the user to follow."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user's intent."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805cf",
+    "expected_output": "",
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 3,
+        "reason": "Proxy from goal alignment score: The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "What's are you built for?",
+      "intent": "unknown",
+      "confidence": 0.2,
+      "slots": {
+        "originalText": "What's are you built for?"
+      },
+      "channel": "whatsapp"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805cc",
-        "expected_output":  {
-                                "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                "message":  "Hey could you look in for me if I have anything left for today",
-                                "intent":  "greeting",
-                                "confidence":  0.86,
-                                "slots":  {
-                                              "text":  "Hey could you look in for me if I have anything left for today"
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-02-02T18:37:08.828554"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  2,
-                                    "reason":  "The request is somewhat vague as it does not specify what the user is looking for or how to check for it, making it unclear and less actionable.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  3,
-                                    "reason":  "The message is conversational and direct, but it lacks a motivating or emotionally supportive tone that would enhance the execution-focused aspect.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "realism_score",
-                                    "value":  5,
-                                    "reason":  "The request is straightforward and respects the user\u0027s time constraints, as it simply asks for a check on remaining tasks without imposing additional workload.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  1,
-                                    "reason":  "The assistant\u0027s output does not address the user\u0027s request to check for remaining tasks, failing to provide relevant information or assistance.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  1,
-                                    "reason":  "Proxy from goal alignment score: The assistant\u0027s output does not address the user\u0027s request to check for remaining tasks, failing to provide relevant information or assistance.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                      "message":  "Hey could you look in for me if I have anything left for today",
-                      "intent":  "greeting",
-                      "confidence":  0.86,
-                      "slots":  {
-                                    "text":  "Hey could you look in for me if I have anything left for today"
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1fa4-ef3b-7bbd-a71b-3242f752b070",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                        "message":  "Hey could you look in for me if I have anything left for today",
-                                        "intent":  "greeting",
-                                        "confidence":  0.86,
-                                        "slots":  {
-                                                      "text":  "Hey could you look in for me if I have anything left for today"
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                         "message":  "Hey could you look in for me if I have anything left for today",
-                                         "intent":  "greeting",
-                                         "confidence":  0.86,
-                                         "slots":  {
-                                                       "text":  "Hey could you look in for me if I have anything left for today"
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-02-02T18:37:08.828554"
-                                     },
-                          "start_time":  "2026-02-02T18:37:08.794535Z",
-                          "end_time":  "2026-02-02T18:37:08.828597Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.974831435Z"
+    "spans": [
+      {
+        "id": "019c1bcf-ffa7-7e44-b220-cf13bbe0885b",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "What's are you built for?",
+          "intent": "unknown",
+          "confidence": 0.2,
+          "slots": {
+            "originalText": "What's are you built for?"
+          },
+          "channel": "whatsapp"
+        },
+        "start_time": "2026-02-02T00:45:42.182195Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.974968521Z",
+    "score_results": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 3,
+        "reason": "Proxy from goal alignment score: The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805ce",
+    "expected_output": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Just wanted to make sure what was on my schedule",
+      "intent": "add_task",
+      "confidence": 0.8,
+      "slots": {
+        "taskName": "wanted to make sure what was on my schedule",
+        "title": "wanted to make sure what was on my schedule",
+        "recurrence": null,
+        "targetTime": null,
+        "datetime": null
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-02T18:04:15.691233"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805cb",
-        "expected_output":  {
-                                "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                "message":  "https://x.com/i/status/2018153950415876368",
-                                "intent":  "status",
-                                "confidence":  0.9,
-                                "slots":  {
-
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-02-02T02:47:51.055383"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  1,
-                                    "reason":  "The output is a link without any context or instructions, leaving the user unclear about what action to take next.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  2,
-                                    "reason":  "The tone lacks warmth and emotional support, making it feel somewhat robotic and less engaging for sustained daily execution.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "realism_score",
-                                    "value":  1,
-                                    "reason":  "The proposed plan does not take into account the user\u0027s existing commitments and may lead to burnout due to unrealistic expectations.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  1,
-                                    "reason":  "The output does not provide any relevant feedback or evaluation regarding the user\u0027s goals, as it simply links to a status without context or analysis.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  1,
-                                    "reason":  "Proxy from goal alignment score: The output does not provide any relevant feedback or evaluation regarding the user\u0027s goals, as it simply links to a status without context or analysis.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                      "message":  "https://x.com/i/status/2018153950415876368",
-                      "intent":  "status",
-                      "confidence":  0.9,
-                      "slots":  {
-
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1c3f-d3ee-71de-b800-68e4ff619e93",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                        "message":  "https://x.com/i/status/2018153950415876368",
-                                        "intent":  "status",
-                                        "confidence":  0.9,
-                                        "slots":  {
-
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                         "message":  "https://x.com/i/status/2018153950415876368",
-                                         "intent":  "status",
-                                         "confidence":  0.9,
-                                         "slots":  {
-
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-02-02T02:47:51.055383"
-                                     },
-                          "start_time":  "2026-02-02T02:47:51.021375Z",
-                          "end_time":  "2026-02-02T02:47:51.055422Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.974785388Z"
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output does not provide any specific next steps or actionable instructions for the user to follow regarding their schedule.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 5,
+        "reason": "The assistant's output acknowledges the user's need to check their schedule, which is a realistic and achievable action that respects their time constraints.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address the user's request to check their schedule and lacks any relevant information or context.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 3,
+        "reason": "The message is neutral and straightforward, but lacks warmth and emotional support that would enhance motivation and engagement.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address the user's request to check their schedule and lacks any relevant information or context.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Just wanted to make sure what was on my schedule",
+      "intent": "add_task",
+      "confidence": 0.8,
+      "slots": {
+        "taskName": "wanted to make sure what was on my schedule",
+        "title": "wanted to make sure what was on my schedule",
+        "recurrence": null,
+        "targetTime": null,
+        "datetime": null
+      },
+      "channel": "whatsapp"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805ca",
-        "expected_output":  {
-                                "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                "message":  "Hello Tenax",
-                                "intent":  "greeting",
-                                "confidence":  0.86,
-                                "slots":  {
-                                              "text":  "Hello Tenax"
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-02-02T18:03:39.435716"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "realism_score",
-                                    "value":  4,
-                                    "reason":  "The plan is mostly realistic and achievable, considering the user\u0027s schedule, but may require careful time management to avoid potential overload.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  3,
-                                    "reason":  "The tone is friendly and acknowledges the user, but it lacks depth and emotional support that would enhance motivation and connection.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  1,
-                                    "reason":  "The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user\u0027s intent.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  1,
-                                    "reason":  "The output does not provide any specific or actionable next steps for the user.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  1,
-                                    "reason":  "Proxy from goal alignment score: The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user\u0027s intent.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                      "message":  "Hello Tenax",
-                      "intent":  "greeting",
-                      "confidence":  0.86,
-                      "slots":  {
-                                    "text":  "Hello Tenax"
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1f86-4609-7d14-8e68-4cff5dde49ed",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                        "message":  "Hello Tenax",
-                                        "intent":  "greeting",
-                                        "confidence":  0.86,
-                                        "slots":  {
-                                                      "text":  "Hello Tenax"
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
-                                         "message":  "Hello Tenax",
-                                         "intent":  "greeting",
-                                         "confidence":  0.86,
-                                         "slots":  {
-                                                       "text":  "Hello Tenax"
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-02-02T18:03:39.435716"
-                                     },
-                          "start_time":  "2026-02-02T18:03:39.400964Z",
-                          "end_time":  "2026-02-02T18:03:39.435758Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.974738138Z"
+    "spans": [
+      {
+        "id": "019c1f86-d3a8-7438-adae-985803bc5364",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Just wanted to make sure what was on my schedule",
+          "intent": "add_task",
+          "confidence": 0.8,
+          "slots": {
+            "taskName": "wanted to make sure what was on my schedule",
+            "title": "wanted to make sure what was on my schedule",
+            "recurrence": null,
+            "targetTime": null,
+            "datetime": null
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Just wanted to make sure what was on my schedule",
+          "intent": "add_task",
+          "confidence": 0.8,
+          "slots": {
+            "taskName": "wanted to make sure what was on my schedule",
+            "title": "wanted to make sure what was on my schedule",
+            "recurrence": null,
+            "targetTime": null,
+            "datetime": null
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-02T18:04:15.691233"
+        },
+        "start_time": "2026-02-02T18:04:15.655756Z",
+        "end_time": "2026-02-02T18:04:15.691276Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.974928064Z",
+    "score_results": [
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output does not provide any specific next steps or actionable instructions for the user to follow regarding their schedule."
+      },
+      {
+        "name": "realism_score",
+        "value": 5,
+        "reason": "The assistant's output acknowledges the user's need to check their schedule, which is a realistic and achievable action that respects their time constraints."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address the user's request to check their schedule and lacks any relevant information or context."
+      },
+      {
+        "name": "tone_score",
+        "value": 3,
+        "reason": "The message is neutral and straightforward, but lacks warmth and emotional support that would enhance motivation and engagement."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address the user's request to check their schedule and lacks any relevant information or context."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805cd",
+    "expected_output": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "Before then after the time zone check again how much time do I have to my next work out",
+      "intent": "unknown",
+      "confidence": 0.2,
+      "slots": {
+        "originalText": "Before then after the time zone check again how much time do I have to my next work out"
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-02T02:31:03.316922"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805c9",
-        "expected_output":  {
-                                "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                "message":  "I want you to edit a task",
-                                "intent":  "unknown",
-                                "confidence":  0.2,
-                                "slots":  {
-                                              "originalText":  "I want you to edit a task"
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-01-31T18:13:46.899545"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  2,
-                                    "reason":  "The request to edit a task is vague and does not specify what changes are needed or which task to edit.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  1,
-                                    "reason":  "The output does not address the user\u0027s request to edit a task and lacks any relevant content related to the user\u0027s goal.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "realism_score",
-                                    "value":  1,
-                                    "reason":  "The output does not provide a specific plan or consider the user\u0027s schedule, making it unrealistic and unachievable.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  2,
-                                    "reason":  "The message is direct but lacks a conversational and supportive tone, making it feel more like a command than a motivational prompt.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  1,
-                                    "reason":  "Proxy from goal alignment score: The output does not address the user\u0027s request to edit a task and lacks any relevant content related to the user\u0027s goal.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                      "message":  "I want you to edit a task",
-                      "intent":  "unknown",
-                      "confidence":  0.2,
-                      "slots":  {
-                                    "originalText":  "I want you to edit a task"
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1542-d2f1-7fb4-92cd-cacb65378d05",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                        "message":  "I want you to edit a task",
-                                        "intent":  "unknown",
-                                        "confidence":  0.2,
-                                        "slots":  {
-                                                      "originalText":  "I want you to edit a task"
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                         "message":  "I want you to edit a task",
-                                         "intent":  "unknown",
-                                         "confidence":  0.2,
-                                         "slots":  {
-                                                       "originalText":  "I want you to edit a task"
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-01-31T18:13:46.899545"
-                                     },
-                          "start_time":  "2026-01-31T18:13:46.864628Z",
-                          "end_time":  "2026-01-31T18:13:46.899588Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.974695025Z"
+    "feedback_scores": [
+      {
+        "name": "goal_alignment_score",
+        "value": 2,
+        "reason": "The output does not directly address the user's request for a time check before their workout, and lacks specific guidance or information relevant to their immediate goal.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The request to check the time before the next workout is practical, but it lacks specific details about the user's current schedule and available time, making it difficult to fully assess the feasibility of the plan.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The message is somewhat functional but lacks a conversational and supportive tone, making it feel more robotic than engaging.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The instruction to check the time before the workout is somewhat clear, but it lacks specific details on how to perform the time zone check or what exactly to do with the information after checking the time.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 2,
+        "reason": "Proxy from goal alignment score: The output does not directly address the user's request for a time check before their workout, and lacks specific guidance or information relevant to their immediate goal.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "Before then after the time zone check again how much time do I have to my next work out",
+      "intent": "unknown",
+      "confidence": 0.2,
+      "slots": {
+        "originalText": "Before then after the time zone check again how much time do I have to my next work out"
+      },
+      "channel": "whatsapp"
     },
-    {
-        "id":  "019c29d1-c7c1-7111-a906-7a5ccaa805c8",
-        "expected_output":  {
-                                "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                "message":  "Yes sir",
-                                "intent":  "unknown",
-                                "confidence":  0.2,
-                                "slots":  {
-                                              "originalText":  "Yes sir"
-                                          },
-                                "channel":  "whatsapp",
-                                "agent_version":  "v1.0",
-                                "parsed_at":  "2026-02-01T20:23:28.571686"
-                            },
-        "feedback_scores":  [
-                                {
-                                    "name":  "goal_alignment_score",
-                                    "value":  1,
-                                    "reason":  "The response is overly simplistic and does not provide any meaningful feedback or progress related to the user\u0027s goals.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "tone_score",
-                                    "value":  1,
-                                    "reason":  "The response is overly brief and lacks the necessary conversational and supportive tone expected from an execution-focused AI companion.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "realism_score",
-                                    "value":  1,
-                                    "reason":  "The response does not provide any plan or context, making it impossible to evaluate its realism or achievability.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "specificity_score",
-                                    "value":  1,
-                                    "reason":  "The response is vague and does not provide any actionable next steps for the user.",
-                                    "source":  "ONLINE_SCORING"
-                                },
-                                {
-                                    "name":  "resolution_alignment_score",
-                                    "value":  1,
-                                    "reason":  "Proxy from goal alignment score: The response is overly simplistic and does not provide any meaningful feedback or progress related to the user\u0027s goals.",
-                                    "source":  "ONLINE_SCORING"
-                                }
-                            ],
-        "input":  {
-                      "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                      "message":  "Yes sir",
-                      "intent":  "unknown",
-                      "confidence":  0.2,
-                      "slots":  {
-                                    "originalText":  "Yes sir"
-                                },
-                      "channel":  "whatsapp"
-                  },
-        "spans":  [
-                      {
-                          "id":  "019c1aa8-fc0b-7a77-ab8e-dc7ea14c49ec",
-                          "name":  "intent_parsed",
-                          "type":  "general",
-                          "input":  {
-                                        "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                        "message":  "Yes sir",
-                                        "intent":  "unknown",
-                                        "confidence":  0.2,
-                                        "slots":  {
-                                                      "originalText":  "Yes sir"
-                                                  },
-                                        "channel":  "whatsapp"
-                                    },
-                          "output":  {
-                                         "user_id":  "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
-                                         "message":  "Yes sir",
-                                         "intent":  "unknown",
-                                         "confidence":  0.2,
-                                         "slots":  {
-                                                       "originalText":  "Yes sir"
-                                                   },
-                                         "channel":  "whatsapp",
-                                         "agent_version":  "v1.0",
-                                         "parsed_at":  "2026-02-01T20:23:28.571686"
-                                     },
-                          "start_time":  "2026-02-01T19:23:28.138555Z",
-                          "end_time":  "2026-02-01T19:23:28.571734Z"
-                      }
-                  ],
-        "tags":  [
-
-                 ],
-        "created_at":  "2026-02-04T18:02:19.974648845Z"
-    }
+    "spans": [
+      {
+        "id": "019c1c30-7364-71a9-a9e5-4616903871ff",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "Before then after the time zone check again how much time do I have to my next work out",
+          "intent": "unknown",
+          "confidence": 0.2,
+          "slots": {
+            "originalText": "Before then after the time zone check again how much time do I have to my next work out"
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "Before then after the time zone check again how much time do I have to my next work out",
+          "intent": "unknown",
+          "confidence": 0.2,
+          "slots": {
+            "originalText": "Before then after the time zone check again how much time do I have to my next work out"
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-02T02:31:03.316922"
+        },
+        "start_time": "2026-02-02T02:31:03.267463Z",
+        "end_time": "2026-02-02T02:31:03.316971Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.974877859Z",
+    "score_results": [
+      {
+        "name": "goal_alignment_score",
+        "value": 2,
+        "reason": "The output does not directly address the user's request for a time check before their workout, and lacks specific guidance or information relevant to their immediate goal."
+      },
+      {
+        "name": "realism_score",
+        "value": 3,
+        "reason": "The request to check the time before the next workout is practical, but it lacks specific details about the user's current schedule and available time, making it difficult to fully assess the feasibility of the plan."
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The message is somewhat functional but lacks a conversational and supportive tone, making it feel more robotic than engaging."
+      },
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The instruction to check the time before the workout is somewhat clear, but it lacks specific details on how to perform the time zone check or what exactly to do with the information after checking the time."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 2,
+        "reason": "Proxy from goal alignment score: The output does not directly address the user's request for a time check before their workout, and lacks specific guidance or information relevant to their immediate goal."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805cc",
+    "expected_output": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Hey could you look in for me if I have anything left for today",
+      "intent": "greeting",
+      "confidence": 0.86,
+      "slots": {
+        "text": "Hey could you look in for me if I have anything left for today"
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-02T18:37:08.828554"
+    },
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The request is somewhat vague as it does not specify what the user is looking for or how to check for it, making it unclear and less actionable.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 3,
+        "reason": "The message is conversational and direct, but it lacks a motivating or emotionally supportive tone that would enhance the execution-focused aspect.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 5,
+        "reason": "The request is straightforward and respects the user's time constraints, as it simply asks for a check on remaining tasks without imposing additional workload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The assistant's output does not address the user's request to check for remaining tasks, failing to provide relevant information or assistance.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The assistant's output does not address the user's request to check for remaining tasks, failing to provide relevant information or assistance.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Hey could you look in for me if I have anything left for today",
+      "intent": "greeting",
+      "confidence": 0.86,
+      "slots": {
+        "text": "Hey could you look in for me if I have anything left for today"
+      },
+      "channel": "whatsapp"
+    },
+    "spans": [
+      {
+        "id": "019c1fa4-ef3b-7bbd-a71b-3242f752b070",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Hey could you look in for me if I have anything left for today",
+          "intent": "greeting",
+          "confidence": 0.86,
+          "slots": {
+            "text": "Hey could you look in for me if I have anything left for today"
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Hey could you look in for me if I have anything left for today",
+          "intent": "greeting",
+          "confidence": 0.86,
+          "slots": {
+            "text": "Hey could you look in for me if I have anything left for today"
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-02T18:37:08.828554"
+        },
+        "start_time": "2026-02-02T18:37:08.794535Z",
+        "end_time": "2026-02-02T18:37:08.828597Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.974831435Z",
+    "score_results": [
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The request is somewhat vague as it does not specify what the user is looking for or how to check for it, making it unclear and less actionable."
+      },
+      {
+        "name": "tone_score",
+        "value": 3,
+        "reason": "The message is conversational and direct, but it lacks a motivating or emotionally supportive tone that would enhance the execution-focused aspect."
+      },
+      {
+        "name": "realism_score",
+        "value": 5,
+        "reason": "The request is straightforward and respects the user's time constraints, as it simply asks for a check on remaining tasks without imposing additional workload."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The assistant's output does not address the user's request to check for remaining tasks, failing to provide relevant information or assistance."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The assistant's output does not address the user's request to check for remaining tasks, failing to provide relevant information or assistance."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805cb",
+    "expected_output": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "https://x.com/i/status/2018153950415876368",
+      "intent": "status",
+      "confidence": 0.9,
+      "slots": {},
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-02T02:47:51.055383"
+    },
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output is a link without any context or instructions, leaving the user unclear about what action to take next.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The tone lacks warmth and emotional support, making it feel somewhat robotic and less engaging for sustained daily execution.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 1,
+        "reason": "The proposed plan does not take into account the user's existing commitments and may lead to burnout due to unrealistic expectations.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not provide any relevant feedback or evaluation regarding the user's goals, as it simply links to a status without context or analysis.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not provide any relevant feedback or evaluation regarding the user's goals, as it simply links to a status without context or analysis.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "https://x.com/i/status/2018153950415876368",
+      "intent": "status",
+      "confidence": 0.9,
+      "slots": {},
+      "channel": "whatsapp"
+    },
+    "spans": [
+      {
+        "id": "019c1c3f-d3ee-71de-b800-68e4ff619e93",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "https://x.com/i/status/2018153950415876368",
+          "intent": "status",
+          "confidence": 0.9,
+          "slots": {},
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "https://x.com/i/status/2018153950415876368",
+          "intent": "status",
+          "confidence": 0.9,
+          "slots": {},
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-02T02:47:51.055383"
+        },
+        "start_time": "2026-02-02T02:47:51.021375Z",
+        "end_time": "2026-02-02T02:47:51.055422Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.974785388Z",
+    "score_results": [
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output is a link without any context or instructions, leaving the user unclear about what action to take next."
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The tone lacks warmth and emotional support, making it feel somewhat robotic and less engaging for sustained daily execution."
+      },
+      {
+        "name": "realism_score",
+        "value": 1,
+        "reason": "The proposed plan does not take into account the user's existing commitments and may lead to burnout due to unrealistic expectations."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not provide any relevant feedback or evaluation regarding the user's goals, as it simply links to a status without context or analysis."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not provide any relevant feedback or evaluation regarding the user's goals, as it simply links to a status without context or analysis."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805ca",
+    "expected_output": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Hello Tenax",
+      "intent": "greeting",
+      "confidence": 0.86,
+      "slots": {
+        "text": "Hello Tenax"
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-02T18:03:39.435716"
+    },
+    "feedback_scores": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 3,
+        "reason": "The tone is friendly and acknowledges the user, but it lacks depth and emotional support that would enhance motivation and connection.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user's intent.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output does not provide any specific or actionable next steps for the user.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user's intent.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+      "message": "Hello Tenax",
+      "intent": "greeting",
+      "confidence": 0.86,
+      "slots": {
+        "text": "Hello Tenax"
+      },
+      "channel": "whatsapp"
+    },
+    "spans": [
+      {
+        "id": "019c1f86-4609-7d14-8e68-4cff5dde49ed",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Hello Tenax",
+          "intent": "greeting",
+          "confidence": 0.86,
+          "slots": {
+            "text": "Hello Tenax"
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "96f18e9c-e9e4-499a-8196-48fbb99f0b77",
+          "message": "Hello Tenax",
+          "intent": "greeting",
+          "confidence": 0.86,
+          "slots": {
+            "text": "Hello Tenax"
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-02T18:03:39.435716"
+        },
+        "start_time": "2026-02-02T18:03:39.400964Z",
+        "end_time": "2026-02-02T18:03:39.435758Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.974738138Z",
+    "score_results": [
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      },
+      {
+        "name": "tone_score",
+        "value": 3,
+        "reason": "The tone is friendly and acknowledges the user, but it lacks depth and emotional support that would enhance motivation and connection."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user's intent."
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The output does not provide any specific or actionable next steps for the user."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address any specific user goals or provide relevant feedback, making it poorly aligned with the user's intent."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805c9",
+    "expected_output": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "I want you to edit a task",
+      "intent": "unknown",
+      "confidence": 0.2,
+      "slots": {
+        "originalText": "I want you to edit a task"
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-01-31T18:13:46.899545"
+    },
+    "feedback_scores": [
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The request to edit a task is vague and does not specify what changes are needed or which task to edit.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address the user's request to edit a task and lacks any relevant content related to the user's goal.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 1,
+        "reason": "The output does not provide a specific plan or consider the user's schedule, making it unrealistic and unachievable.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The message is direct but lacks a conversational and supportive tone, making it feel more like a command than a motivational prompt.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address the user's request to edit a task and lacks any relevant content related to the user's goal.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "I want you to edit a task",
+      "intent": "unknown",
+      "confidence": 0.2,
+      "slots": {
+        "originalText": "I want you to edit a task"
+      },
+      "channel": "whatsapp"
+    },
+    "spans": [
+      {
+        "id": "019c1542-d2f1-7fb4-92cd-cacb65378d05",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "I want you to edit a task",
+          "intent": "unknown",
+          "confidence": 0.2,
+          "slots": {
+            "originalText": "I want you to edit a task"
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "I want you to edit a task",
+          "intent": "unknown",
+          "confidence": 0.2,
+          "slots": {
+            "originalText": "I want you to edit a task"
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-01-31T18:13:46.899545"
+        },
+        "start_time": "2026-01-31T18:13:46.864628Z",
+        "end_time": "2026-01-31T18:13:46.899588Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.974695025Z",
+    "score_results": [
+      {
+        "name": "specificity_score",
+        "value": 2,
+        "reason": "The request to edit a task is vague and does not specify what changes are needed or which task to edit."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The output does not address the user's request to edit a task and lacks any relevant content related to the user's goal."
+      },
+      {
+        "name": "realism_score",
+        "value": 1,
+        "reason": "The output does not provide a specific plan or consider the user's schedule, making it unrealistic and unachievable."
+      },
+      {
+        "name": "tone_score",
+        "value": 2,
+        "reason": "The message is direct but lacks a conversational and supportive tone, making it feel more like a command than a motivational prompt."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The output does not address the user's request to edit a task and lacks any relevant content related to the user's goal."
+      }
+    ]
+  },
+  {
+    "id": "019c29d1-c7c1-7111-a906-7a5ccaa805c8",
+    "expected_output": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "Yes sir",
+      "intent": "unknown",
+      "confidence": 0.2,
+      "slots": {
+        "originalText": "Yes sir"
+      },
+      "channel": "whatsapp",
+      "agent_version": "v1.0",
+      "parsed_at": "2026-02-01T20:23:28.571686"
+    },
+    "feedback_scores": [
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The response is overly simplistic and does not provide any meaningful feedback or progress related to the user's goals.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "tone_score",
+        "value": 1,
+        "reason": "The response is overly brief and lacks the necessary conversational and supportive tone expected from an execution-focused AI companion.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "realism_score",
+        "value": 1,
+        "reason": "The response does not provide any plan or context, making it impossible to evaluate its realism or achievability.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The response is vague and does not provide any actionable next steps for the user.",
+        "source": "ONLINE_SCORING"
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The response is overly simplistic and does not provide any meaningful feedback or progress related to the user's goals.",
+        "source": "ONLINE_SCORING"
+      }
+    ],
+    "input": {
+      "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+      "message": "Yes sir",
+      "intent": "unknown",
+      "confidence": 0.2,
+      "slots": {
+        "originalText": "Yes sir"
+      },
+      "channel": "whatsapp"
+    },
+    "spans": [
+      {
+        "id": "019c1aa8-fc0b-7a77-ab8e-dc7ea14c49ec",
+        "name": "intent_parsed",
+        "type": "general",
+        "input": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "Yes sir",
+          "intent": "unknown",
+          "confidence": 0.2,
+          "slots": {
+            "originalText": "Yes sir"
+          },
+          "channel": "whatsapp"
+        },
+        "output": {
+          "user_id": "25f1d1d0-8aeb-436a-98b6-a6995144c83c",
+          "message": "Yes sir",
+          "intent": "unknown",
+          "confidence": 0.2,
+          "slots": {
+            "originalText": "Yes sir"
+          },
+          "channel": "whatsapp",
+          "agent_version": "v1.0",
+          "parsed_at": "2026-02-01T20:23:28.571686"
+        },
+        "start_time": "2026-02-01T19:23:28.138555Z",
+        "end_time": "2026-02-01T19:23:28.571734Z"
+      }
+    ],
+    "tags": [],
+    "created_at": "2026-02-04T18:02:19.974648845Z",
+    "score_results": [
+      {
+        "name": "goal_alignment_score",
+        "value": 1,
+        "reason": "The response is overly simplistic and does not provide any meaningful feedback or progress related to the user's goals."
+      },
+      {
+        "name": "tone_score",
+        "value": 1,
+        "reason": "The response is overly brief and lacks the necessary conversational and supportive tone expected from an execution-focused AI companion."
+      },
+      {
+        "name": "realism_score",
+        "value": 1,
+        "reason": "The response does not provide any plan or context, making it impossible to evaluate its realism or achievability."
+      },
+      {
+        "name": "specificity_score",
+        "value": 1,
+        "reason": "The response is vague and does not provide any actionable next steps for the user."
+      },
+      {
+        "name": "resolution_alignment_score",
+        "value": 1,
+        "reason": "Proxy from goal alignment score: The response is overly simplistic and does not provide any meaningful feedback or progress related to the user's goals."
+      }
+    ]
+  }
 ]

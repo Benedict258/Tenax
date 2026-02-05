@@ -71,7 +71,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.464280555Z"
+    "created_at": "2026-02-04T17:57:52.464280555Z",
+    "score_results": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid overload."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3387",
@@ -145,7 +167,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.464245708Z"
+    "created_at": "2026-02-04T17:57:52.464245708Z",
+    "score_results": [
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid overload."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3386",
@@ -219,7 +263,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.464207055Z"
+    "created_at": "2026-02-04T17:57:52.464207055Z",
+    "score_results": [
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being overly aggressive or command-based."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3385",
@@ -293,7 +359,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.464167961Z"
+    "created_at": "2026-02-04T17:57:52.464167961Z",
+    "score_results": [
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3384",
@@ -367,7 +455,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.464128498Z"
+    "created_at": "2026-02-04T17:57:52.464128498Z",
+    "score_results": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally conversational and supportive, encouraging sustained execution without being overly aggressive or command-based."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3383",
@@ -441,7 +551,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.464080713Z"
+    "created_at": "2026-02-04T17:57:52.464080713Z",
+    "score_results": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid overload."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3382",
@@ -515,7 +647,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.464050236Z"
+    "created_at": "2026-02-04T17:57:52.464050236Z",
+    "score_results": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being overly aggressive or command-based."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3381",
@@ -589,7 +743,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.464020512Z"
+    "created_at": "2026-02-04T17:57:52.464020512Z",
+    "score_results": [
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being aggressive or shaming."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac3380",
@@ -663,7 +839,29 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.463990275Z"
+    "created_at": "2026-02-04T17:57:52.463990275Z",
+    "score_results": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is conversational and supportive, encouraging sustained execution without being overly aggressive or command-based."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      }
+    ]
   },
   {
     "id": "019c29cd-b2ce-7293-b1aa-5726c6ac337f",
@@ -737,6 +935,28 @@
     ],
     "tags": [],
     "usage": "",
-    "created_at": "2026-02-04T17:57:52.463961634Z"
+    "created_at": "2026-02-04T17:57:52.463961634Z",
+    "score_results": [
+      {
+        "name": "tone_score",
+        "value": 4,
+        "reason": "The tone is generally conversational and supportive, encouraging sustained execution without being overly aggressive or command-based. However, it could benefit from slightly more personalization to enhance emotional connection."
+      },
+      {
+        "name": "specificity_score",
+        "value": 3,
+        "reason": "The output provides some direction but lacks clear, actionable steps for the user to follow immediately."
+      },
+      {
+        "name": "goal_alignment_score",
+        "value": 3,
+        "reason": "The output acknowledges the user's goals but lacks specific references to their progress or context, making it somewhat generic."
+      },
+      {
+        "name": "realism_score",
+        "value": 4,
+        "reason": "The plan is mostly realistic and achievable, considering the user's schedule, but may require careful time management to avoid potential overload."
+      }
+    ]
   }
 ]
