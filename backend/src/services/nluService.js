@@ -126,6 +126,42 @@ function isQuestionLike(text = '') {
   return /^(hi|hey|hello|yo)[,\s]+(what|when|where|why|how|which|who|do i|did i|am i|is|are|can|should)\b/.test(normalized);
 }
 
+function isExplicitIntent(text = '') {
+  const normalized = safeText(text);
+  if (!normalized) return false;
+  if (isScheduleQueryText(normalized) || isStatusQueryText(normalized) || isTimeQueryText(normalized)) {
+    return true;
+  }
+  if (COMPLETION_PREFIXES.some((prefix) => normalized.startsWith(prefix)) || /i\s*(?:have|just)?\s*(completed|finished|done)/i.test(normalized)) {
+    return true;
+  }
+  if (REMOVE_TRIGGERS.some((trigger) => normalized.startsWith(trigger))) {
+    return true;
+  }
+  if (RESCHEDULE_TRIGGERS.some((trigger) => normalized.startsWith(trigger))) {
+    return true;
+  }
+  if (REMINDER_SNOOZE_TRIGGERS.some((phrase) => normalized.startsWith(phrase))) {
+    return true;
+  }
+  if (REMINDER_PAUSE_TRIGGERS.some((phrase) => normalized.includes(phrase))) {
+    return true;
+  }
+  if (TIMETABLE_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
+    return true;
+  }
+  if (GREETING_TRIGGERS.some((phrase) => normalized.startsWith(phrase))) {
+    return true;
+  }
+  if (normalized === 'help') {
+    return true;
+  }
+  if (ADD_TRIGGERS.some((trigger) => normalized.includes(trigger))) {
+    return true;
+  }
+  return false;
+}
+
 function isStatusQueryText(text = '') {
   const normalized = safeText(text);
   if (!normalized) return false;
@@ -764,6 +800,40 @@ function resolvePendingAction(rawText, pendingAction, options = {}) {
   return null;
 }
 
+function shouldBypassPendingAction(rawText, pendingAction, options = {}) {
+  if (!pendingAction || !rawText) return false;
+  const normalized = normalize(rawText);
+  const timezone = options.timezone || 'UTC';
+
+  if (!isExplicitIntent(normalized) && !isQuestionLike(normalized)) {
+    return false;
+  }
+
+  if (pendingAction.type === 'task_disambiguation') {
+    const numbers = extractNumberList(normalized);
+    if (numbers.length) return false;
+  }
+
+  if (pendingAction.type === 'time_confirmation') {
+    if (/no fixed time|no time|anytime|flexible/i.test(normalized)) return false;
+    if (extractTimeData(rawText, timezone)) return false;
+  }
+
+  if (pendingAction.type === 'schedule_query') {
+    const parsed = parseScheduleQuery(rawText, timezone);
+    if (parsed?.slots && !parsed.slots.needsDate) return false;
+  }
+
+  if (pendingAction.type === 'timetable_confirmation') {
+    if (/^(yes|yep|sure|go ahead|add all|no|cancel|not now)/i.test(rawText.trim())) {
+      return false;
+    }
+    if (normalized.startsWith('add only')) return false;
+  }
+
+  return true;
+}
+
 function parseResolutionBuilderIntent(text) {
   const normalized = normalize(text);
   if (/resolution builder|new year resolution|plan my goal|create resolution plan|start resolution builder|plan my 2026 goal/i.test(normalized)) {
@@ -864,5 +934,7 @@ module.exports = {
   inferIntentWithLLM,
   extractTaskTitleWithLLM,
   extractTaskTitleDeterministic,
-  extractNumberList
+  extractNumberList,
+  isExplicitIntent,
+  shouldBypassPendingAction
 };

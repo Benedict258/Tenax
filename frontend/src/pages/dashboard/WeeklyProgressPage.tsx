@@ -71,6 +71,21 @@ const WeeklyProgressPage = () => {
           <InsightCard label="Total completed" value={`${summary.totalCompleted} tasks`} hint={`vs ${summary.totalPlanned} planned`} />
           <InsightCard label="Reminder effectiveness" value={`${reminderEffectiveness || 0}%`} hint="Last 24h" />
         </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-gray-200 bg-white px-6 py-5">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Completion trend</p>
+            <p className="mt-2 text-sm text-gray-600">Last 7 days (completion rate)</p>
+            <TrendBars values={weeklyTrend.map((day) => day.completionRate)} />
+          </div>
+          <div className="rounded-2xl border border-gray-200 bg-white px-6 py-5">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Outcome-based evaluation</p>
+            <p className="mt-2 text-sm text-gray-600">Completion vs reminder effectiveness</p>
+            <div className="mt-4 space-y-4">
+              <ProgressBar label="Completion rate" value={summary.average} />
+              <ProgressBar label="Reminder effectiveness" value={Number(reminderEffectiveness || 0)} />
+            </div>
+          </div>
+        </div>
       </section>
 
       <ScheduleEditorPage />
@@ -109,3 +124,38 @@ const buildWeeklySummary = (trend: TrendPoint[]) => {
 
   return { average, momentumLabel, momentumHint, totalCompleted, totalPlanned };
 };
+
+const TrendBars = ({ values }: { values: number[] }) => {
+  if (!values.length) {
+    return <p className="mt-4 text-sm text-gray-500">No trend data yet.</p>;
+  }
+  const max = Math.max(1, ...values);
+  return (
+    <div className="mt-4 flex items-end gap-2">
+      {values.map((value, idx) => (
+        <div key={`trend-${idx}`} className="flex flex-col items-center gap-2">
+          <div
+            className="w-6 rounded-full bg-gradient-to-t from-brand-500 to-emerald-400"
+            style={{ height: `${Math.max(16, (value / max) * 80)}px` }}
+          />
+          <span className="text-[10px] text-gray-400">{value}%</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ProgressBar = ({ label, value }: { label: string; value: number }) => (
+  <div>
+    <div className="flex items-center justify-between text-sm text-gray-600">
+      <span>{label}</span>
+      <span>{value}%</span>
+    </div>
+    <div className="mt-2 h-2 rounded-full bg-gray-200">
+      <div
+        className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-400"
+        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+      />
+    </div>
+  </div>
+);

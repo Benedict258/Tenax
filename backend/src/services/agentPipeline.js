@@ -863,9 +863,22 @@ async function handleMessage({
     ...metadata
   });
 
+  const scheduleQuery = nluService.isScheduleQueryText(text);
+  const statusQuery = nluService.isStatusQueryText(text);
+  const timeQuery = nluService.isTimeQueryText(text);
+  const addTaskSignal = nluService.isAddTaskText(text);
+  const isQuestion = nluService.isQuestionLike(text);
+
   const pendingAction = conversationContext.getPendingAction(resolvedUser.id);
 
-  if (pendingAction) {
+  const shouldBypassPending = pendingAction
+    && nluService.shouldBypassPendingAction(text, pendingAction, { timezone: resolvedUser.timezone || 'UTC' });
+
+  if (shouldBypassPending) {
+    conversationContext.consumePendingAction(resolvedUser.id);
+  }
+
+  if (pendingAction && !shouldBypassPending) {
     parsed = nluService.resolvePendingAction(text, pendingAction, { timezone: resolvedUser.timezone || 'UTC' });
     if (parsed) {
       conversationContext.consumePendingAction(resolvedUser.id);
@@ -889,12 +902,6 @@ async function handleMessage({
       parsed = llmIntent;
     }
   }
-
-  const scheduleQuery = nluService.isScheduleQueryText(text);
-  const statusQuery = nluService.isStatusQueryText(text);
-  const timeQuery = nluService.isTimeQueryText(text);
-  const addTaskSignal = nluService.isAddTaskText(text);
-  const isQuestion = nluService.isQuestionLike(text);
 
   if (scheduleQuery) {
     parsed = nluService.parseMessage(text, { timezone: resolvedUser.timezone || 'UTC' });

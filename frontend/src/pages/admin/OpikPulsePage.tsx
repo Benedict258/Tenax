@@ -18,6 +18,10 @@ const OpikPulsePage = () => {
   const opikTrends = summary?.opikTrends ?? {};
   const daily = Array.isArray(opikTrends.daily) ? opikTrends.daily : [];
   const hourly = Array.isArray(opikTrends.hourly) ? opikTrends.hourly : [];
+  const dailyTone = daily.map((point) => Number(point.tone_score || 0));
+  const dailySpecificity = daily.map((point) => Number(point.specificity_score || 0));
+  const dailyRealism = daily.map((point) => Number(point.realism_score || 0));
+  const dailyAlignment = daily.map((point) => Number(point.goal_alignment_score || 0));
 
   if (!ADMIN_ENABLED) {
     return <AdminGate />;
@@ -55,6 +59,10 @@ const OpikPulsePage = () => {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Last 7 days</p>
+          <MiniBars label="Tone" values={dailyTone} />
+          <MiniBars label="Specificity" values={dailySpecificity} />
+          <MiniBars label="Realism" values={dailyRealism} />
+          <MiniBars label="Goal alignment" values={dailyAlignment} />
           {daily.length === 0 && <p className="mt-3 text-sm text-white/60">No Opik trend data yet.</p>}
           {daily.length > 0 && (
             <div className="mt-3 space-y-3">
@@ -71,6 +79,8 @@ const OpikPulsePage = () => {
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/40">Last 24 hours</p>
+          <MiniBars label="Tone" values={hourly.map((point) => Number(point.tone_score || 0))} />
+          <MiniBars label="Goal alignment" values={hourly.map((point) => Number(point.goal_alignment_score || 0))} />
           {hourly.length === 0 && <p className="mt-3 text-sm text-white/60">No hourly Opik trend data yet.</p>}
           {hourly.length > 0 && (
             <div className="mt-3 space-y-3">
@@ -92,3 +102,22 @@ const OpikPulsePage = () => {
 };
 
 export default OpikPulsePage;
+
+const MiniBars = ({ label, values }: { label: string; values: number[] }) => {
+  if (!values.length) return null;
+  const max = Math.max(1, ...values);
+  return (
+    <div className="mt-4">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/40">{label}</p>
+      <div className="mt-2 flex items-end gap-1">
+        {values.slice(-14).map((value, idx) => (
+          <div
+            key={`${label}-${idx}`}
+            className="w-2 rounded-full bg-gradient-to-t from-brand-500/70 to-emerald-400/90"
+            style={{ height: `${Math.max(10, (value / max) * 48)}px` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
