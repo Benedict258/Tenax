@@ -56,6 +56,11 @@ else:
     except ImportError:
         _fewshot_reporting = None
 
+try:
+    from opik_optimizer.core.score_result import ScoreResult
+except ImportError:
+    ScoreResult = None
+
 
 MOCK_MODE = os.environ.get('OPIK_OPTIMIZER_MOCK_MODE', 'true').lower() != 'false'
 
@@ -309,8 +314,8 @@ def _extract_expected_text(dataset_item: Dict[str, Any]) -> str:
     return ''
 
 
-def _feedback_metric(metric_name: str) -> Callable[..., float]:
-    def _metric(dataset_item: Dict[str, Any], llm_output: str, **_kwargs: Any) -> float:
+def _feedback_metric(metric_name: str) -> Callable[..., Any]:
+    def _metric(dataset_item: Dict[str, Any], llm_output: str, **_kwargs: Any) -> Any:
         scores = dataset_item.get('feedback_scores') or []
         for score in scores:
             if not isinstance(score, dict):
@@ -321,7 +326,11 @@ def _feedback_metric(metric_name: str) -> Callable[..., float]:
                 except (TypeError, ValueError):
                     value = 0.0
                 # Normalize common 1-5 rubric to 0-1
-                return max(0.0, min(1.0, value / 5.0 if value > 1 else value))
+                normalized = max(0.0, min(1.0, value / 5.0 if value > 1 else value))
+                reason = score.get('reason') or f'Auto reason for {metric_name}'
+                if ScoreResult is not None:
+                    return ScoreResult(name=metric_name, value=normalized, reason=reason)
+                return normalized
         return 0.0
 
     _metric.__name__ = metric_name
