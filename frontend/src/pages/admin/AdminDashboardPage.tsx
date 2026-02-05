@@ -133,12 +133,14 @@ const AdminDashboardPage = () => {
       <section className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6">
         <h2 className="text-xl font-semibold">Behavior & Evaluator</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-4">
-          {Object.entries(averages).map(([key, value]) => (
+          {Object.entries(averages).map(([key, value]) => {
+            const displayValue = typeof value === 'number' || typeof value === 'string' ? value : '-';
+            return (
             <div key={key} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-4">
               <p className="text-xs uppercase tracking-[0.3em] text-white/50">{key.replace(/_/g, ' ')}</p>
-              <p className="mt-2 text-2xl font-semibold">{value ?? '-'}</p>
+              <p className="mt-2 text-2xl font-semibold">{displayValue}</p>
             </div>
-          ))}
+          )})}
         </div>
       </section>
 

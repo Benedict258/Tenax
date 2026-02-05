@@ -393,7 +393,7 @@ const ExecutionBoardBentoCard = ({
   );
 };
 
-const formatTime = (value?: string) =>
+const formatTime = (value?: string | null) =>
   value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
 
 const getAverageCompletion = (trend: TrendPoint[]) => {

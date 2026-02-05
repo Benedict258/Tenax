@@ -2,9 +2,10 @@ export interface Task {
   id: string;
   title: string;
   status?: string;
-  severity?: string;
+  severity?: string | null;
   category?: string;
   start_time?: string;
+  end_time?: string | null;
   location?: string | null;
   is_schedule_block?: boolean;
 }
