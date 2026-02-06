@@ -1,6 +1,5 @@
 const { DateTime } = require('luxon');
 const Task = require('../models/Task');
-const QueueService = require('./queue');
 const scheduleService = require('./scheduleService');
 
 const buildStartTimeISO = (dateInput, timeString, timezone = 'UTC') => {
@@ -117,6 +116,9 @@ async function enforceDailyRules(user, dateInput = new Date()) {
   const inserted = await Task.createMany(createdTasks);
   for (const task of inserted) {
     if (!task.start_time) continue;
+    // Lazy-require to avoid circular dependency with queue -> agent -> ruleEngine.
+    // eslint-disable-next-line global-require
+    const QueueService = require('./queue');
     // eslint-disable-next-line no-await-in-loop
     await QueueService.scheduleTaskReminders(user, task);
   }
