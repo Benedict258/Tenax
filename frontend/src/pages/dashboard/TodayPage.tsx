@@ -337,6 +337,9 @@ const ExecutionBoardBentoCard = ({
     };
   });
   const combined = [...tasks, ...scheduleItems];
+  const realTaskCount = tasks.length;
+  const scheduleCount = scheduleItems.length;
+  const combinedCount = combined.length;
   const withTimes = combined.map((item) => ({
     ...item,
     startMs: item.start_time ? new Date(item.start_time).getTime() : null,
@@ -362,7 +365,9 @@ const ExecutionBoardBentoCard = ({
       <div className="relative z-10 flex flex-col gap-4 p-6">
         <div className="flex items-center justify-between">
           <p className="text-xs uppercase tracking-[0.35em] text-gray-500">Today's Execution Board</p>
-          <span className="text-xs text-gray-500">{combined.length} tasks</span>
+          <span className="text-xs text-gray-500">
+            {realTaskCount} tasks{scheduleCount ? ` · ${scheduleCount} schedule` : ''}
+          </span>
         </div>
         {firstTask ? (
           <div className="space-y-2">
@@ -386,7 +391,7 @@ const ExecutionBoardBentoCard = ({
               View all <ArrowRightIcon className="ml-2 h-4 w-4" />
             </Link>
           </Button>
-          <span className="text-gray-400">{combined.length} total</span>
+          <span className="text-gray-400">{combinedCount} total</span>
         </div>
       </div>
     </div>

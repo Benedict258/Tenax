@@ -199,7 +199,7 @@ class Task {
       .select('*')
       .eq('user_id', user_id)
       .not('status', 'in', '("archived","deleted")')
-      .or(`start_time.is.null,and(start_time.gte.${startISO},start_time.lt.${endISO})`)
+      .or(`and(start_time.is.null,created_at.gte.${startISO},created_at.lt.${endISO}),and(start_time.gte.${startISO},start_time.lt.${endISO})`)
       .order('priority', { ascending: true })
       .order('start_time', { ascending: true });
 

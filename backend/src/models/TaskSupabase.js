@@ -89,14 +89,17 @@ class Task {
 
   static async getTodaysTasks(user_id, timezone = 'UTC') {
     const { DateTime } = require('luxon');
-    const today = DateTime.now().setZone(timezone || 'UTC').toISODate();
+    const start = DateTime.now().setZone(timezone || 'UTC').startOf('day').toUTC();
+    const end = start.plus({ days: 1 });
+    const startISO = start.toISO();
+    const endISO = end.toISO();
     
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('user_id', user_id)
       .not('status', 'in', '("archived","deleted")')
-      .or(`start_time::date.eq.${today},start_time.is.null`)
+      .or(`and(start_time.is.null,created_at.gte.${startISO},created_at.lt.${endISO}),and(start_time.gte.${startISO},start_time.lt.${endISO})`)
       .order('priority', { ascending: true })
       .order('start_time', { ascending: true });
 
