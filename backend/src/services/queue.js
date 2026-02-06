@@ -1,5 +1,4 @@
 const { v4: uuid } = require('uuid');
-const agentService = require('./agent');
 const scheduleService = require('./scheduleService');
 const metricsStore = require('./metricsStore');
 const { DateTime } = require('luxon');
@@ -22,7 +21,10 @@ let reminderQueue = null;
 let reminderWorker = null;
 
 async function runReminderJob(job) {
-  const { user, task, type } = job;
+  // Lazy-require to avoid circular dependency with agent -> ruleEngine -> queue.
+  const agentService = require('./agent');
+  // Lazy-require to avoid circular dependency with agent -> ruleEngine -> queue.
+    const { user, task, type } = job;
   if (!type) {
     throw new Error('Reminder job missing type');
   }
