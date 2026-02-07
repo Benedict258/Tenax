@@ -223,6 +223,21 @@ function extractTimeData(text, timezone = 'UTC') {
   if (!text) return null;
   const zone = timezone || 'UTC';
   const now = DateTime.now().setZone(zone);
+  const fromNowMatch = text.match(/\b(\d+)\s*(minute|minutes|min|hour|hours|hr|hrs)\s+from\s+now\b/i);
+  if (fromNowMatch) {
+    const amount = parseInt(fromNowMatch[1], 10);
+    const unitRaw = fromNowMatch[2].toLowerCase();
+    const unit = unitRaw.startsWith('hour') || unitRaw.startsWith('hr') ? 'hours' : 'minutes';
+    if (!Number.isNaN(amount) && amount > 0) {
+      const dt = now.plus({ [unit]: amount });
+      return {
+        iso: dt.toUTC().toISO(),
+        matchedText: fromNowMatch[0],
+        date: dt.toJSDate(),
+        timezone: zone
+      };
+    }
+  }
   const byMatch = text.match(/\bby\s+(\d{1,2}(:\d{2})?\s*(am|pm)?)\b/i);
   if (byMatch) {
     const quick = chrono.parse(byMatch[1], now.toJSDate(), { forwardDate: true });
