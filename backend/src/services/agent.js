@@ -46,10 +46,10 @@ const reminderOpeners = {
     'Psst'
   ],
   on_time: [
-    'It is time',
-    'You are up',
-    'Starting now',
-    'Right on time'
+    "Time to start",
+    "Jump in when you're ready",
+    "It’s go time",
+    "Starting now"
   ],
   post_start: [
     'Quick check-in',
@@ -184,7 +184,7 @@ const buildSpecificReminderMessage = (task, reminderType, timezone = 'UTC') => {
       ? buildResolutionDetails(task)
       : '';
 
-  return `${opener}. ${actionPhrase}. Aim for about ${durationMinutes} minutes and keep me posted ${emoji} ${closing}${resolutionDetails}`;
+  return `${opener}. ${actionPhrase}. Keep me posted ${emoji} ${closing}${resolutionDetails}`;
 };
 
 class AgentService {
