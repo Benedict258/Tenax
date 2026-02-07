@@ -340,6 +340,9 @@ function cleanTaskTitle(raw) {
   text = text.replace(/^\s*to\s+/i, '');
   text = text.replace(/^\s*build\s+my\s+/i, 'build ');
   text = text.replace(/^(the\s+)?task\s+/i, '');
+  text = text.replace(/^a\s+task\s+to\s+/i, '');
+  text = text.replace(/^task\s+to\s+/i, '');
+  text = text.replace(/^a\s+task\s+/i, '');
   text = text.replace(/\b(please|pls)\b/gi, '');
   text = text.replace(/\b(today|tomorrow|tonight)\b/gi, '');
   text = text.replace(/\b(by|for|at)\b\s*$/i, '');

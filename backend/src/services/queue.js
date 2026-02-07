@@ -273,12 +273,6 @@ class QueueService {
     const onTime = await this.scheduleTaskReminder(user, task, start.toISOString(), 'on_time');
     if (onTime) reminders.push(onTime);
 
-    const postStart = new Date(start);
-    postStart.setMinutes(postStart.getMinutes() + 10);
-    if (postStart.getTime() > Date.now()) {
-      const scheduled = await this.scheduleTaskReminder(user, task, postStart.toISOString(), 'post_start');
-      if (scheduled) reminders.push(scheduled);
-    }
 
     return reminders;
   }

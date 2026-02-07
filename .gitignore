@@ -34,3 +34,7 @@ __pycache__/
 Thumbs.db
 .vscode/
 .idea/
+
+backend/.venv/
+backend/opik_datasets/streams/*.jsonl
+ecosystem.config.js

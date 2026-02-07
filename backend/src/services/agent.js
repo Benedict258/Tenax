@@ -386,7 +386,8 @@ class AgentService {
       ]);
 
       const guardActive = ruleStateService.shouldBlockNonCompletion(ruleState);
-      if (guardActive && enrichedTask?.severity !== 'p1' && p1Tasks.length) {
+      const allowNonP1 = enrichedTask?.metadata?.allow_non_p1_reminder || enrichedTask?.metadata?.user_requested;
+      if (guardActive && enrichedTask?.severity !== 'p1' && p1Tasks.length && !allowNonP1) {
         const guardMessage = ruleStateService.buildGuardrailMessage(p1Tasks);
         await whatsappService.sendMessage(user.phone_number, guardMessage);
         await ruleStateService.recordSurface({

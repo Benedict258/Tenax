@@ -319,13 +319,13 @@ async function handleAddTask(session, slots) {
         const adjustedIso = adjustment.adjustedTime ? new Date(adjustment.adjustedTime).toISOString() : originalTime;
         if (adjustedIso !== originalTime) {
           metadata.schedule_shifted_from = originalTime;
+          metadata.schedule_shifted_to = adjustedIso;
           metadata.schedule_shifted = true;
-          startTime = adjustedIso;
           await scheduleService.recordScheduleConflict({
             userId: session.user.id,
             conflictType: 'task_vs_schedule',
             conflictWindow: adjustment.conflictBlock,
-            resolution: 'task_shifted',
+            resolution: 'reminder_shifted',
             metadata: { original_time: originalTime, shifted_time: adjustedIso }
           });
         } else {
@@ -351,7 +351,7 @@ async function handleAddTask(session, slots) {
     recurrence: slots.recurrence || null,
     created_via: session.channel,
     severity,
-    metadata
+    metadata: { ...(metadata || {}), user_requested: true, allow_non_p1_reminder: true }
   });
   await notificationService.createNotification(session.user.id, {
     type: 'task',
@@ -934,8 +934,10 @@ async function handleMessage({
   const ruleState = await ruleStateService.getUserState(resolvedUser.id);
   const guardActive = ruleStateService.shouldBlockNonCompletion(ruleState);
   const p1Tasks = await ruleStateService.getActiveP1Tasks(resolvedUser.id);
+  const allowAddTaskOverride = parsed.intent === 'add_task'
+    && (addTaskSignal || parsed?.slots?.targetTime || parsed?.slots?.taskName);
 
-  if (guardActive && !GUARD_ALLOWED_INTENTS.has(parsed.intent)) {
+  if (guardActive && !GUARD_ALLOWED_INTENTS.has(parsed.intent) && !allowAddTaskOverride) {
     const guardMessage = ruleStateService.buildGuardrailMessage(p1Tasks);
     const memoryTurns = conversationContext.getTurns(resolvedUser.id);
     const reply = await conversationAgent.generateAssistantReply({
