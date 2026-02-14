@@ -1,4 +1,385 @@
----
+# Tenax — WhatsApp-First Execution Agent
+
+Turn resolutions into daily action — and measure execution quality in real time.
+
+Tenax is an AI-powered execution agent that converts high-level goals into structured daily tasks, enforces follow-through via WhatsApp, and continuously evaluates its own effectiveness using Opik-powered observability and behavioral metrics.
+
+## Table of Contents
+
+- Overview
+- Core Features
+- Architecture
+- Development Phases
+- Resolution Builder
+- Opik Integration & Evaluation
+- Setup & Installation
+- Environment Variables
+- API Endpoints
+- Testing & Regression
+- Database Schema
+- Schedule Intelligence
+- Optimization Engine
+- Project Structure
+- Troubleshooting
+- Hackathon Alignment
+
+## Overview
+
+Tenax exists to solve one problem: **Goals fail not because of intention — but because execution breaks.**
+
+Most productivity tools generate plans. Tenax enforces action and measures outcomes.
+
+Tenax:
+
+- Converts resolutions into structured roadmaps
+- Breaks them into scheduled daily tasks
+- Sends reminders and accountability nudges via WhatsApp
+- Accepts natural language completions
+- Tracks behavioral outcomes
+- Evaluates quality using Opik
+- Prevents degraded behavior from shipping via regression testing
+
+Core belief: Productivity systems must be evaluated by behavior change, not response quality alone.
+
+## Core Features
+
+### Resolution Builder
+
+- Converts goals into structured, topic-specific roadmaps
+- Breaks phases into schedulable sessions
+- Requires user approval before inserting tasks
+- Tracks phase progression (no premature phase exposure)
+- Supports roadmap view + PDF export
+
+### Execution Engine
+
+- Daily plan generation
+- Morning motivation
+- 30-minute pre-task reminders
+- On-time nudges
+- +10 minute follow-up reminders
+- Natural language completion (“I finished it”, “Done”, etc.)
+- End-of-day summaries
+
+### WhatsApp-First Architecture
+
+- No new app required for engagement
+- Unified ingestion (WhatsApp + Web)
+- Persistent conversation history
+
+### Schedule Intelligence
+
+- Timetable uploads (OCR pipeline)
+- Google Calendar read-only integration
+- Conflict detection
+- Availability windows
+- Dynamic schedule coverage tracking
+
+### Observability & Evaluation (Opik)
+
+- LLM-as-judge scoring (tone, specificity, realism, relevance)
+- Completion-based behavioral metrics
+- Failure dataset capture
+- Regression test harness
+- Prompt optimization engine
+- Experiment tagging (A/B variants)
+
+## Architecture
+
+**Backend:**
+
+- Node.js + Express
+- PostgreSQL
+- Supabase (Auth, Storage)
+- Redis + Bull queues
+- Twilio WhatsApp API
+- Opik Python bridge
+
+**Frontend:**
+
+- React (Vite)
+- Tailwind CSS
+- shadcn/ui
+- Supabase Realtime
+
+**AI Models:**
+
+- Groq (primary runtime)
+- Gemini (research fallback)
+- OpenAI (optional compatibility)
+
+## Development Phases
+
+- Phase 0 – System Foundation
+- Phase 1 – Core Execution Loop
+- Phase 2 – LLM-as-Judge Evaluation
+- Phase 3 – Rule Enforcement (P1 Guardrails)
+- Phase 4 – Schedule Intelligence
+- Phase 5 – Prompt Optimization Engine
+- Phase 6 – Advanced NLU & Conversation
+- Phase 7 – Admin Analytics Dashboard
+- Phase 8 – Polish & Demo Readiness
+- Phase 9 – Production Deployment
+
+Full breakdown: [devPhases.md](devPhases.md)
+
+## Resolution Builder
+
+The Resolution Builder converts high-level goals into structured execution.
+
+**Flow:**
+
+1. User defines goal
+2. Selects duration + availability
+3. Roadmap generated (topic-specific phases)
+4. Resources curated (deduplicated, linked)
+5. Sessions scheduled progressively
+6. User approves before insertion
+7. Only active phase tasks appear in schedule
+8. Completion unlocks next phase
+
+Each phase includes:
+
+- Objective
+- Description
+- Deliverable
+- Curated resource links
+
+Roadmap accessible via `/dashboard/roadmap`. Exportable as structured PDF.
+
+## Opik Integration & Evaluation
+
+Tenax is built around measurable improvement.
+
+Every `daily_plan`, `reminder`, `eod_summary`, and completion event is traced and scored in Opik.
+
+**Evaluators:**
+
+- Tone
+- Specificity
+- Realism
+- Goal Alignment
+
+**Behavioral Metrics:**
+
+- Completion rate
+- Reminder effectiveness
+- Streak continuity
+- Engagement frequency
+- Latency after reminder
+
+**Regression Guardrail**
+
+Low-quality traces are captured in: `backend/opik_datasets/failure_cases.json`
+
+Run:
+
+```bash
+npm run test:regression
+```
+
+If specificity or tone drops below threshold, the build fails.
+
+Optional failure demo:
+
+```bash
+FORCE_REGRESSION_FAILURE=true npm run test:regression
+```
+
+Tenax blocks degraded prompts before deployment.
+
+## Setup & Installation
+
+**Prerequisites:**
+
+- Node 18+
+- PostgreSQL 14+
+- Redis 6+
+- Twilio account
+
+**Install:**
+
+```bash
+cd backend && npm install
+cd frontend && npm install
+```
+
+**Start services:**
+
+```bash
+redis-server
+cd backend && npm run dev
+cd frontend && npm run dev
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env`.
+
+**Required:**
+
+- `DATABASE_URL`
+- `REDIS_URL`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `JWT_SECRET`
+
+**Optional:**
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `REPLICATE_API_KEY`
+- `OPIK_OPTIMIZER_ENABLED`
+- `AGENT_VERSION`
+- `EXPERIMENT_ID`
+- `ADMIN_PASSCODE`
+
+## API Endpoints
+
+**Auth:**
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+
+**Tasks:**
+
+- `GET /api/tasks`
+- `GET /api/tasks/today`
+- `POST /api/tasks`
+- `PATCH /api/tasks/:id/status`
+
+**Resolution:**
+
+- `/api/resolution/*`
+
+**Schedule:**
+
+- `POST /api/schedule/upload`
+- `GET /api/schedule/availability/:userId`
+
+**WhatsApp:**
+
+- `POST /api/whatsapp/webhook`
+
+**Admin:**
+
+- `/admin` (passcode protected)
+
+## Testing & Regression
+
+**End-to-end WhatsApp simulation:**
+
+```bash
+npm run test:whatsapp
+```
+
+**Agent action tests:**
+
+```bash
+node scripts/run_agent_actions.js morning
+node scripts/run_agent_actions.js reminder
+node scripts/run_agent_actions.js eod
+```
+
+**Optimizer:**
+
+```bash
+npm run optimizer:lite
+```
+
+## Database Schema
+
+Schedule Intelligence includes:
+
+- `timetable_uploads`
+- `timetable_extractions`
+- `external_calendars`
+- `external_events`
+- `schedule_blocks_v`
+
+OCR via Replicate (Meta DINO models).
+
+Google Calendar sync scope: `calendar.readonly`.
+
+Availability endpoint merges timetable blocks, external events, and tasks.
+
+## Schedule Intelligence
+
+- Timetable ingestion, OCR, and validation
+- Google Calendar connectors with user consent
+- Conflict detection and availability heuristics
+- Coverage tracking for task saturation
+
+## Optimization Engine (Phase 5)
+
+Tenax includes a custom optimizer-lite pipeline:
+
+```bash
+npm run optimizer:lite
+```
+
+It:
+
+- Pulls real Opik datasets
+- Generates prompt variants
+- Scores them via Groq
+- Outputs ranked improvement candidates
+
+No manual notebooks. No OpenAI dependency required.
+
+## Project Structure
+
+```
+Tenax/
+├── backend/
+├── frontend/
+├── database/
+├── docs/
+├── devPhases.md
+├── Tenax.md
+└── README.md
+```
+
+## Troubleshooting
+
+**Database:**
+
+```bash
+pg_isready
+```
+
+**Redis:**
+
+```bash
+redis-cli ping
+```
+
+**WhatsApp:**
+
+- Ensure webhook → `/api/whatsapp/webhook`
+- Use ngrok locally
+
+**Opik:**
+
+- Ensure Python bridge configured
+- Check `backend/logs/opik_fallback.jsonl`
+
+## Hackathon Alignment
+
+Tenax demonstrates:
+
+- End-to-end execution loop
+- WhatsApp-first engagement
+- Real-time Opik tracing
+- LLM-as-judge scoring
+- Regression guardrails
+- Prompt optimization
+- Measurable behavioral outcomes
+
+## Tenax is not a planner. It is an execution system with measurable accountability.
+
 # Tenax – AI Agent for Measurable Productivity
 
 **Tenax** is a personal productivity AI agent that turns high-level goals into daily executable actions, enforces follow-through via WhatsApp, and evaluates its own effectiveness using Opik-powered observability and behavioral metrics.
@@ -178,10 +559,10 @@ cd frontend && npm install
 
 ### Resolution Builder (end-to-end)
 
-1) Start the builder and answer prompts (goal, outcome, duration, availability, pace).
-2) Approve the schedule to create daily items and insert Schedule Intel blocks.
-3) View the roadmap page: `/dashboard/roadmap`.
-4) Export PDF from Resolution Builder.
+1. Start the builder and answer prompts (goal, outcome, duration, availability, pace).
+2. Approve the schedule to create daily items and insert Schedule Intel blocks.
+3. View the roadmap page: `/dashboard/roadmap`.
+4. Export PDF from Resolution Builder.
 
 If Opik Python is not available, fallback logs are stored at:
 `backend/logs/opik_fallback.jsonl`
@@ -647,6 +1028,7 @@ For issues or questions:
 - Troubleshooting: See error messages for missing tables, type mismatches, or connection issues. Update `.env` for correct Supabase, Twilio, and Redis credentials.
 
 ### New integrations (2026-01)
+
 - Run the new SQL scripts in Supabase:
   - `backend/scripts/notifications_schema.sql`
   - `backend/scripts/google_calendar_schema.sql`
