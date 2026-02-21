@@ -4,8 +4,6 @@ import * as React from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
-import googleLogo from '../../assets/brands/google.svg';
-import xLogo from '../../assets/brands/x.svg';
 
 interface AuthShellProps {
   title: string;
@@ -33,40 +31,6 @@ const PrimaryButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = (
   >
     {children}
   </button>
-);
-
-const SocialButton: React.FC<{
-  icon?: React.ReactNode;
-  fullWidth?: boolean;
-  children?: React.ReactNode;
-}> = ({ icon, fullWidth, children }) => (
-  <button
-    type="button"
-    className={cn(
-      'relative z-0 flex items-center justify-center gap-2 overflow-hidden rounded-md border border-zinc-300 bg-zinc-100 px-4 py-2 font-semibold text-zinc-800 transition-all duration-500 before:absolute before:inset-0 before:-z-10 before:translate-x-[150%] before:translate-y-[150%] before:scale-[2.5] before:rounded-[100%] before:bg-zinc-800 before:transition-transform before:duration-1000 before:content-[""] hover:scale-105 hover:text-zinc-100 hover:before:translate-x-[0%] hover:before:translate-y-[0%] active:scale-95',
-      fullWidth && 'col-span-2',
-    )}
-  >
-    {icon}
-    <span>{children}</span>
-  </button>
-);
-
-const Divider: React.FC = () => (
-  <div className="my-6 flex items-center gap-3">
-    <div className="h-[1px] w-full bg-zinc-300" />
-    <span className="text-zinc-500">OR</span>
-    <div className="h-[1px] w-full bg-zinc-300" />
-  </div>
-);
-
-const SocialButtons: React.FC = () => (
-  <div className="mb-6 space-y-3">
-    <div className="grid grid-cols-2 gap-3">
-      <SocialButton icon={<img src={xLogo} alt="X" className="h-4 w-4 text-zinc-900 dark:invert" />} />
-      <SocialButton icon={<img src={googleLogo} alt="Google" className="h-4 w-4" />} />
-    </div>
-  </div>
 );
 
 const TermsAndConditions: React.FC = () => (
@@ -127,7 +91,7 @@ const AuthShell: React.FC<AuthShellProps> = ({
   link,
   onBack,
   children,
-  showSocial = true,
+  showSocial = false,
   showTerms = true,
   containerClassName,
   cardClassName,
@@ -154,12 +118,7 @@ const AuthShell: React.FC<AuthShellProps> = ({
             </p>
           )}
         </div>
-        {showSocial && (
-          <>
-            <SocialButtons />
-            <Divider />
-          </>
-        )}
+        {showSocial && null}
         {children}
         {showTerms && <TermsAndConditions />}
       </motion.div>

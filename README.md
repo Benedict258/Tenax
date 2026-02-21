@@ -46,7 +46,7 @@ Core belief: Productivity systems must be evaluated by behavior change, not resp
 Tenax is WhatsApp-first. Daily execution, reminders, and check-ins happen inside WhatsApp.
 
 - **Twilio Sandbox Number:** +1 415 523 8886
-- **Join code:** `join pipe-born`
+- **Send message:** `join pipe-born`
 - **Direct link:** http://wa.me/+14155238886?text=join%20pipe-born
 
 ## Core Features

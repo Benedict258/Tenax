@@ -76,11 +76,12 @@ const HeroLanding = () => {
             <p className="text-xs uppercase tracking-[0.4em] text-white/50">Tenax on WhatsApp</p>
             <h2 className="mt-3 text-2xl font-semibold text-white">Execution lives inside WhatsApp</h2>
             <p className="mt-2 text-white/70">
-              Reminders, check-ins, and daily execution happen directly in your WhatsApp chat with Tenax.
+              Reminders, check-ins, and daily execution happen directly in your WhatsApp chat with Tenax. Send the join
+              message to connect.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/80">
               <span>Number: +1 415 523 8886</span>
-              <span className="rounded bg-white/10 px-3 py-1 font-mono text-xs">join pipe-born</span>
+              <span className="rounded bg-white/10 px-3 py-1 font-mono text-xs">send “join pipe-born”</span>
             </div>
             <div className="mt-6">
               <Button

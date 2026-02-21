@@ -276,15 +276,19 @@ const DashboardLayout = () => {
                 <p className="text-xs uppercase tracking-[0.4em] text-gray-400">WhatsApp Setup</p>
                 <h2 className="mt-2 text-2xl font-semibold text-[#03040b]">Tenax runs on WhatsApp</h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  Reminders, check-ins, and daily execution happen in WhatsApp.
+                  Reminders, check-ins, and daily execution happen in WhatsApp. To start chatting, send the join code
+                  to the Tenax number below.
                 </p>
                 <div className="mt-4 space-y-2 text-sm text-gray-700">
                   <p>
                     <span className="font-semibold">Number:</span> +1 415 523 8886
                   </p>
                   <p>
-                    <span className="font-semibold">Join code:</span>{' '}
+                    <span className="font-semibold">Send message:</span>{' '}
                     <span className="rounded bg-gray-100 px-2 py-1 font-mono text-xs">join pipe-born</span>
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Send that message to connect and start receiving reminders.
                   </p>
                 </div>
                 <div className="mt-6 flex flex-wrap gap-3">
