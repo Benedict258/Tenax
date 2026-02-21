@@ -9,6 +9,7 @@ const heroChips = [
   { label: 'Quality pulse', value: 'Opik compliant' },
   { label: 'Channels', value: 'WhatsApp + Web' },
 ];
+const whatsappLink = 'http://wa.me/+14155238886?text=join%20pipe-born';
 
 const HeroLanding = () => {
   const navigate = useNavigate();
@@ -71,6 +72,25 @@ const HeroLanding = () => {
             )}
             <p className="text-white/60 text-sm">Your dashboard stays encrypted. This hero is simply the welcome airlock.</p>
           </div>
+          <section className="w-full max-w-4xl rounded-3xl border border-white/10 bg-white/5 px-6 py-8 text-left">
+            <p className="text-xs uppercase tracking-[0.4em] text-white/50">Tenax on WhatsApp</p>
+            <h2 className="mt-3 text-2xl font-semibold text-white">Execution lives inside WhatsApp</h2>
+            <p className="mt-2 text-white/70">
+              Reminders, check-ins, and daily execution happen directly in your WhatsApp chat with Tenax.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/80">
+              <span>Number: +1 415 523 8886</span>
+              <span className="rounded bg-white/10 px-3 py-1 font-mono text-xs">join pipe-born</span>
+            </div>
+            <div className="mt-6">
+              <Button
+                className="border border-green-200 bg-green-100 text-green-900 hover:bg-green-200"
+                onClick={() => window.open(whatsappLink, '_blank', 'noopener,noreferrer')}
+              >
+                Chat with Tenax
+              </Button>
+            </div>
+          </section>
           <div className="w-full max-w-5xl">
             <HeroGeometric
               badge="Ops readiness"

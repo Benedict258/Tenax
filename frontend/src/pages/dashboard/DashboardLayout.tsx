@@ -19,7 +19,9 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showWhatsAppGuide, setShowWhatsAppGuide] = useState(false);
   const location = useLocation();
+  const whatsappLink = 'http://wa.me/+14155238886?text=join%20pipe-born';
 
   const navItems = useMemo(
     () => dashboardNavItems.filter((item) => (item.adminOnly ? ADMIN_ENABLED : true)),
@@ -32,6 +34,16 @@ const DashboardLayout = () => {
       setShowOnboarding(true);
     }
   }, []);
+
+  React.useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+    const seenWhatsApp = localStorage.getItem('tenax.whatsapp_seen');
+    if (!seenWhatsApp) {
+      setShowWhatsAppGuide(true);
+    }
+  }, [user?.id]);
 
   if (authLoading) {
     return (
@@ -154,7 +166,7 @@ const DashboardLayout = () => {
           </SidebarBody>
         </Sidebar>
         <div className="flex-1 flex flex-col min-w-0 bg-white">
-          <header className="flex flex-col gap-4 border-b border-gray-200 bg-white px-6 py-6 md:flex-row md:items-center md:justify-between">
+          <header className="relative flex flex-col gap-4 border-b border-gray-200 bg-white px-6 py-6 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
               <Button
                 variant="ghost"
@@ -167,6 +179,14 @@ const DashboardLayout = () => {
                 <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Command Module</p>
                 <h1 className="text-2xl font-semibold text-[#03040b]">{currentNavLabel}</h1>
               </div>
+            </div>
+            <div className="flex w-full justify-center md:absolute md:left-1/2 md:top-1/2 md:w-auto md:-translate-x-1/2 md:-translate-y-1/2">
+              <Button
+                className="w-full max-w-xs border border-green-200 bg-green-100 text-green-900 hover:bg-green-200 md:w-auto"
+                onClick={() => window.open(whatsappLink, '_blank', 'noopener,noreferrer')}
+              >
+                Chat with Tenax
+              </Button>
             </div>
             {!isWeeklySchedule && (
             <div className="flex items-center gap-3">
@@ -229,6 +249,60 @@ const DashboardLayout = () => {
             </ul>
             <div className="mt-6 flex justify-end">
               <Button onClick={closeOnboarding}>Got it</Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showWhatsAppGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="relative w-full max-w-xl rounded-3xl bg-white p-8 shadow-2xl">
+            <button
+              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600"
+              onClick={() => {
+                localStorage.setItem('tenax.whatsapp_seen', 'true');
+                setShowWhatsAppGuide(false);
+              }}
+              aria-label="Close WhatsApp guide"
+            >
+              ✕
+            </button>
+            <div className="flex items-start gap-4">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                alt="WhatsApp"
+                className="h-12 w-12"
+              />
+              <div>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-400">WhatsApp Setup</p>
+                <h2 className="mt-2 text-2xl font-semibold text-[#03040b]">Tenax runs on WhatsApp</h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Reminders, check-ins, and daily execution happen in WhatsApp.
+                </p>
+                <div className="mt-4 space-y-2 text-sm text-gray-700">
+                  <p>
+                    <span className="font-semibold">Number:</span> +1 415 523 8886
+                  </p>
+                  <p>
+                    <span className="font-semibold">Join code:</span>{' '}
+                    <span className="rounded bg-gray-100 px-2 py-1 font-mono text-xs">join pipe-born</span>
+                  </p>
+                </div>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button onClick={() => window.open(whatsappLink, '_blank', 'noopener,noreferrer')}>
+                    Open WhatsApp
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-200 text-gray-700"
+                    onClick={() => {
+                      localStorage.setItem('tenax.whatsapp_seen', 'true');
+                      setShowWhatsAppGuide(false);
+                    }}
+                  >
+                    Got it
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
